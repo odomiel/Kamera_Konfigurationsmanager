@@ -103,10 +103,22 @@ class AxisPlugin(VendorPlugin):
         """
         return vapix.parse_user_list(path, onvif=onvif)
 
-    def add_onvif_user(self, camera, creds: Credentials, new_user, new_password):
+    # ONVIF user levels (highest to lowest privilege).
+    ONVIF_LEVELS = ("Administrator", "Operator", "User")
+
+    def add_onvif_user(self, camera, creds: Credentials, new_user, new_password,
+                       level="Administrator"):
         ip = self.ip_of(camera)
         return vapix.add_onvif_user(ip, creds.username, creds.password,
-                                    new_user, new_password, **self._conn(creds))
+                                    new_user, new_password, level=level,
+                                    **self._conn(creds))
+
+    def set_onvif_user_password(self, camera, creds: Credentials, target_user,
+                                new_password, level="Administrator"):
+        ip = self.ip_of(camera)
+        return vapix.set_onvif_user_password(ip, creds.username, creds.password,
+                                             target_user, new_password, level=level,
+                                             **self._conn(creds))
 
     def upgrade_firmware(self, camera, creds: Credentials, firmware_path,
                          factory_default=False):

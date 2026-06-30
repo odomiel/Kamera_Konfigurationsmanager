@@ -55,9 +55,11 @@ mehrere Kameras *verschiedener Modelle gleichzeitig* — pro Modell eine eigene
 werden übersprungen; factory-default-Option; langer Upload-Timeout.
 **Benutzer-Dialog fertig:** anlegen (mit Rolle + factory) / Passwort ändern /
 Stapel-Import aus `Name,Passwort[,Rolle]`-Datei (einmal validiert, je Kamera ×
-Benutzer); optional Speichern ins Tresor. **Offen:** die zwei weiteren
-Aktions-Dialoge (ONVIF-Benutzer/IP-Adresse), die Einstellungen (Plugin-Manager,
-Spalten, Online-Prüfung-je-Gruppe, Tresor-UI) und die Build-Skripte.
+Benutzer); optional Speichern ins Tresor. **ONVIF-Benutzer-Dialog fertig:**
+gleicher Aufbau mit ONVIF-Stufen (Administrator/Operator/User), ohne factory.
+**Offen:** der letzte Aktions-Dialog (IP-Adresse), die Einstellungen
+(Plugin-Manager, Spalten, Online-Prüfung-je-Gruppe, Tresor-UI) und die
+Build-Skripte.
 
 ## Aus dem Quellcode starten
 
