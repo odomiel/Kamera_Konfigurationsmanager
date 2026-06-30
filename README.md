@@ -98,3 +98,9 @@ py -3.13 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
 python3 bump_version.py --print    # aktuelle Version
 python3 bump_version.py            # nächste Version setzen
 ```
+
+## Lizenz
+
+GPL-3.0-or-later. Siehe `LICENSE`. Dieses Projekt enthält den VAPIX-Client aus
+dem ebenfalls GPL-3.0 lizenzierten Axis_Kamera_Discovery-Tool; der gesamte
+Quelltext steht daher unter der GNU General Public License v3 (oder neuer).
