@@ -59,8 +59,12 @@ Benutzer); optional Speichern ins Tresor. **ONVIF-Benutzer-Dialog fertig:**
 gleicher Aufbau mit ONVIF-Stufen (Administrator/Operator/User), ohne factory.
 **IP-Adresse-Dialog fertig:** DHCP / feste IP fortlaufend ab Start-IP / pro Kamera
 einzeln (Ziel-IPs werden vor dem Zugriff validiert). **Alle fünf Aktions-Dialoge
-stehen damit.** **Offen:** die Einstellungen (Plugin-Manager, Spalten,
-Online-Prüfung-je-Gruppe, Tresor-UI) und die Build-Skripte (AppImage + Windows).
+stehen damit.** **Einstellungen-Dialog fertig:** Tresor-Verwaltung (Master-Passwort
+anlegen/entsperren/sperren/ändern), Plugin-Manager (Hersteller an/aus, persistent),
+Online-Prüfung je Gruppe (an/aus + Intervall, mit automatischer Prüfung der
+gewählten Gruppe im Hauptfenster) und Spalten-Sichtbarkeit; Tresor ist ins
+Hauptfenster eingebunden (Aktions-Dialoge füllen gespeicherte Passwörter vor).
+**Offen:** die Build-Skripte (AppImage + Windows).
 
 ## Aus dem Quellcode starten
 

@@ -21,14 +21,17 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
 
 from kkm.version import APP_NAME, __version__
-from kkm.core import Credentials, Capability, GroupStore, ALL_CAMERAS_ID, camera_key
+from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
+                      camera_key, PasswordVault, AppSettings)
 from kkm.core.groups import config_dir
 from kkm.plugins import build_registry
 from kkm.plugins.axis.discovery import FIELD_NAMES, get_first_ip, export_results
 from kkm.gui.dialogs import ACTION_DIALOGS
+from kkm.gui.dialogs.settings_dialog import SettingsDialog
 
 ONLINE_COL = "● Status"
 TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "MAC/Seriennummer", "Firmware", ONLINE_COL]
+FIXED_COLUMNS = {"Name"}   # always visible, cannot be hidden
 
 
 class MainWindow(tk.Tk):
@@ -38,19 +41,24 @@ class MainWindow(tk.Tk):
         self.geometry("1100x650")
 
         self.store = GroupStore()
-        self.registry = build_registry()
+        self.settings = AppSettings()
+        self.registry = build_registry(self.settings.get("enabled_plugins"))
+        self.vault = PasswordVault()
         self.creds = Credentials()
         self._q: queue.Queue = queue.Queue()
         self._current_gid = ALL_CAMERAS_ID
         # rowid (in tree) -> camera dict, for the device table
         self._row_cam: dict[str, dict] = {}
+        self._online_job = None   # after() id for the per-group auto online check
 
         self._build_toolbar()
         self._build_body()
         self._build_statusbar()
         self._refresh_groups()
+        self.apply_columns(self.settings.get("hidden_columns", []))
         self._refresh_table()
         self.after(100, self._poll)
+        self._schedule_online_autocheck()
 
     # ------------------------------------------------------------------ UI
     def _build_toolbar(self):
@@ -139,6 +147,7 @@ class MainWindow(tk.Tk):
         if sel:
             self._current_gid = sel[0]
             self._refresh_table()
+            self._schedule_online_autocheck()
 
     def _add_group(self):
         name = simpledialog.askstring("Neue Gruppe", "Name der Gruppe:", parent=self)
@@ -275,16 +284,37 @@ class MainWindow(tk.Tk):
             self.status.config(text=f"Exportiert nach {path}")
 
     def _open_settings(self):
-        # TODO(scaffold): plugin manager (enable/disable vendors), column visibility,
-        # online-check-per-group config, and master-password / vault management.
-        enabled = ", ".join(p.name for p in self.registry.enabled()) or "—"
-        messagebox.showinfo(
-            APP_NAME,
-            f"Einstellungen (folgt):\n"
-            f"• Plugins aktiv: {enabled}\n"
-            f"• Online-Prüfung je Gruppe\n"
-            f"• Passwort-Tresor (Master-Passwort)\n\n"
-            f"Konfig-Verzeichnis:\n{config_dir()}")
+        dlg = SettingsDialog(
+            self, vault=self.vault, registry=self.registry, settings=self.settings,
+            store=self.store, current_gid=self._current_gid,
+            columns=TABLE_COLUMNS, fixed_columns=FIXED_COLUMNS,
+            apply_columns=self.apply_columns)
+        self.wait_window(dlg)
+        # The group's online-check config may have changed -> reschedule.
+        self._schedule_online_autocheck()
+
+    # ------------------------------------------------------------- columns
+    def apply_columns(self, hidden):
+        visible = [c for c in TABLE_COLUMNS if c not in hidden or c in FIXED_COLUMNS]
+        self.table.config(displaycolumns=visible)
+
+    # ------------------------------------------------- online auto-check
+    def _schedule_online_autocheck(self):
+        if self._online_job is not None:
+            self.after_cancel(self._online_job)
+            self._online_job = None
+        g = self.store.groups.get(self._current_gid)
+        if g and g.online_check:
+            self._online_job = self.after(max(5, g.online_interval) * 1000,
+                                          self._run_online_autocheck)
+
+    def _run_online_autocheck(self):
+        self._online_job = None
+        cams = self.store.cameras_in(self._current_gid)
+        if cams:
+            threading.Thread(target=self._worker_online, args=(cams,), daemon=True).start()
+        # reschedule the next tick
+        self._schedule_online_autocheck()
 
 
 def main():
