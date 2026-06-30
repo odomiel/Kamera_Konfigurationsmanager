@@ -64,11 +64,37 @@ anlegen/entsperren/sperren/ändern), Plugin-Manager (Hersteller an/aus, persiste
 Online-Prüfung je Gruppe (an/aus + Intervall, mit automatischer Prüfung der
 gewählten Gruppe im Hauptfenster) und Spalten-Sichtbarkeit; Tresor ist ins
 Hauptfenster eingebunden (Aktions-Dialoge füllen gespeicherte Passwörter vor).
-**Offen:** die Build-Skripte (AppImage + Windows).
+**Build-Skripte fertig:** Linux-AppImage und Windows-`.exe` (siehe unten). Die
+Programm-Features sind damit vollständig.
 
 ## Aus dem Quellcode starten
 
 ```bash
 pip install -r requirements.txt   # zeroconf, cryptography
 python3 main.py
+```
+
+## Bauen
+
+**Linux (AppImage)** — baut Tcl/Tk 9 + Python 3.13 + OpenSSL aus dem Quelltext
+und vendort `zeroconf` + `cryptography` als Wheels (kein pip im Ergebnis nötig):
+
+```bash
+./build_appimage.sh            # -> Kamerakonfigurationsmanager-<version>-x86_64.AppImage
+./build_appimage.sh --bump     # Version vorher hochzählen, dann bauen
+```
+
+**Windows (portable .exe)** — muss auf Windows mit Python 3.13 laufen
+(PyInstaller cross-kompiliert nicht), Details in `BUILD_WINDOWS.md`:
+
+```powershell
+py -3.13 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
+# oder: powershell -ExecutionPolicy Bypass -File build_windows.ps1
+```
+
+**Version** (Schema `JJ.MM.TT[bN]`, in `kkm/version.py`):
+
+```bash
+python3 bump_version.py --print    # aktuelle Version
+python3 bump_version.py            # nächste Version setzen
 ```

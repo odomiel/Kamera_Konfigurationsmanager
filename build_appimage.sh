@@ -1,0 +1,201 @@
+#!/usr/bin/env bash
+#
+# Baut ein eigenstaendiges AppImage des Kamera_Konfigurationsmanagers mit Tcl/Tk 9.
+#
+# Wie beim Axis_Kamera_Discovery-Tool: da kein Basis-Image mit Tk 9 existiert,
+# werden Tcl 9, Tk 9 und Python 3.13 aus dem Quellcode gebaut. libffi (fuer
+# _ctypes -> ifaddr/zeroconf) und OpenSSL (fuer das ssl-Modul -> HTTPS/VAPIX)
+# ebenfalls. Reine Laufzeit-Pakete kommen als fertige Wheels (kein pip noetig):
+# zeroconf (+ifaddr) fuer die Discovery, cryptography (+cffi/pycparser) fuer den
+# Passwort-Tresor (AES-256-GCM).
+#
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD="$ROOT/.tk9build"
+SRC="$BUILD/src"
+APPDIR="$BUILD/AppDir"
+PREFIX="$APPDIR/usr"
+JOBS="$(nproc)"
+
+TCL_VER=9.0.3
+TK_VER=9.0.3
+PY_VER=3.13.14
+PY_XY=3.13
+FFI_VER=3.6.0
+SSL_VER=3.5.7
+
+APP=Kamerakonfigurationsmanager
+
+mkdir -p "$SRC"
+rm -rf "$APPDIR"
+mkdir -p "$PREFIX"
+
+dl() {  # dl <url> <zieldatei>
+    local url="$1" out="$2"
+    [ -f "$out" ] || { echo ">> download $(basename "$out")"; curl -fSL "$url" -o "$out"; }
+}
+
+# --------------------------------------------------------------- 1. Quellen
+dl "https://downloads.sourceforge.net/project/tcl/Tcl/$TCL_VER/tcl$TCL_VER-src.tar.gz" "$SRC/tcl.tar.gz"
+dl "https://downloads.sourceforge.net/project/tcl/Tcl/$TK_VER/tk$TK_VER-src.tar.gz"    "$SRC/tk.tar.gz"
+dl "https://www.python.org/ftp/python/$PY_VER/Python-$PY_VER.tgz"                       "$SRC/python.tgz"
+dl "https://github.com/libffi/libffi/releases/download/v$FFI_VER/libffi-$FFI_VER.tar.gz" "$SRC/libffi.tar.gz"
+dl "https://github.com/openssl/openssl/releases/download/openssl-$SSL_VER/openssl-$SSL_VER.tar.gz" "$SRC/openssl.tar.gz"
+
+cd "$SRC"
+rm -rf "tcl$TCL_VER" "tk$TK_VER" "Python-$PY_VER" "libffi-$FFI_VER" "openssl-$SSL_VER"
+tar xf tcl.tar.gz; tar xf tk.tar.gz; tar xf python.tgz; tar xf libffi.tar.gz; tar xf openssl.tar.gz
+
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# --------------------------------------------------------------- 2. libffi
+echo "==== libffi $FFI_VER ===="
+cd "$SRC/libffi-$FFI_VER"
+./configure --prefix="$PREFIX" --disable-static --disable-docs >/dev/null
+make -j"$JOBS" >/dev/null
+make install >/dev/null
+
+# --------------------------------------------------------------- 2b. OpenSSL
+echo "==== OpenSSL $SSL_VER ===="
+cd "$SRC/openssl-$SSL_VER"
+./Configure --prefix="$PREFIX" --libdir=lib --openssldir="$PREFIX/ssl" \
+            shared -Wl,-rpath,'$ORIGIN/../lib' >/dev/null
+make -j"$JOBS" >/dev/null
+make install_sw >/dev/null
+
+# --------------------------------------------------------------- 3. Tcl 9
+echo "==== Tcl $TCL_VER ===="
+cd "$SRC/tcl$TCL_VER/unix"
+./configure --prefix="$PREFIX" --enable-shared --enable-64bit >/dev/null
+make -j"$JOBS" >/dev/null
+make install >/dev/null
+ln -sf "$PREFIX/bin/tclsh$TCL_VER" "$PREFIX/bin/tclsh${TCL_VER%.*}" 2>/dev/null || true
+
+# --------------------------------------------------------------- 4. Tk 9
+echo "==== Tk $TK_VER ===="
+cd "$SRC/tk$TK_VER/unix"
+./configure --prefix="$PREFIX" --with-tcl="$PREFIX/lib" \
+            --enable-shared --enable-64bit --enable-xft >/dev/null
+make -j"$JOBS" >/dev/null
+make install >/dev/null
+
+# --------------------------------------------------------------- 5. Python 3.13
+echo "==== Python $PY_VER (gegen Tcl/Tk 9) ===="
+cd "$SRC/Python-$PY_VER"
+./configure \
+    --prefix="$PREFIX" \
+    --enable-shared \
+    --with-ensurepip=no \
+    --with-openssl="$PREFIX" \
+    --with-openssl-rpath=auto \
+    --with-tcltk-includes="-I$PREFIX/include" \
+    --with-tcltk-libs="-L$PREFIX/lib -ltcl9.0 -ltk9.0" \
+    CPPFLAGS="-I$PREFIX/include" \
+    LDFLAGS="-L$PREFIX/lib -Wl,-rpath,\$\$ORIGIN/../lib" \
+    >/dev/null
+make -j"$JOBS" >/dev/null 2>&1
+make install >/dev/null 2>&1
+
+PYBIN="$PREFIX/bin/python$PY_XY"
+echo ">> Tcl/Tk-Version im neuen Python:"
+"$PYBIN" -c "import tkinter; r=tkinter.Tk(); print('  Tcl/Tk', r.tk.call('info','patchlevel')); r.destroy()"
+echo ">> OpenSSL-Version im neuen Python:"
+"$PYBIN" -c "import ssl; print('  ', ssl.OPENSSL_VERSION)"
+
+# --------------------------------------------------------------- 6. Wheels vendoren
+echo "==== Laufzeit-Pakete (Wheels) ===="
+SITE="$PREFIX/lib/python$PY_XY/site-packages"
+mkdir -p "$SITE"
+wheel() {  # wheel <pypi-paket> <filter>
+    local pkg="$1" filt="$2"
+    local url
+    url=$(curl -s "https://pypi.org/pypi/$pkg/json" | "$PYBIN" -c "
+import json,sys
+d=json.load(sys.stdin); v=d['info']['version']
+for f in d['releases'][v]:
+    n=f['filename']
+    if $filt:
+        print(f['url']); break
+")
+    [ -n "$url" ] || { echo "FEHLER: kein passendes Wheel fuer $pkg gefunden"; exit 1; }
+    echo ">> $pkg: $(basename "$url")"
+    curl -fsSL "$url" -o "$BUILD/$pkg.whl"
+    "$PYBIN" -m zipfile -e "$BUILD/$pkg.whl" "$SITE/"
+}
+# Discovery (mDNS/Zeroconf)
+wheel zeroconf     "'cp313' in n and 'manylinux' in n and 'x86_64' in n"
+wheel ifaddr       "n.endswith('.whl')"
+# Passwort-Tresor (AES-256-GCM). cryptography-Wheels sind abi3 (cp39+).
+wheel cryptography "'abi3' in n and 'manylinux' in n and 'x86_64' in n"
+wheel cffi         "'cp313' in n and 'manylinux' in n and 'x86_64' in n"
+wheel pycparser    "n.endswith('.whl')"
+
+echo ">> Importtest der gebuendelten Pakete:"
+"$PYBIN" -c "import zeroconf, ifaddr, cryptography; \
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM; \
+print('  zeroconf', zeroconf.__version__, '| cryptography', cryptography.__version__)"
+
+# --------------------------------------------------------------- 7. App + AppDir
+echo "==== AppDir zusammenstellen ===="
+mkdir -p "$APPDIR/app"
+cp "$ROOT/main.py" "$ROOT/README.md" "$APPDIR/app/"
+cp -r "$ROOT/kkm" "$APPDIR/app/"
+find "$APPDIR/app" -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+
+# Icon: vorhandenes nehmen, sonst minimalen Platzhalter erzeugen.
+ICON_SRC="$ROOT/assets/$APP.png"
+if [ -f "$ICON_SRC" ]; then
+    cp "$ICON_SRC" "$APPDIR/$APP.png"
+else
+    echo ">> kein assets/$APP.png -> Platzhalter-Icon wird erzeugt"
+    base64 -d > "$APPDIR/$APP.png" <<'PNG'
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHElEQVR42mNkYPhfz0AEYBxVSF+F
+o4qEgAEAQ7AL8a9aQ1cAAAAASUVORK5CYII=
+PNG
+fi
+
+cat > "$APPDIR/$APP.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=$APP
+GenericName=Kamera-Konfigurationsmanager
+Comment=Verwaltet und konfiguriert Netzwerkkameras (Axis-Plugin)
+Exec=AppRun %u
+Icon=$APP
+Categories=Network;Utility;
+Terminal=false
+DESKTOP
+
+# AppRun: eigenstaendige Python/Tcl/Tk-Umgebung, startet die GUI (main.py).
+cat > "$APPDIR/AppRun" <<APPRUN
+#!/bin/bash
+HERE="\$(dirname "\$(readlink -f "\$0")")"
+export APPDIR="\$HERE"
+export PYTHONHOME="\$HERE/usr"
+export PYTHONDONTWRITEBYTECODE=1
+export LD_LIBRARY_PATH="\$HERE/usr/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+# Tcl/Tk 9 betten ihre Script-Library per zipfs in die .so ein -> kein
+# TCL_LIBRARY/TK_LIBRARY noetig.
+exec "\$HERE/usr/bin/python$PY_XY" "\$HERE/app/main.py" "\$@"
+APPRUN
+chmod +x "$APPDIR/AppRun"
+
+# Build-Reste verschlanken
+rm -rf "$PREFIX/lib/python$PY_XY/test" "$PREFIX/lib/python$PY_XY/"*/test 2>/dev/null || true
+find "$PREFIX" -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+
+# --------------------------------------------------------------- 8. AppImage packen
+echo "==== AppImage packen ===="
+AIT="$BUILD/appimagetool-x86_64.AppImage"
+dl "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" "$AIT"
+chmod +x "$AIT"
+
+[ "${1:-}" = "--bump" ] && python3 "$ROOT/bump_version.py" >/dev/null
+VERSION="$(python3 "$ROOT/bump_version.py" --print)"
+OUT="$ROOT/$APP-${VERSION}-x86_64.AppImage"
+ARCH=x86_64 "$AIT" --appimage-extract-and-run "$APPDIR" "$OUT" 2>&1 | tail -5
+ln -sfn "$(basename "$OUT")" "$ROOT/$APP-x86_64.AppImage"
+
+echo ">> Fertig: $OUT"
