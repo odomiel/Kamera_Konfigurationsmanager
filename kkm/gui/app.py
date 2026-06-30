@@ -104,8 +104,9 @@ class MainWindow(tk.Tk):
             btn.pack(side=tk.LEFT, padx=(0, 4))
             self._action_buttons[cap] = btn
 
+        ttk.Button(bar, text="Hilfe", command=self._open_help).pack(side=tk.RIGHT)
         ttk.Button(bar, text="Einstellungen", command=self._open_settings).pack(
-            side=tk.RIGHT)
+            side=tk.RIGHT, padx=(0, 6))
         ttk.Button(bar, text="Exportieren", command=self._export).pack(
             side=tk.RIGHT, padx=(0, 6))
         self.progress = ttk.Progressbar(bar, mode="indeterminate", length=140)
@@ -382,6 +383,36 @@ class MainWindow(tk.Tk):
         if path:
             export_results(cams, path, columns=FIELD_NAMES)
             self.status.config(text=f"Exportiert nach {path}")
+
+    def _open_help(self):
+        import sys
+        from pathlib import Path
+        if getattr(sys, "frozen", False):
+            base = Path(getattr(sys, "_MEIPASS", "."))
+        else:
+            base = Path(__file__).resolve().parents[2]   # <root>/ bzw. AppImage app/
+        path = base / "HILFE.md"
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            text = "Hilfedatei (HILFE.md) nicht gefunden."
+
+        win = tk.Toplevel(self)
+        win.title("Hilfe")
+        win.geometry("720x600")
+        win.transient(self)
+        frame = ttk.Frame(win, padding=8)
+        frame.pack(fill=tk.BOTH, expand=True)
+        scroll = ttk.Scrollbar(frame)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        txt = tk.Text(frame, wrap=tk.WORD, yscrollcommand=scroll.set,
+                      padx=8, pady=8)
+        txt.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.config(command=txt.yview)
+        txt.insert("1.0", text)
+        txt.config(state=tk.DISABLED)
+        ttk.Button(win, text="Schließen", command=win.destroy).pack(
+            anchor=tk.E, padx=8, pady=(0, 8))
 
     def _open_settings(self):
         dlg = SettingsDialog(

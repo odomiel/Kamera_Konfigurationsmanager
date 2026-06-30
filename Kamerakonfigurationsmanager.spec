@@ -15,6 +15,7 @@ from PyInstaller.utils.hooks import collect_submodules
 # README/Lizenzen mit ins Bundle (zur Laufzeit ueber sys._MEIPASS auffindbar).
 datas = [
     ("README.md", "."),
+    ("HILFE.md", "."),
     ("LICENSE", "."),
     ("THIRD_PARTY_LICENSES.md", "."),
 ]
