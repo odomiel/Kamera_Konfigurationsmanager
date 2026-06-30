@@ -52,10 +52,12 @@ Dialog-Basis (`kkm/gui/dialogs/base.py`: Zugangsdaten, Hintergrund-Threads,
 Ergebnis-Log, Tresor-Vorbefüllung). **Firmware-Dialog fertig:** aktualisiert
 mehrere Kameras *verschiedener Modelle gleichzeitig* — pro Modell eine eigene
 `.bin` zuweisen, Update parallel mit Ergebnis-Log; nicht zugewiesene Modelle
-werden übersprungen; factory-default-Option; langer Upload-Timeout. **Offen:** die
-drei weiteren Aktions-Dialoge (IP/Benutzer/ONVIF), die Einstellungen
-(Plugin-Manager, Spalten, Online-Prüfung-je-Gruppe, Tresor-UI) und die
-Build-Skripte.
+werden übersprungen; factory-default-Option; langer Upload-Timeout.
+**Benutzer-Dialog fertig:** anlegen (mit Rolle + factory) / Passwort ändern /
+Stapel-Import aus `Name,Passwort[,Rolle]`-Datei (einmal validiert, je Kamera ×
+Benutzer); optional Speichern ins Tresor. **Offen:** die zwei weiteren
+Aktions-Dialoge (ONVIF-Benutzer/IP-Adresse), die Einstellungen (Plugin-Manager,
+Spalten, Online-Prüfung-je-Gruppe, Tresor-UI) und die Build-Skripte.
 
 ## Aus dem Quellcode starten
 

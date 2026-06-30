@@ -80,12 +80,28 @@ class AxisPlugin(VendorPlugin):
         ip = self.ip_of(camera)
         return vapix.set_dhcp(ip, creds.username, creds.password, **self._conn(creds))
 
+    # Roles offered in the user dialog (highest to lowest privilege).
+    USER_ROLES = ("administrator", "operator", "viewer")
+
     def add_user(self, camera, creds: Credentials, new_user, new_password,
                  role="viewer", factory=False):
         ip = self.ip_of(camera)
         return vapix.add_or_set_user(ip, creds.username, creds.password,
                                      new_user, new_password, role=role,
                                      factory=factory, **self._conn(creds))
+
+    def set_user_password(self, camera, creds: Credentials, target_user, new_password):
+        ip = self.ip_of(camera)
+        return vapix.set_user_password(ip, creds.username, creds.password,
+                                       target_user, new_password, **self._conn(creds))
+
+    @staticmethod
+    def parse_user_list(path, onvif=False):
+        """Parse a CSV/text user list (Name,Password[,Role]) -> list of dicts.
+
+        Raises on format errors (with line numbers) so nothing partial is applied.
+        """
+        return vapix.parse_user_list(path, onvif=onvif)
 
     def add_onvif_user(self, camera, creds: Credentials, new_user, new_password):
         ip = self.ip_of(camera)
