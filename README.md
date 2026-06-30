@@ -7,7 +7,8 @@ Axis_Kamera_Discovery-Tool (Python 3.13 + Tkinter/Tk9).
 
 ## Funktionen (Zielbild)
 
-- **Gerätesuche** im LAN (mDNS), Zuweisung zu Gruppen.
+- **Gerätesuche** im LAN (mDNS); Kameras per **Rechtsklick** einer oder mehreren
+  Gruppen zuweisen (additiv) bzw. aus der aktuellen Gruppe entfernen.
 - **Gruppen ohne Datenbank** (JSON): nicht löschbare Gruppe „Alle Kameras“,
   darunter eigene Gruppen (anlegen/bearbeiten/löschen).
 - **Online-Status** als eigene Spalte, manueller Prüf-Button + konfigurierbare

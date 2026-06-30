@@ -139,6 +139,8 @@ class MainWindow(tk.Tk):
             self.table.column(col, width=160, stretch=True)
         self.table.column(ONLINE_COL, width=90, stretch=False, anchor=tk.CENTER)
         self.table.pack(fill=tk.BOTH, expand=True)
+        # Rechtsklick -> Kameras Gruppen zuweisen (additiv) / entfernen.
+        self.table.bind("<Button-3>", self._show_table_menu)
 
     def _build_statusbar(self):
         self.status = ttk.Label(self, text="Bereit", relief=tk.SUNKEN, anchor=tk.W)
@@ -217,6 +219,63 @@ class MainWindow(tk.Tk):
 
     def _selected_cameras(self) -> list[dict]:
         return [self._row_cam[r] for r in self.table.selection() if r in self._row_cam]
+
+    # ------------------------------------------------- camera -> group (Rechtsklick)
+    def _show_table_menu(self, event):
+        # Rechtsklick auf eine nicht-markierte Zeile wählt sie zuerst aus.
+        row = self.table.identify_row(event.y)
+        if row and row not in self.table.selection():
+            self.table.selection_set(row)
+        cams = self._selected_cameras()
+        if not cams:
+            return
+        keys = [camera_key(c) for c in cams]
+
+        menu = tk.Menu(self, tearoff=0)
+        add_menu = tk.Menu(menu, tearoff=0)
+        user_groups = [(gid, g) for gid, g in self.store.groups.items()
+                       if gid != ALL_CAMERAS_ID]
+        for gid, g in user_groups:
+            add_menu.add_command(label=g.name,
+                                 command=lambda gid=gid: self._assign_selected(gid, keys))
+        if user_groups:
+            add_menu.add_separator()
+        add_menu.add_command(label="Neue Gruppe…",
+                             command=lambda: self._assign_new_group(keys))
+        menu.add_cascade(label=f"Zu Gruppe hinzufügen ({len(cams)} Kamera(s))",
+                         menu=add_menu)
+
+        g = self.store.groups.get(self._current_gid)
+        if g and self._current_gid != ALL_CAMERAS_ID:
+            menu.add_separator()
+            menu.add_command(label=f"Aus „{g.name}“ entfernen",
+                             command=lambda: self._unassign_selected(self._current_gid, keys))
+        try:
+            menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            menu.grab_release()
+
+    def _assign_selected(self, gid, keys):
+        self.store.assign(gid, keys)
+        name = self.store.groups[gid].name
+        if self._current_gid == gid:
+            self._refresh_table()
+        self.status.config(text=f"{len(keys)} Kamera(s) zu „{name}“ hinzugefügt")
+
+    def _assign_new_group(self, keys):
+        name = simpledialog.askstring("Neue Gruppe", "Name der Gruppe:", parent=self)
+        if not name:
+            return
+        g = self.store.create_group(name.strip())
+        self.store.assign(g.id, keys)
+        self._refresh_groups()
+        self.status.config(text=f"{len(keys)} Kamera(s) zu neuer Gruppe „{g.name}“ hinzugefügt")
+
+    def _unassign_selected(self, gid, keys):
+        self.store.unassign(gid, keys)
+        name = self.store.groups[gid].name
+        self._refresh_table()   # Ansicht zeigt diese Gruppe -> Zeilen verschwinden
+        self.status.config(text=f"{len(keys)} Kamera(s) aus „{name}“ entfernt")
 
     # -------------------------------------------------------------- search
     def start_search(self):
