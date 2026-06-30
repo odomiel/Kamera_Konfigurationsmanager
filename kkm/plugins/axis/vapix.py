@@ -166,10 +166,11 @@ def _parse_param_list(text):
 
 
 def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10):
-    """Liest Modell und Seriennummer (lesender Test der Verbindung/Auth)."""
+    """Liest Modell, Seriennummer und Firmware (lesender Test der Verbindung/Auth)."""
     path = (
         "/axis-cgi/param.cgi?action=list"
-        "&group=Brand.ProdShortName,Properties.System.SerialNumber"
+        "&group=Brand.ProdShortName,Properties.System.SerialNumber,"
+        "Properties.Firmware.Version"
     )
     params = _parse_param_list(
         _request_auto(ip, username, password, path, scheme, port, timeout)
@@ -177,6 +178,7 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
     return {
         "model": params.get("root.Brand.ProdShortName", "?"),
         "serial": params.get("root.Properties.System.SerialNumber", "?"),
+        "firmware": params.get("root.Properties.Firmware.Version", ""),
     }
 
 

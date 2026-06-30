@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.06.30b5 — 2026-06-30
+
+- **Firmware/Modell nach der Suche auslesen**: Da mDNS keine Firmware liefert,
+  werden Firmware und Modell nach der Suche per VAPIX nachgelesen
+  (`get_device_info` liest jetzt auch `Properties.Firmware.Version`).
+- **Zugangsdaten-Abfrage bei der Suche**: Für Kameras mit unbekannten
+  Zugangsdaten wird nach Benutzer/Passwort gefragt; Option „dieses Passwort bei
+  allen Kameras mit unbekannten Zugangsdaten ausprobieren". Funktionierende
+  Zugangsdaten werden automatisch gespeichert (Tresor, sonst Sitzung). Kameras mit
+  bekannten Zugangsdaten werden still im Hintergrund ausgelesen.
+
 ## 26.06.30b4 — 2026-06-30
 
 - **Hilfe-Seite**: „Hilfe"-Button (oben rechts) öffnet eine Beschreibung aller

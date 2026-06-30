@@ -44,6 +44,7 @@ from kkm.plugins import build_registry
 from kkm.plugins.axis.discovery import FIELD_NAMES, get_first_ip, export_results
 from kkm.gui.dialogs import ACTION_DIALOGS
 from kkm.gui.dialogs.settings_dialog import SettingsDialog
+from kkm.gui.dialogs.credentials_prompt import CredentialPromptDialog
 
 ONLINE_COL = "● Status"
 GROUP_COL = "Gruppe(n)"
@@ -68,6 +69,10 @@ class MainWindow(tk.Tk):
         # rowid (in tree) -> camera dict, for the device table
         self._row_cam: dict[str, dict] = {}
         self._online_job = None   # after() id for the per-group auto online check
+        # Session-Cache erfolgreich verwendeter Zugangsdaten je Kamera (camera_key
+        # -> (user, password)); ergänzt den Tresor, falls dieser gesperrt ist.
+        self._cam_creds: dict[str, tuple] = {}
+        self._unknown_queue: list[dict] = []
 
         self._build_toolbar()
         self._build_body()
@@ -334,6 +339,100 @@ class MainWindow(tk.Tk):
             self._q.put(("online", (camera_key(cam), ok)))
         self._q.put(("online_done", None))
 
+    # -------------------------------------------- Geräteinfo (Firmware/Modell)
+    def _creds_known(self, cam) -> bool:
+        key = camera_key(cam)
+        if key in self._cam_creds:
+            return True
+        return bool(self.vault and not self.vault.is_locked
+                    and self.vault.get_password(key))
+
+    def _creds_for(self, cam) -> Credentials | None:
+        """Bekannte Zugangsdaten einer Kamera (Session-Cache oder Tresor)."""
+        key = camera_key(cam)
+        if key in self._cam_creds:
+            u, p = self._cam_creds[key]
+            return Credentials(username=u, password=p)
+        if self.vault and not self.vault.is_locked:
+            stored = self.vault.get_password(key)
+            if stored:
+                return Credentials(username=stored.get("username", "root"),
+                                   password=stored.get("password", ""))
+        return None
+
+    def _after_search(self, found):
+        """Nach der Suche: bekannte Kameras still auslesen, für unbekannte fragen."""
+        known = [c for c in found if self._creds_known(c)]
+        if known:
+            threading.Thread(target=self._worker_enrich, args=(known,),
+                             daemon=True).start()
+        self._unknown_queue = [c for c in found if not self._creds_known(c)]
+        # asynchron, damit der Queue-Poll während der modalen Abfrage weiterläuft
+        self.after(0, self._prompt_next_credentials)
+
+    def _worker_enrich(self, cams):
+        """Liest Firmware/Modell für Kameras mit bekannten Zugangsdaten (still)."""
+        for cam in cams:
+            plugin = self.registry.get(cam.get("_vendor", "axis"))
+            creds = self._creds_for(cam)
+            if not plugin or not creds:
+                continue
+            try:
+                info = plugin.device_info(cam, creds)
+                self._q.put(("device_info", (camera_key(cam), info)))
+            except Exception:  # noqa: BLE001 - still erfolglos, Feld bleibt leer
+                pass
+        self._q.put(("enrich_done", None))
+
+    def _prompt_next_credentials(self):
+        # bereits aufgelöste Kameras herausfiltern
+        self._unknown_queue = [c for c in self._unknown_queue if not self._creds_known(c)]
+        if not self._unknown_queue:
+            self._refresh_table()
+            return
+        cam = self._unknown_queue[0]
+        dlg = CredentialPromptDialog(self, cam, len(self._unknown_queue))
+        self.wait_window(dlg)
+        action, user, pw, try_all = dlg.result or ("cancel", None, None, False)
+        if action == "cancel":
+            self._unknown_queue = []
+            self._refresh_table()
+            return
+        if action == "skip":
+            self._unknown_queue.pop(0)
+            self._prompt_next_credentials()
+            return
+        # action == "apply"
+        targets = list(self._unknown_queue) if try_all else [cam]
+        self.progress.start(12)
+        self.status.config(text="Prüfe Zugangsdaten…")
+        threading.Thread(target=self._worker_creds, args=(targets, user, pw),
+                         daemon=True).start()
+
+    def _apply_device_info(self, key, info):
+        cam = self.store.roster.get(key)
+        if not cam:
+            return
+        fw = info.get("firmware")
+        model = info.get("model")
+        if fw:
+            cam["_firmware"] = fw
+        if model and model != "?":
+            cam["_model"] = model
+
+    def _worker_creds(self, targets, user, pw):
+        creds = Credentials(username=user, password=pw)
+        for cam in targets:
+            plugin = self.registry.get(cam.get("_vendor", "axis"))
+            if not plugin:
+                continue
+            try:
+                info = plugin.device_info(cam, creds)
+                self._q.put(("cred_ok", (camera_key(cam), user, pw, info)))
+            except Exception:  # noqa: BLE001 - Zugangsdaten passen (noch) nicht
+                self._q.put(("cred_fail", camera_key(cam)))
+        self._q.put(("creds_done", None))
+
     # ---------------------------------------------------------------- queue
     def _poll(self):
         try:
@@ -344,6 +443,7 @@ class MainWindow(tk.Tk):
                     self.progress.stop()
                     self._refresh_table()
                     self.status.config(text=f"Suche fertig: {len(payload)} Gerät(e)")
+                    self._after_search(payload)
                 elif kind == "online":
                     key, ok = payload
                     if key in self.store.roster:
@@ -351,6 +451,24 @@ class MainWindow(tk.Tk):
                 elif kind == "online_done":
                     self.progress.stop()
                     self._refresh_table()
+                elif kind == "device_info":
+                    self._apply_device_info(*payload)
+                elif kind == "enrich_done":
+                    self.store.save()
+                    self._refresh_table()
+                elif kind == "cred_ok":
+                    key, user, pw, info = payload
+                    self._cam_creds[key] = (user, pw)
+                    if self.vault and not self.vault.is_locked:
+                        self.vault.set_password(key, user, pw)
+                    self._apply_device_info(key, info)
+                elif kind == "cred_fail":
+                    pass   # Zugangsdaten passten nicht -> Kamera bleibt unbekannt
+                elif kind == "creds_done":
+                    self.progress.stop()
+                    self.store.save()
+                    self._refresh_table()
+                    self.after(0, self._prompt_next_credentials)   # nächste/erneute Abfrage
                 elif kind == "error":
                     self.progress.stop()
                     messagebox.showerror(APP_NAME, payload)

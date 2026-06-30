@@ -26,6 +26,15 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
 - **Suchen** — durchsucht das lokale Netzwerk nach Kameras (mDNS) und nimmt sie in
   „Alle Kameras" auf. Bereits bekannte Kameras bleiben erhalten, auch wenn sie
   gerade offline sind.
+  - **Firmware/Modell** stehen nicht im Suchergebnis und werden nach der Suche per
+    Kamera-Login nachgelesen: Kameras mit bekannten Zugangsdaten (Tresor oder
+    bereits in dieser Sitzung eingegeben) werden automatisch ausgelesen.
+  - Für Kameras mit **unbekannten Zugangsdaten** erscheint eine **Abfrage**
+    (Benutzer/Passwort). Mit der Option **„Dieses Passwort bei allen Kameras mit
+    unbekannten Zugangsdaten ausprobieren"** werden die Eingaben auf alle noch
+    offenen Kameras angewendet. Funktionierende Zugangsdaten werden **automatisch
+    gespeichert** (im Tresor, falls entsperrt, sonst für die laufende Sitzung).
+    „Überspringen" lässt eine Kamera aus, „Abbrechen" beendet die Abfrage.
 - **Online prüfen** — prüft die markierten Kameras (oder die ganze Gruppe) sofort
   auf Erreichbarkeit; das Ergebnis erscheint in der Spalte **Status**
   (● Online / ○ Offline).
