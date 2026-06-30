@@ -4,6 +4,11 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.06.30b4 — 2026-06-30
+
+- **Hilfe-Seite**: „Hilfe"-Button (oben rechts) öffnet eine Beschreibung aller
+  Funktionen (`HILFE.md`), in AppImage und Windows-`.exe` mitgebündelt.
+
 ## 26.06.30b3 — 2026-06-30
 
 - **Spalte „Gruppe(n)"** in der Geräteliste: zeigt, in welchen Gruppen eine Kamera
