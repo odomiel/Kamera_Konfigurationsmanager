@@ -57,9 +57,10 @@ werden übersprungen; factory-default-Option; langer Upload-Timeout.
 Stapel-Import aus `Name,Passwort[,Rolle]`-Datei (einmal validiert, je Kamera ×
 Benutzer); optional Speichern ins Tresor. **ONVIF-Benutzer-Dialog fertig:**
 gleicher Aufbau mit ONVIF-Stufen (Administrator/Operator/User), ohne factory.
-**Offen:** der letzte Aktions-Dialog (IP-Adresse), die Einstellungen
-(Plugin-Manager, Spalten, Online-Prüfung-je-Gruppe, Tresor-UI) und die
-Build-Skripte.
+**IP-Adresse-Dialog fertig:** DHCP / feste IP fortlaufend ab Start-IP / pro Kamera
+einzeln (Ziel-IPs werden vor dem Zugriff validiert). **Alle fünf Aktions-Dialoge
+stehen damit.** **Offen:** die Einstellungen (Plugin-Manager, Spalten,
+Online-Prüfung-je-Gruppe, Tresor-UI) und die Build-Skripte (AppImage + Windows).
 
 ## Aus dem Quellcode starten
 

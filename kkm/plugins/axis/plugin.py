@@ -80,6 +80,11 @@ class AxisPlugin(VendorPlugin):
         ip = self.ip_of(camera)
         return vapix.set_dhcp(ip, creds.username, creds.password, **self._conn(creds))
 
+    @staticmethod
+    def next_ip(ip_str, step=1):
+        """IPv4 helper for the sequential-assignment mode. Raises on invalid input."""
+        return vapix.next_ip(ip_str, step)
+
     # Roles offered in the user dialog (highest to lowest privilege).
     USER_ROLES = ("administrator", "operator", "viewer")
 
