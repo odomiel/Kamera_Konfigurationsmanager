@@ -34,6 +34,7 @@ from .groups import config_dir
 DEFAULTS = {
     "enabled_plugins": None,     # None -> all on
     "hidden_columns": [],
+    "theme": "dark",             # "dark" | "light" (Sun-Valley-Theme)
 }
 
 

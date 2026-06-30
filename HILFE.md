@@ -123,7 +123,9 @@ Speichert die Geräteliste der aktuellen Gruppe als **CSV** oder **Textdatei**.
 ---
 
 ## Einstellungen
-Vier Bereiche:
+Mehrere Bereiche:
+- **Darstellung** — modernes Design **Dunkel** oder **Hell** (Sun Valley); die
+  Umschaltung wirkt sofort und wird gespeichert.
 - **Tresor** — Passwort-Tresor anlegen, entsperren, sperren oder Master-Passwort
   ändern. Der Tresor speichert Kamera-Passwörter verschlüsselt (AES-256-GCM,
   abgeleitet aus dem Master-Passwort).

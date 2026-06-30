@@ -19,6 +19,7 @@ eigene Programmcode (Paket `kkm/`, `main.py`, `bump_version.py`,
 | cryptography | aktuell | Apache-2.0 **ODER** BSD-3-Clause | AppImage + .exe |
 | cffi | aktuell | MIT | AppImage + .exe |
 | pycparser | aktuell | BSD-3-Clause | AppImage + .exe |
+| sv-ttk (Sun Valley) | aktuell | MIT | AppImage + .exe |
 
 > Die genauen Versionen der Wheels (zeroconf, ifaddr, cryptography, cffi,
 > pycparser) werden zur Bauzeit von PyPI in ihrer jeweils aktuellen Fassung
@@ -154,3 +155,14 @@ Copyright © 2008-2022 Eli Bendersky und weitere Mitwirkende.
 
 Lizenziert unter der **BSD-3-Clause-Lizenz**. Quellcode:
 https://github.com/eliben/pycparser . Abhängigkeit von cffi.
+
+---
+
+## sv-ttk (Sun Valley ttk theme)
+
+Copyright © rdbende und weitere Mitwirkende.
+
+Lizenziert unter der **MIT-Lizenz** (Wortlaut wie bei *ifaddr* oben). Quellcode:
+https://github.com/rdbende/Sun-Valley-ttk-theme bzw.
+https://github.com/rdbende/sv-ttk . Liefert das moderne Hell/Dunkel-Design der
+Oberfläche (reines Tcl-Theme, als Paketdaten gebündelt).

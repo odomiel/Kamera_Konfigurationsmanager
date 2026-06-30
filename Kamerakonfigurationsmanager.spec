@@ -10,7 +10,7 @@
 # Linux wird stattdessen das AppImage via build_appimage.sh erzeugt.
 
 import os
-from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 # README/Lizenzen mit ins Bundle (zur Laufzeit ueber sys._MEIPASS auffindbar).
 datas = [
@@ -19,12 +19,15 @@ datas = [
     ("LICENSE", "."),
     ("THIRD_PARTY_LICENSES.md", "."),
 ]
+# sv_ttk liefert seine Tcl-Theme-Dateien als Paketdaten -> mitnehmen.
+datas += collect_data_files("sv_ttk")
 
 # zeroconf/ifaddr laden Teile dynamisch; cryptography hat C-/Rust-Submodule ->
 # explizit einsammeln.
 hiddenimports = (collect_submodules("zeroconf")
                  + collect_submodules("ifaddr")
-                 + collect_submodules("cryptography"))
+                 + collect_submodules("cryptography")
+                 + collect_submodules("sv_ttk"))
 
 # Eigenes Paket einsammeln, falls noch nicht installiert/auf dem Pfad.
 hiddenimports += collect_submodules("kkm")

@@ -40,7 +40,8 @@ from kkm.core import ALL_CAMERAS_ID, VaultError
 
 class SettingsDialog(tk.Toplevel):
     def __init__(self, parent, *, vault, registry, settings, store, current_gid,
-                 columns, fixed_columns=(), apply_columns=None):
+                 columns, fixed_columns=(), apply_columns=None,
+                 theme_mode="dark", on_theme_change=None):
         super().__init__(parent)
         self.title("Einstellungen")
         self.transient(parent)
@@ -52,9 +53,12 @@ class SettingsDialog(tk.Toplevel):
         self.columns = list(columns)
         self.fixed_columns = set(fixed_columns)
         self.apply_columns = apply_columns
+        self.theme_mode = theme_mode
+        self.on_theme_change = on_theme_change
 
         nb = ttk.Notebook(self)
         nb.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        nb.add(self._build_appearance_tab(nb), text="Darstellung")
         nb.add(self._build_vault_tab(nb), text="Tresor")
         nb.add(self._build_plugins_tab(nb), text="Plugins")
         nb.add(self._build_online_tab(nb), text="Online-Prüfung")
@@ -62,6 +66,23 @@ class SettingsDialog(tk.Toplevel):
 
         ttk.Button(self, text="Schließen", command=self.destroy).pack(
             anchor=tk.E, padx=8, pady=(0, 8))
+
+    # -------------------------------------------------------------- appearance
+    def _build_appearance_tab(self, parent):
+        tab = ttk.Frame(parent, padding=10)
+        ttk.Label(tab, text="Erscheinungsbild:",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 6))
+        self._theme_var = tk.StringVar(value=self.theme_mode)
+        for val, text in (("dark", "Dunkel"), ("light", "Hell")):
+            ttk.Radiobutton(tab, text=text, value=val, variable=self._theme_var,
+                            command=self._on_theme).pack(anchor=tk.W, pady=1)
+        ttk.Label(tab, text="Modernes Sun-Valley-Design. Wirkt sofort.").pack(
+            anchor=tk.W, pady=(6, 0))
+        return tab
+
+    def _on_theme(self):
+        if self.on_theme_change:
+            self.on_theme_change(self._theme_var.get())
 
     # ------------------------------------------------------------------- vault
     def _build_vault_tab(self, parent):

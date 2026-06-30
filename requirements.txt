@@ -1,5 +1,6 @@
 # Runtime dependencies (vendored as cp313 wheels in the AppImage/Windows build).
 zeroconf            # Axis mDNS discovery (_axis-video._tcp.local.)
 cryptography        # AES-256-GCM for the password vault (PBKDF2 KDF is stdlib)
+sv-ttk              # modernes Sun-Valley-ttk-Theme (Hell/Dunkel)
 # tkinter ships with CPython (Linux: python3-tk / bundled Tcl-Tk 9 in the AppImage).
 # The VAPIX layer (kkm/plugins/axis/vapix.py) is stdlib-only.

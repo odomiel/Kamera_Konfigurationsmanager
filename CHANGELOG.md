@@ -11,6 +11,10 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   „konfiguriert" und „nicht erreichbar" unterscheidet. Neue echte Erreichbarkeits-
   prüfung `is_online` (jede HTTP-Antwort inkl. 401 = online; nur Verbindungs-/
   Timeout-Fehler = offline); `check_online` liefert nun den echten Status.
+- **Modernes Design (Sun Valley) mit Hell/Dunkel**: zeitgemäßes, flaches
+  Erscheinungsbild über das gebündelte `sv-ttk`-Theme; Standard **Dunkel**.
+  Umschaltung unter Einstellungen → Darstellung (wirkt sofort, wird gespeichert).
+  Status- und Warnfarben passen sich dem Theme an.
 
 ## 26.06.30b6 — 2026-06-30
 

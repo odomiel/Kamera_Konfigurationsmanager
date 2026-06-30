@@ -131,11 +131,14 @@ wheel ifaddr       "n.endswith('.whl')"
 wheel cryptography "'abi3' in n and 'manylinux' in n and 'x86_64' in n"
 wheel cffi         "'cp313' in n and 'manylinux' in n and 'x86_64' in n"
 wheel pycparser    "n.endswith('.whl')"
+# Modernes Sun-Valley-Theme (reines py3-none-any-Wheel inkl. Tcl-Dateien)
+wheel sv-ttk       "n.endswith('.whl')"
 
 echo ">> Importtest der gebuendelten Pakete:"
-"$PYBIN" -c "import zeroconf, ifaddr, cryptography; \
+"$PYBIN" -c "import zeroconf, ifaddr, cryptography, sv_ttk; \
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM; \
-print('  zeroconf', zeroconf.__version__, '| cryptography', cryptography.__version__)"
+print('  zeroconf', zeroconf.__version__, '| cryptography', cryptography.__version__, \
+'| sv_ttk ok')"
 
 # --------------------------------------------------------------- 7. App + AppDir
 echo "==== AppDir zusammenstellen ===="

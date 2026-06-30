@@ -90,11 +90,12 @@ class FirmwareDialog(ActionDialog):
             parent, text="Werkseinstellungen beim Update (factory default)",
             variable=self._factory).pack(anchor=tk.W)
 
+        from kkm.gui import theme
         ttk.Label(
             parent,
             text="Achtung: Die Firmware MUSS zum jeweiligen Modell passen. "
                  "Die Kameras starten nach dem Update neu.",
-            foreground="#b00020", wraplength=560, justify=tk.LEFT,
+            foreground=theme.CURRENT["warn"], wraplength=560, justify=tk.LEFT,
         ).pack(anchor=tk.W, pady=(4, 6))
 
         ttk.Button(parent, text="Firmware aufspielen",

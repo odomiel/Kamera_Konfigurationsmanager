@@ -46,6 +46,7 @@ from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
 from kkm.core.groups import config_dir
 from kkm.plugins import build_registry
 from kkm.plugins.axis.discovery import FIELD_NAMES, get_first_ip, export_results
+from kkm.gui import theme
 from kkm.gui.dialogs import ACTION_DIALOGS
 from kkm.gui.dialogs.settings_dialog import SettingsDialog
 from kkm.gui.dialogs.credentials_prompt import CredentialPromptDialog
@@ -66,6 +67,9 @@ class MainWindow(tk.Tk):
 
         self.store = GroupStore()
         self.settings = AppSettings()
+        # Modernes Erscheinungsbild (Sun Valley) vor dem UI-Aufbau anwenden.
+        self._theme = self.settings.get("theme", "dark")
+        theme.apply_theme(self, self._theme)
         self.registry = build_registry(self.settings.get("enabled_plugins"))
         self.vault = PasswordVault()
         self.creds = Credentials()
@@ -151,9 +155,7 @@ class MainWindow(tk.Tk):
             self.table.heading(col, text=col)
             self.table.column(col, width=160, stretch=True)
         self.table.column(ONLINE_COL, width=90, stretch=False, anchor=tk.CENTER)
-        # Statusfarben: online grün, offline rot.
-        self.table.tag_configure("online", foreground="#1a7f37")
-        self.table.tag_configure("offline", foreground="#c0392b")
+        self._apply_status_tags()      # Statusfarben (themen-passend): online/offline
         self.table.pack(fill=tk.BOTH, expand=True)
         # Rechtsklick -> Kameras Gruppen zuweisen (additiv) / entfernen.
         self.table.bind("<Button-3>", self._show_table_menu)
@@ -567,7 +569,8 @@ class MainWindow(tk.Tk):
             self, vault=self.vault, registry=self.registry, settings=self.settings,
             store=self.store, current_gid=self._current_gid,
             columns=TABLE_COLUMNS, fixed_columns=FIXED_COLUMNS,
-            apply_columns=self.apply_columns)
+            apply_columns=self.apply_columns,
+            theme_mode=self._theme, on_theme_change=self.set_theme)
         self.wait_window(dlg)
         # The group's online-check config may have changed -> reschedule.
         self._schedule_online_autocheck()
@@ -576,6 +579,18 @@ class MainWindow(tk.Tk):
     def apply_columns(self, hidden):
         visible = [c for c in TABLE_COLUMNS if c not in hidden or c in FIXED_COLUMNS]
         self.table.config(displaycolumns=visible)
+
+    # --------------------------------------------------------------- theme
+    def _apply_status_tags(self):
+        self.table.tag_configure("online", foreground=theme.CURRENT["online"])
+        self.table.tag_configure("offline", foreground=theme.CURRENT["offline"])
+
+    def set_theme(self, mode):
+        self._theme = mode
+        self.settings.set("theme", mode)
+        theme.apply_theme(self, mode)
+        self._apply_status_tags()
+        self._refresh_table()
 
     # ------------------------------------------------- online auto-check
     def _schedule_online_autocheck(self):
