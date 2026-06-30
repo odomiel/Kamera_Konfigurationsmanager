@@ -148,6 +148,16 @@ class PasswordVault:
         self._data.pop(camera_key, None)
         self._flush()
 
+    def delete_many(self, camera_keys) -> None:
+        """Remove several entries with a single write."""
+        self._require_unlocked()
+        changed = False
+        for key in camera_keys:
+            if self._data.pop(key, None) is not None:
+                changed = True
+        if changed:
+            self._flush()
+
     # --- io -----------------------------------------------------------------
     def _flush(self) -> None:
         self._require_unlocked()

@@ -33,8 +33,12 @@ from __future__ import annotations
 
 import queue
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
+
+# Parallele Netzwerk-Zugriffe (Firmware/Online/Zugangsdaten) je Suche.
+NET_WORKERS = 12
 
 from kkm.version import APP_NAME, __version__
 from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
@@ -306,10 +310,9 @@ class MainWindow(tk.Tk):
                 "Bei der nächsten Suche tauchen erreichbare Kameras wieder auf.",
                 parent=self):
             return
-        for key in keys:
-            self.store.forget(key)
-            if self.vault and not self.vault.is_locked:
-                self.vault.delete(key)
+        self.store.forget_many(keys)            # ein Speichervorgang statt N
+        if self.vault and not self.vault.is_locked:
+            self.vault.delete_many(keys)
         self._refresh_table()
         self.status.config(text=f"{len(keys)} Kamera(s) vollständig entfernt")
 
@@ -337,11 +340,20 @@ class MainWindow(tk.Tk):
         self.status.config(text="Prüfe Online-Status…")
         threading.Thread(target=self._worker_online, args=(cams,), daemon=True).start()
 
+    @staticmethod
+    def _run_pool(items, task, workers=NET_WORKERS):
+        """Führt task(item) parallel aus (Thread-Pool); Tasks fangen Fehler selbst."""
+        if not items:
+            return
+        with ThreadPoolExecutor(max_workers=min(workers, len(items))) as ex:
+            list(ex.map(task, items))
+
     def _worker_online(self, cams):
-        for cam in cams:
+        def task(cam):
             vendor = self.registry.get(cam.get("_vendor", "axis"))
             ok = bool(vendor and vendor.check_online(cam, self.creds))
             self._q.put(("online", (camera_key(cam), ok)))
+        self._run_pool(cams, task)
         self._q.put(("online_done", None))
 
     # -------------------------------------------- Geräteinfo (Firmware/Modell)
@@ -377,16 +389,17 @@ class MainWindow(tk.Tk):
 
     def _worker_enrich(self, cams):
         """Liest Firmware/Modell für Kameras mit bekannten Zugangsdaten (still)."""
-        for cam in cams:
+        def task(cam):
             plugin = self.registry.get(cam.get("_vendor", "axis"))
             creds = self._creds_for(cam)
             if not plugin or not creds:
-                continue
+                return
             try:
                 info = plugin.device_info(cam, creds)
                 self._q.put(("device_info", (camera_key(cam), info)))
             except Exception:  # noqa: BLE001 - still erfolglos, Feld bleibt leer
                 pass
+        self._run_pool(cams, task)
         self._q.put(("enrich_done", None))
 
     def _prompt_next_credentials(self):
@@ -427,15 +440,16 @@ class MainWindow(tk.Tk):
 
     def _worker_creds(self, targets, user, pw):
         creds = Credentials(username=user, password=pw)
-        for cam in targets:
+        def task(cam):
             plugin = self.registry.get(cam.get("_vendor", "axis"))
             if not plugin:
-                continue
+                return
             try:
                 info = plugin.device_info(cam, creds)
                 self._q.put(("cred_ok", (camera_key(cam), user, pw, info)))
             except Exception:  # noqa: BLE001 - Zugangsdaten passen (noch) nicht
                 self._q.put(("cred_fail", camera_key(cam)))
+        self._run_pool(targets, task)
         self._q.put(("creds_done", None))
 
     # ---------------------------------------------------------------- queue

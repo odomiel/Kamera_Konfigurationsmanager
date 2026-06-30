@@ -16,6 +16,13 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   bekannten Zugangsdaten werden still im Hintergrund ausgelesen.
 - **Status bei der Suche**: gefundene Kameras werden online gesetzt, bekannte aber
   nicht mehr gefundene offline. Statusspalte farblich: online grün, offline rot.
+- **Performance (große Bestände, ~1000 Kameras)**:
+  - Reverse-Index im `GroupStore` → `groups_of`/Tabellenaufbau statt O(N×Gruppen×
+    Mitglieder) jetzt praktisch O(1) je Kamera.
+  - Batch-Löschen (`forget_many`, `vault.delete_many`) → ein Speichervorgang statt
+    einer pro Kamera.
+  - Firmware-Auslesen, Online-Prüfung und Zugangsdaten-Test laufen parallel über
+    einen Thread-Pool (12) statt sequenziell.
 
 ## 26.06.30b4 — 2026-06-30
 

@@ -79,6 +79,9 @@ class GroupStore:
         # roster: camera_key -> last-seen camera dict (so "Alle Kameras" persists
         # even when a camera is currently offline / not in the latest scan).
         self.roster: dict[str, dict] = {}
+        # Reverse index camera_key -> {group ids} for O(1) groups_of / membership
+        # checks (built from the groups' member lists; not persisted).
+        self._index: dict[str, set[str]] = {}
         self.load()
 
     # --- persistence --------------------------------------------------------
@@ -95,6 +98,15 @@ class GroupStore:
             self.groups[ALL_CAMERAS_ID] = Group(
                 id=ALL_CAMERAS_ID, name=ALL_CAMERAS_NAME, deletable=False
             )
+        self._rebuild_index()
+
+    def _rebuild_index(self) -> None:
+        self._index = {}
+        for gid, g in self.groups.items():
+            if gid == ALL_CAMERAS_ID:
+                continue
+            for key in g.members:
+                self._index.setdefault(key, set()).add(gid)
 
     def save(self) -> None:
         data = {
@@ -124,6 +136,12 @@ class GroupStore:
         g = self.groups.get(gid)
         if not g or not g.deletable:
             return False
+        for key in g.members:
+            idx = self._index.get(key)
+            if idx:
+                idx.discard(gid)
+                if not idx:
+                    del self._index[key]
         del self.groups[gid]
         self.save()
         return True
@@ -154,15 +172,24 @@ class GroupStore:
         if not g or gid == ALL_CAMERAS_ID:
             return
         for key in camera_keys:
-            if key not in g.members:
+            idx = self._index.setdefault(key, set())
+            if gid not in idx:          # O(1)-Dedup über den Index
                 g.members.append(key)
+                idx.add(gid)
         self.save()
 
     def unassign(self, gid: str, camera_keys: list[str]) -> None:
         g = self.groups.get(gid)
         if not g or gid == ALL_CAMERAS_ID:
             return
-        g.members = [k for k in g.members if k not in camera_keys]
+        drop = set(camera_keys)
+        g.members = [k for k in g.members if k not in drop]
+        for key in camera_keys:
+            idx = self._index.get(key)
+            if idx:
+                idx.discard(gid)
+                if not idx:
+                    del self._index[key]
         self.save()
 
     def cameras_in(self, gid: str) -> list[dict]:
@@ -176,13 +203,24 @@ class GroupStore:
 
     def groups_of(self, key: str) -> list[str]:
         """Names of the user groups a camera belongs to (excl. 'Alle Kameras')."""
-        return [g.name for gid, g in self.groups.items()
-                if gid != ALL_CAMERAS_ID and key in g.members]
+        return [self.groups[gid].name for gid in self._index.get(key, ())
+                if gid in self.groups]
+
+    def _forget_one(self, key: str) -> None:
+        """Remove a camera from roster + all groups WITHOUT saving."""
+        self.roster.pop(key, None)
+        for gid in self._index.pop(key, set()):
+            g = self.groups.get(gid)
+            if g and key in g.members:
+                g.members.remove(key)
 
     def forget(self, key: str) -> None:
         """Remove a camera entirely: from the roster and from every group."""
-        self.roster.pop(key, None)
-        for g in self.groups.values():
-            if key in g.members:
-                g.members.remove(key)
+        self._forget_one(key)
+        self.save()
+
+    def forget_many(self, keys: list[str]) -> None:
+        """Batch-remove cameras with a single save (statt N Dateischreibvorgängen)."""
+        for key in keys:
+            self._forget_one(key)
         self.save()
