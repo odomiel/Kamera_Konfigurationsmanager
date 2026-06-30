@@ -12,8 +12,12 @@
 import os
 from PyInstaller.utils.hooks import collect_submodules
 
-# README mit ins Bundle (zur Laufzeit ueber sys._MEIPASS auffindbar).
-datas = [("README.md", ".")]
+# README/Lizenzen mit ins Bundle (zur Laufzeit ueber sys._MEIPASS auffindbar).
+datas = [
+    ("README.md", "."),
+    ("LICENSE", "."),
+    ("THIRD_PARTY_LICENSES.md", "."),
+]
 
 # zeroconf/ifaddr laden Teile dynamisch; cryptography hat C-/Rust-Submodule ->
 # explizit einsammeln.

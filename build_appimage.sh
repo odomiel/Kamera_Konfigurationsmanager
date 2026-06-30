@@ -140,7 +140,7 @@ print('  zeroconf', zeroconf.__version__, '| cryptography', cryptography.__versi
 # --------------------------------------------------------------- 7. App + AppDir
 echo "==== AppDir zusammenstellen ===="
 mkdir -p "$APPDIR/app"
-cp "$ROOT/main.py" "$ROOT/README.md" "$APPDIR/app/"
+cp "$ROOT/main.py" "$ROOT/README.md" "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_LICENSES.md" "$APPDIR/app/"
 cp -r "$ROOT/kkm" "$APPDIR/app/"
 find "$APPDIR/app" -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true
 
