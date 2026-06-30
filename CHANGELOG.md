@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.06.30b3 — 2026-06-30
+
+- **Spalte „Gruppe(n)"** in der Geräteliste: zeigt, in welchen Gruppen eine Kamera
+  ist (ohne „Alle Kameras"), per Spalten-Einstellung aus-/einblendbar.
+- **Kamera vollständig entfernen** (Rechtsklick-Kontextmenü): löscht die Kamera aus
+  der Geräteliste und allen Gruppen sowie ihr gespeichertes Passwort (bei
+  entsperrtem Tresor), mit Bestätigung.
+
 ## 26.06.30b2 — 2026-06-30
 
 - **Kameras per Rechtsklick Gruppen zuweisen** (additiv): Kontextmenü auf der

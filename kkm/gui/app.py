@@ -46,7 +46,9 @@ from kkm.gui.dialogs import ACTION_DIALOGS
 from kkm.gui.dialogs.settings_dialog import SettingsDialog
 
 ONLINE_COL = "● Status"
-TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "MAC/Seriennummer", "Firmware", ONLINE_COL]
+GROUP_COL = "Gruppe(n)"
+TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "MAC/Seriennummer", "Firmware",
+                 GROUP_COL, ONLINE_COL]
 FIXED_COLUMNS = {"Name"}   # always visible, cannot be hidden
 
 
@@ -203,12 +205,14 @@ class MainWindow(tk.Tk):
             key = camera_key(cam)
             online = cam.get("_online")
             badge = "—" if online is None else ("● Online" if online else "○ Offline")
+            groups = ", ".join(self.store.groups_of(key)) or "—"
             values = [
                 cam.get("Name", ""),
                 cam.get("_model", cam.get("Name", "")),
                 get_first_ip(cam),
                 cam.get("MAC-Adresse/Seriennummer", ""),
                 cam.get("_firmware", ""),
+                groups,
                 badge,
             ]
             rowid = self.table.insert("", "end", iid=key, values=values)
@@ -250,6 +254,9 @@ class MainWindow(tk.Tk):
             menu.add_separator()
             menu.add_command(label=f"Aus „{g.name}“ entfernen",
                              command=lambda: self._unassign_selected(self._current_gid, keys))
+        menu.add_separator()
+        menu.add_command(label=f"Kamera(s) vollständig entfernen ({len(cams)})",
+                         command=lambda: self._remove_selected(cams, keys))
         try:
             menu.tk_popup(event.x_root, event.y_root)
         finally:
@@ -276,6 +283,24 @@ class MainWindow(tk.Tk):
         name = self.store.groups[gid].name
         self._refresh_table()   # Ansicht zeigt diese Gruppe -> Zeilen verschwinden
         self.status.config(text=f"{len(keys)} Kamera(s) aus „{name}“ entfernt")
+
+    def _remove_selected(self, cams, keys):
+        """Remove cameras entirely: roster, all groups, and vault entry."""
+        names = ", ".join(c.get("Name", "?") for c in cams[:5]) + (" …" if len(cams) > 5 else "")
+        if not messagebox.askyesno(
+                APP_NAME,
+                f"{len(keys)} Kamera(s) vollständig entfernen?\n\n{names}\n\n"
+                "Sie werden aus allen Gruppen und der Geräteliste entfernt; ein "
+                "gespeichertes Passwort wird (bei entsperrtem Tresor) ebenfalls gelöscht. "
+                "Bei der nächsten Suche tauchen erreichbare Kameras wieder auf.",
+                parent=self):
+            return
+        for key in keys:
+            self.store.forget(key)
+            if self.vault and not self.vault.is_locked:
+                self.vault.delete(key)
+        self._refresh_table()
+        self.status.config(text=f"{len(keys)} Kamera(s) vollständig entfernt")
 
     # -------------------------------------------------------------- search
     def start_search(self):

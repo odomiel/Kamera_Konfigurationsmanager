@@ -173,3 +173,16 @@ class GroupStore:
         if not g:
             return []
         return [self.roster[k] for k in g.members if k in self.roster]
+
+    def groups_of(self, key: str) -> list[str]:
+        """Names of the user groups a camera belongs to (excl. 'Alle Kameras')."""
+        return [g.name for gid, g in self.groups.items()
+                if gid != ALL_CAMERAS_ID and key in g.members]
+
+    def forget(self, key: str) -> None:
+        """Remove a camera entirely: from the roster and from every group."""
+        self.roster.pop(key, None)
+        for g in self.groups.values():
+            if key in g.members:
+                g.members.remove(key)
+        self.save()
