@@ -34,10 +34,11 @@ from __future__ import annotations
 import queue
 import threading
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
-from kkm.core import Credentials
+from kkm.core import Credentials, camera_key
 from kkm.plugins.axis.discovery import get_first_ip
+from .vault_access import ensure_vault_unlocked
 
 
 class ActionDialog(tk.Toplevel):
@@ -127,6 +128,23 @@ class ActionDialog(tk.Toplevel):
     def build_body(self, parent):  # pragma: no cover - overridden
         raise NotImplementedError
 
+    # --------------------------------------------------------------- vault store
+    def _wants_vault(self) -> bool:
+        var = getattr(self, "store_vault", None)
+        return bool(var and var.get())
+
+    def _maybe_store(self, camera, username, password):
+        """Speichert Zugangsdaten, wenn der Nutzer es will: in den Tresor (falls
+        entsperrt) und zusätzlich in den Sitzungs-Cache des Hauptfensters."""
+        if not self._wants_vault():
+            return
+        key = camera_key(camera)
+        if self.vault and not self.vault.is_locked:
+            self.vault.set_password(key, username, password)
+        cache = getattr(self.master, "_cam_creds", None)
+        if cache is not None:                     # Fallback: nur laufende Sitzung
+            cache[key] = (username, password)
+
     # ------------------------------------------------------------- background run
     def run_per_camera(self, op, done_msg="Fertig."):
         """Run ``op(plugin, camera, creds)`` for each camera in a worker thread.
@@ -136,6 +154,15 @@ class ActionDialog(tk.Toplevel):
         """
         if self._busy:
             return
+        # Soll ins Tresor gespeichert werden, dieser ist aber gesperrt/nicht
+        # angelegt -> auf dem Main-Thread anbieten, ihn einzurichten.
+        if self._wants_vault() and self.vault is not None and self.vault.is_locked:
+            if not ensure_vault_unlocked(self, self.vault,
+                                         "Zum Speichern der Passwörter"):
+                messagebox.showinfo(
+                    self.title_text,
+                    "Ohne Tresor werden die Passwörter nur für die laufende "
+                    "Sitzung gemerkt (beim Schließen verworfen).")
         self._busy = True
         self.progress.start(12)
         self._log_clear()

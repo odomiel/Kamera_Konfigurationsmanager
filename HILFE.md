@@ -33,8 +33,10 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
     (Benutzer/Passwort). Mit der Option **„Dieses Passwort bei allen Kameras mit
     unbekannten Zugangsdaten ausprobieren"** werden die Eingaben auf alle noch
     offenen Kameras angewendet. Funktionierende Zugangsdaten werden **automatisch
-    gespeichert** (im Tresor, falls entsperrt, sonst für die laufende Sitzung).
-    „Überspringen" lässt eine Kamera aus, „Abbrechen" beendet die Abfrage.
+    gespeichert**. Ist der Tresor dabei noch gesperrt/nicht angelegt, wird
+    **angeboten, ihn jetzt einzurichten**; lehnst du ab, werden die Zugangsdaten
+    nur für die laufende Sitzung gemerkt. „Überspringen" lässt eine Kamera aus,
+    „Abbrechen" beendet die Abfrage.
 - **Online prüfen** — prüft die markierten Kameras (oder die ganze Gruppe) sofort
   auf Erreichbarkeit; das Ergebnis erscheint in der Spalte **Status**
   (● Online / ○ Offline).

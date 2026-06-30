@@ -49,6 +49,7 @@ from kkm.plugins.axis.discovery import FIELD_NAMES, get_first_ip, export_results
 from kkm.gui.dialogs import ACTION_DIALOGS
 from kkm.gui.dialogs.settings_dialog import SettingsDialog
 from kkm.gui.dialogs.credentials_prompt import CredentialPromptDialog
+from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 
 ONLINE_COL = "● Status"
 GROUP_COL = "Gruppe(n)"
@@ -384,6 +385,12 @@ class MainWindow(tk.Tk):
             threading.Thread(target=self._worker_enrich, args=(known,),
                              daemon=True).start()
         self._unknown_queue = [c for c in found if not self._creds_known(c)]
+        # Wenn Zugangsdaten abgefragt werden und der Tresor gesperrt/nicht angelegt
+        # ist, einmal anbieten, ihn einzurichten -> sonst nur Sitzungs-Cache.
+        if self._unknown_queue and self.vault is not None and self.vault.is_locked:
+            ensure_vault_unlocked(
+                self, self.vault,
+                "Damit eingegebene Zugangsdaten dauerhaft gespeichert werden")
         # asynchron, damit der Queue-Poll während der modalen Abfrage weiterläuft
         self.after(0, self._prompt_next_credentials)
 

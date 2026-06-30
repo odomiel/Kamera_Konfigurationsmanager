@@ -37,7 +37,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from kkm.core import Capability, camera_key
+from kkm.core import Capability
 from kkm.plugins.axis.plugin import AxisPlugin
 from .base import ActionDialog
 
@@ -145,10 +145,6 @@ class UserDialog(ActionDialog):
             self._apply_setpw()
         else:
             self._apply_add()
-
-    def _maybe_store(self, camera, username, password):
-        if self.store_vault.get() and self.vault and not self.vault.is_locked:
-            self.vault.set_password(camera_key(camera), username, password)
 
     def _apply_add(self):
         name = self.user_name.get().strip()

@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.06.30b6 — 2026-06-30
+
+- **Tresor bei Bedarf einrichten**: Wenn Passwörter gespeichert werden sollen (per
+  Häkchen in den Aktionsdialogen oder bei der Zugangsdaten-Abfrage nach der Suche),
+  der Tresor aber noch gesperrt/nicht angelegt ist, wird jetzt angeboten, ihn
+  anzulegen bzw. zu entsperren. Lehnt man ab, werden die Zugangsdaten nur für die
+  laufende Sitzung gemerkt (klarer Hinweis statt stillem Verwerfen). Gemeinsamer
+  Helfer `ensure_vault_unlocked`; `_maybe_store` zentral in der Dialog-Basis.
+
 ## 26.06.30b5 — 2026-06-30
 
 - **Firmware/Modell nach der Suche auslesen**: Da mDNS keine Firmware liefert,
