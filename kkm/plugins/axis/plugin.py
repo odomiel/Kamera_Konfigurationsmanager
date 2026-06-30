@@ -71,13 +71,10 @@ class AxisPlugin(VendorPlugin):
             return False
         creds = creds or Credentials()
         try:
-            # is_unconfigured performs a lightweight probe and tells us the device
-            # answered; either way a successful HTTP(S) response means "online".
-            vapix.is_unconfigured(ip, scheme=creds.scheme, port=creds.port,
-                                  timeout=min(creds.timeout, 5))
-            return True
-        except vapix.VapixError:
-            return True   # answered with an error -> still online
+            # Echte Erreichbarkeit: jede HTTP(S)-Antwort (auch 401) = online,
+            # nur Verbindungs-/Timeout-Fehler = offline.
+            return vapix.is_online(ip, scheme=creds.scheme, port=creds.port,
+                                   timeout=min(creds.timeout, 5))
         except Exception:
             return False
 

@@ -155,6 +155,30 @@ def is_unconfigured(ip, scheme="auto", port=None, timeout=10):
     return False
 
 
+def is_online(ip, scheme="auto", port=None, timeout=5):
+    """True, wenn das Geraet ueberhaupt per HTTP(S) antwortet (erreichbar).
+
+    Im Gegensatz zu is_unconfigured zaehlt JEDE HTTP-Antwort als online -- auch
+    401 (Auth verlangt) oder andere Fehlercodes bedeuten 'das Geraet ist da'. Nur
+    Verbindungs-/Timeout-Fehler ueber alle Schemata hinweg gelten als offline.
+    """
+    schemes = ["https", "http"] if scheme == "auto" else [scheme]
+    path = "/axis-cgi/pwdgrp.cgi?action=get"
+    for sc in schemes:
+        p = port if port else DEFAULT_PORTS[sc]
+        url = f"{sc}://{ip}:{p}{path}"
+        opener = _build_opener(f"{ip}:{p}", "", "", auth=False)
+        try:
+            with opener.open(url, timeout=timeout) as resp:
+                resp.read()
+            return True                       # 200 -> online
+        except urllib.error.HTTPError:
+            return True                       # Geraet hat geantwortet (z. B. 401)
+        except (urllib.error.URLError, TimeoutError, OSError):
+            continue                          # ueber dieses Schema nicht erreichbar
+    return False
+
+
 def _parse_param_list(text):
     """Wandelt die 'root.Gruppe.Name=Wert'-Zeilen von param.cgi in ein Dict."""
     result = {}

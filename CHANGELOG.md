@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.06.30b7 — 2026-06-30
+
+- **Fehler behoben: „Online prüfen" zeigte alle Kameras als online.** Die Prüfung
+  ignorierte das Ergebnis und nutzte zudem `is_unconfigured`, das nicht zwischen
+  „konfiguriert" und „nicht erreichbar" unterscheidet. Neue echte Erreichbarkeits-
+  prüfung `is_online` (jede HTTP-Antwort inkl. 401 = online; nur Verbindungs-/
+  Timeout-Fehler = offline); `check_online` liefert nun den echten Status.
+
 ## 26.06.30b6 — 2026-06-30
 
 - **Tresor bei Bedarf einrichten**: Wenn Passwörter gespeichert werden sollen (per
