@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Build / Packaging (AppImage + PyInstaller, analog Discovery-Tool)
+build/
+dist/
+*.exe
+*.AppImage
+.tk9build/
+.tk9build_log.txt
+squashfs-root/
+appimagetool*.AppImage
+base.AppImage
+
+# Lokale Claude-Code-Einstellungen (maschinenspezifisch)
+.claude/settings.local.json
+
+# Lokale Testdaten (ADM-Konfigurationsdateien, Firmware-Images)
+*.cfg
+*.bin
+
+# Projektspezifische Claude-Notiz (nicht versioniert, wie im Discovery-Tool)
+CLAUDE.md
