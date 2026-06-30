@@ -38,6 +38,9 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
 - **Online prüfen** — prüft die markierten Kameras (oder die ganze Gruppe) sofort
   auf Erreichbarkeit; das Ergebnis erscheint in der Spalte **Status**
   (● Online / ○ Offline).
+- **Status nach der Suche** — bei jeder Suche werden gefundene Kameras auf
+  **online** gesetzt, bereits bekannte aber nicht mehr gefundene auf **offline**.
+  In der Statusspalte ist **online grün**, **offline rot** dargestellt.
 - **Automatische Online-Prüfung** — pro Gruppe einstellbar (siehe Einstellungen);
   die gerade angezeigte Gruppe wird dann im eingestellten Intervall geprüft.
 

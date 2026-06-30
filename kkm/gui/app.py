@@ -146,6 +146,9 @@ class MainWindow(tk.Tk):
             self.table.heading(col, text=col)
             self.table.column(col, width=160, stretch=True)
         self.table.column(ONLINE_COL, width=90, stretch=False, anchor=tk.CENTER)
+        # Statusfarben: online grün, offline rot.
+        self.table.tag_configure("online", foreground="#1a7f37")
+        self.table.tag_configure("offline", foreground="#c0392b")
         self.table.pack(fill=tk.BOTH, expand=True)
         # Rechtsklick -> Kameras Gruppen zuweisen (additiv) / entfernen.
         self.table.bind("<Button-3>", self._show_table_menu)
@@ -221,7 +224,9 @@ class MainWindow(tk.Tk):
                 groups,
                 badge,
             ]
-            rowid = self.table.insert("", "end", iid=key, values=values)
+            tag = "" if online is None else ("online" if online else "offline")
+            rowid = self.table.insert("", "end", iid=key, values=values,
+                                      tags=(tag,) if tag else ())
             self._row_cam[rowid] = cam
         g = self.store.groups.get(self._current_gid)
         n = len(self._row_cam)
@@ -440,6 +445,10 @@ class MainWindow(tk.Tk):
                 kind, payload = self._q.get_nowait()
                 if kind == "search_done":
                     self.store.remember_all(payload)
+                    # Gefundene Kameras = online, alle übrigen bekannten = offline.
+                    found_keys = {camera_key(c) for c in payload}
+                    for key, cam in self.store.roster.items():
+                        cam["_online"] = key in found_keys
                     self.progress.stop()
                     self._refresh_table()
                     self.status.config(text=f"Suche fertig: {len(payload)} Gerät(e)")

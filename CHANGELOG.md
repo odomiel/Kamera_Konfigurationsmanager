@@ -14,6 +14,8 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   allen Kameras mit unbekannten Zugangsdaten ausprobieren". Funktionierende
   Zugangsdaten werden automatisch gespeichert (Tresor, sonst Sitzung). Kameras mit
   bekannten Zugangsdaten werden still im Hintergrund ausgelesen.
+- **Status bei der Suche**: gefundene Kameras werden online gesetzt, bekannte aber
+  nicht mehr gefundene offline. Statusspalte farblich: online grün, offline rot.
 
 ## 26.06.30b4 — 2026-06-30
 
