@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.01b10 — 2026-07-01
+
+- **Firmware-Auslesen robuster (basicdeviceinfo.cgi)**: Wenn `param.cgi` keine
+  Firmware liefert (neuere AXIS OS geben teils leere Werte oder eine
+  `# Error`-Antwort mit HTTP 200 zurück — Verbindung „ok", aber Spalte leer), wird
+  Firmware/Modell ergänzend über den JSON-Endpunkt `basicdeviceinfo.cgi`
+  (`getAllProperties` → `Version`/`ProdShortName`) gelesen. Das 401-Verhalten für
+  die Zugangsdaten-Prüfung bleibt erhalten.
+- **Genauere Statusmeldung**: „Firmware gelesen: X, Y ohne Firmware-Wert, Z
+  fehlgeschlagen" — unterscheidet jetzt „verbunden, aber kein Firmware-Wert" von
+  echten Fehlern.
+
 ## 26.07.01b9 — 2026-07-01
 
 - **Firmware/Modell bleiben über Suchen erhalten**: `remember()` überschrieb bei

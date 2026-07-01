@@ -449,7 +449,7 @@ class MainWindow(tk.Tk):
 
         Zählt Erfolge/Fehler mit, damit die Statuszeile Rückmeldung geben kann
         (statt Lesefehler komplett stumm zu verschlucken)."""
-        stats = {"ok": 0, "fail": 0}
+        stats = {"fw": 0, "nofw": 0, "fail": 0}
         lock = threading.Lock()
         def task(cam):
             plugin = self.registry.get(cam.get("_vendor", "axis"))
@@ -462,12 +462,12 @@ class MainWindow(tk.Tk):
                 info = plugin.device_info(cam, creds)
                 self._q.put(("device_info", (camera_key(cam), info)))
                 with lock:
-                    stats["ok"] += 1
+                    stats["fw" if info.get("firmware") else "nofw"] += 1
             except Exception:  # noqa: BLE001 - Lesefehler -> Feld bleibt leer
                 with lock:
                     stats["fail"] += 1
         self._run_pool(cams, task)
-        self._q.put(("enrich_done", (stats["ok"], stats["fail"])))
+        self._q.put(("enrich_done", (stats["fw"], stats["nofw"], stats["fail"])))
 
     def _prompt_next_credentials(self):
         # bereits aufgelöste Kameras herausfiltern
@@ -546,12 +546,14 @@ class MainWindow(tk.Tk):
                 elif kind == "enrich_done":
                     self.store.save()
                     self._refresh_table()
-                    ok, fail = payload if payload else (0, 0)
-                    if ok or fail:
-                        msg = f"Firmware/Modell gelesen: {ok} ok"
+                    fw, nofw, fail = payload if payload else (0, 0, 0)
+                    if fw or nofw or fail:
+                        msg = f"Firmware gelesen: {fw}"
+                        if nofw:
+                            msg += f", {nofw} ohne Firmware-Wert"
                         if fail:
                             msg += (f", {fail} fehlgeschlagen (Zugangsdaten/"
-                                    "Erreichbarkeit prüfen)")
+                                    "Erreichbarkeit)")
                         self.status.config(text=msg)
                 elif kind == "cred_ok":
                     key, user, pw, info = payload

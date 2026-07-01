@@ -189,8 +189,46 @@ def _parse_param_list(text):
     return result
 
 
+def _basic_device_info(ip, username, password, scheme="auto", port=None, timeout=10):
+    """Liest Geraeteeigenschaften ueber basicdeviceinfo.cgi (JSON, AXIS OS).
+
+    Liefert das ``propertyList``-Dict (u. a. ``Version``, ``ProdShortName``,
+    ``ProdNbr``, ``SerialNumber``) oder ``{}``, wenn der Endpunkt nicht verfuegbar
+    ist. Wirft VapixError nur bei fehlgeschlagener Authentifizierung (401), damit
+    die aufrufende Zugangsdaten-Pruefung weiterhin funktioniert.
+    """
+    path = "/axis-cgi/basicdeviceinfo.cgi"
+    body = json.dumps({"apiVersion": "1.0", "context": "kkm",
+                       "method": "getAllProperties"}).encode("utf-8")
+    schemes = ["https", "http"] if scheme == "auto" else [scheme]
+    for sc in schemes:
+        p = port if port else DEFAULT_PORTS[sc]
+        host_port = f"{ip}:{p}"
+        url = f"{sc}://{host_port}{path}"
+        opener = _build_opener(host_port, username, password)
+        req = urllib.request.Request(url, data=body,
+                                     headers={"Content-Type": "application/json"})
+        try:
+            with opener.open(req, timeout=timeout) as resp:
+                data = json.loads(resp.read().decode("utf-8", errors="replace"))
+            return data.get("data", {}).get("propertyList", {}) or {}
+        except urllib.error.HTTPError as exc:
+            if exc.code == 401:
+                raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
+            continue  # Endpunkt nicht vorhanden o. Ae. -> naechstes Schema
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+            continue
+    return {}
+
+
 def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10):
-    """Liest Modell, Seriennummer und Firmware (lesender Test der Verbindung/Auth)."""
+    """Liest Modell, Seriennummer und Firmware (lesender Test der Verbindung/Auth).
+
+    Primaer ueber ``param.cgi`` (wirft bei 401 -> Zugangsdaten-Pruefung). Fehlt die
+    Firmware dann noch (neuere AXIS OS liefern ueber param.cgi teils leere Werte
+    oder eine ``# Error``-Antwort mit HTTP 200), wird ``basicdeviceinfo.cgi``
+    ergaenzend abgefragt.
+    """
     path = (
         "/axis-cgi/param.cgi?action=list"
         "&group=Brand.ProdShortName,Properties.System.SerialNumber,"
@@ -199,11 +237,23 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
     params = _parse_param_list(
         _request_auto(ip, username, password, path, scheme, port, timeout)
     )
-    return {
+    info = {
         "model": params.get("root.Brand.ProdShortName", "?"),
         "serial": params.get("root.Properties.System.SerialNumber", "?"),
         "firmware": params.get("root.Properties.Firmware.Version", ""),
     }
+    # Fallback fuer moderne Geraete: fehlende Firmware/Modell per JSON-Endpunkt.
+    if not info["firmware"] or info["model"] in ("", "?"):
+        props = _basic_device_info(ip, username, password, scheme, port, timeout)
+        if props:
+            if not info["firmware"]:
+                info["firmware"] = props.get("Version", "") or ""
+            if info["model"] in ("", "?"):
+                info["model"] = (props.get("ProdShortName") or props.get("ProdNbr")
+                                 or info["model"])
+            if info["serial"] in ("", "?"):
+                info["serial"] = props.get("SerialNumber", "") or info["serial"]
+    return info
 
 
 def _update_params(ip, username, password, params, scheme, port, timeout):
