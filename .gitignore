@@ -23,3 +23,6 @@ base.AppImage
 
 # Projektspezifische Claude-Notiz (nicht versioniert, wie im Discovery-Tool)
 CLAUDE.md
+
+# Lokale Fehler-Screenshots (nicht versionieren)
+fehler/

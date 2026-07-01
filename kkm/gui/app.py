@@ -128,21 +128,20 @@ class MainWindow(tk.Tk):
 
         ttk.Button(bar, text="Hilfe", command=self._open_help).pack(side=tk.RIGHT)
         # Tresor-Schnellschalter: 🔒 gesperrt / 🔓 entsperrt, klickbar zum Umschalten.
-        # Großes Symbol (größere Schrift), aber der Button wird auf die Höhe der
-        # anderen Toolbar-Buttons gepinnt: er sitzt in einem höhenfesten Rahmen, der
-        # den leeren Zeilenabstand der großen Schrift wegschneidet.
-        ttk.Style().configure("Lock.TButton", font=("TkDefaultFont", 18), padding=0)
-        self._lock_holder = ttk.Frame(bar)
-        self._lock_holder.pack(side=tk.RIGHT, padx=(0, 6))
-        self._lock_btn = ttk.Button(self._lock_holder, width=2, style="Lock.TButton",
+        # Großes Symbol (größere Schrift); die Buttonhöhe wird über symmetrischen
+        # oben/unten-Innenabstand an die anderen Buttons angeglichen (siehe
+        # _match_lock_height) — dadurch bleibt das Symbol mittig zentriert.
+        ttk.Style().configure("Lock.TButton", font=("TkDefaultFont", 18), padding=0,
+                              anchor="center")
+        self._lock_btn = ttk.Button(bar, width=2, style="Lock.TButton",
                                     command=self._toggle_vault_lock)
-        self._lock_btn.pack(fill=tk.BOTH, expand=True)
+        self._lock_btn.pack(side=tk.RIGHT, padx=(0, 6))
         settings_btn = ttk.Button(bar, text="Einstellungen", command=self._open_settings)
         settings_btn.pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Button(bar, text="Exportieren", command=self._export).pack(
             side=tk.RIGHT, padx=(0, 6))
         self._update_lock_button()
-        # Höhe des Schloss-Buttons an einen normalen Button angleichen.
+        # Höhe des Schloss-Buttons an einen normalen Button angleichen (zentriert).
         self._match_lock_height(settings_btn)
         self.progress = ttk.Progressbar(bar, mode="indeterminate", length=140)
         self.progress.pack(side=tk.RIGHT, padx=8)
@@ -627,16 +626,16 @@ class MainWindow(tk.Tk):
 
     # ----------------------------------------------------------- vault lock button
     def _match_lock_height(self, ref_btn):
-        """Höhe des Schloss-Buttons auf die eines normalen Buttons fixieren, das
-        große Symbol aber unangetastet lassen (schneidet nur den leeren
-        Zeilenabstand oben/unten weg)."""
+        """Buttonhöhe an einen normalen Toolbar-Button angleichen, ohne das große
+        Symbol zu beschneiden: symmetrischer oben/unten-Innenabstand füllt die
+        Differenz auf, sodass das Glyph mittig zentriert bleibt."""
         try:
             self.update_idletasks()
-            h = ref_btn.winfo_reqheight()
-            w = self._lock_btn.winfo_reqwidth()
-            if h > 1 and w > 1:
-                self._lock_holder.configure(height=h, width=w)
-                self._lock_holder.pack_propagate(False)
+            ref_h = ref_btn.winfo_reqheight()
+            lock_h = self._lock_btn.winfo_reqheight()   # aktuell mit padding=0
+            pad = (ref_h - lock_h) // 2
+            if pad > 0:
+                ttk.Style().configure("Lock.TButton", padding=(0, pad))
         except Exception:  # noqa: BLE001 - Layout darf daran nie scheitern
             pass
 
