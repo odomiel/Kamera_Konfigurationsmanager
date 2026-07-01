@@ -41,6 +41,7 @@ from kkm.core import Capability
 from kkm.plugins.axis.discovery import get_first_ip
 from kkm.plugins.axis import vapix
 from .base import ActionDialog
+from .vault_access import ensure_vault_unlocked
 
 
 class ConfigDialog(ActionDialog):
@@ -123,6 +124,11 @@ class ConfigDialog(ActionDialog):
         if plugin is None:
             messagebox.showerror(self.title_text, "Kein Plugin für diese Kamera.")
             return
+        # Zugangsdaten aus dem Tresor gewünscht, aber gesperrt -> anbieten zu
+        # entsperren, damit das Passwort fürs Auslesen zur Verfügung steht.
+        if self.use_vault_var.get() and self.vault is not None and self.vault.is_locked:
+            ensure_vault_unlocked(self, self.vault,
+                                  "Zum Verwenden der gespeicherten Passwörter")
         self._busy = True
         self.progress.start(12)
         self._log_clear()

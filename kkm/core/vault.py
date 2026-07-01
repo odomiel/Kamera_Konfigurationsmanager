@@ -36,9 +36,11 @@ next to ``groups.json``.
 from __future__ import annotations
 
 import base64
+import getpass
 import hashlib
 import json
 import os
+import platform
 
 from .groups import config_dir
 
@@ -46,6 +48,30 @@ PBKDF2_ITERATIONS = 600_000   # OWASP-recommended floor for PBKDF2-HMAC-SHA256
 KEY_LEN = 32                  # AES-256
 SALT_LEN = 16
 NONCE_LEN = 12
+
+# Auto-Entsperrung (Bequemlichkeit, KEIN echter Schutz): das Master-Passwort wird
+# in einer Zusatzdatei abgelegt, verschluesselt mit einem aus stabilen Geraete-/
+# Benutzermerkmalen abgeleiteten Schluessel. Das bindet die Datei an dieses Konto
+# auf diesem Rechner (Kopieren auf einen anderen Rechner schlaegt fehl), ist aber
+# gegen jemanden, der als dieser Benutzer Code ausfuehren kann, nicht sicher.
+AUTO_FILENAME = "vault.auto"
+AUTO_ITERATIONS = 200_000
+
+
+def _getuser() -> str:
+    try:
+        return getpass.getuser()
+    except Exception:  # pragma: no cover - je nach Umgebung
+        return "user"
+
+
+def _machine_key(salt: bytes) -> bytes:
+    ident = "\x1f".join([
+        platform.node(), _getuser(), platform.system(),
+        "kkm-vault-autounlock-v1",
+    ])
+    return hashlib.pbkdf2_hmac("sha256", ident.encode("utf-8"), salt,
+                               AUTO_ITERATIONS, KEY_LEN)
 
 
 class VaultLocked(Exception):
@@ -80,6 +106,7 @@ class PasswordVault:
 
     def __init__(self, path: str | None = None):
         self.path = path or os.path.join(config_dir(), self.FILENAME)
+        self.auto_path = os.path.join(os.path.dirname(self.path), AUTO_FILENAME)
         self._key: bytes | None = None
         self._salt: bytes | None = None
         self._data: dict[str, dict] = {}
@@ -132,6 +159,57 @@ class PasswordVault:
         self._salt = os.urandom(SALT_LEN)
         self._key = _derive(new, self._salt)
         self._flush()
+        # Auto-Entsperrung (falls aktiv) auf das neue Passwort umschreiben.
+        if self.autounlock_enabled:
+            self.enable_autounlock(new)
+
+    # --- auto-unlock --------------------------------------------------------
+    @property
+    def autounlock_enabled(self) -> bool:
+        """True, wenn ein Auto-Entsperr-Token hinterlegt ist."""
+        return os.path.exists(self.auto_path)
+
+    def enable_autounlock(self, master: str) -> None:
+        """Master-Passwort für die Auto-Entsperrung hinterlegen. Verifiziert es
+        zuvor durch Entsperren (wirft VaultError bei falschem Passwort)."""
+        self.unlock(master)                       # prüft das Passwort
+        salt = os.urandom(SALT_LEN)
+        nonce = os.urandom(NONCE_LEN)
+        ct = _aesgcm()(_machine_key(salt)).encrypt(nonce, master.encode("utf-8"), None)
+        blob = {
+            "version": 1,
+            "salt": base64.b64encode(salt).decode(),
+            "nonce": base64.b64encode(nonce).decode(),
+            "ct": base64.b64encode(ct).decode(),
+        }
+        tmp = self.auto_path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(blob, fh, indent=2)
+        os.replace(tmp, self.auto_path)
+
+    def disable_autounlock(self) -> None:
+        """Auto-Entsperr-Token entfernen."""
+        try:
+            os.remove(self.auto_path)
+        except FileNotFoundError:
+            pass
+
+    def try_autounlock(self) -> bool:
+        """Beim Start aufrufen: entsperrt den Tresor mit dem hinterlegten Token.
+        Gibt True bei Erfolg zurück; scheitert still (z. B. anderer Rechner)."""
+        if not self.autounlock_enabled or not self.exists:
+            return False
+        try:
+            with open(self.auto_path, encoding="utf-8") as fh:
+                blob = json.load(fh)
+            salt = base64.b64decode(blob["salt"])
+            nonce = base64.b64decode(blob["nonce"])
+            ct = base64.b64decode(blob["ct"])
+            master = _aesgcm()(_machine_key(salt)).decrypt(nonce, ct, None).decode("utf-8")
+            self.unlock(master)
+            return True
+        except Exception:  # noqa: BLE001 - Token ungültig/fremder Rechner -> gesperrt bleiben
+            return False
 
     # --- secrets ------------------------------------------------------------
     def set_password(self, camera_key: str, username: str, password: str) -> None:

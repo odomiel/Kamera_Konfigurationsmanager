@@ -4,6 +4,33 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.01b1 — 2026-07-01
+
+- **Tresor-Schnellschalter in der Aktionsleiste**: rechts neben „Einstellungen" ein
+  Schloss-Button — **🔒** wenn der Tresor gesperrt ist, **🔓** wenn entsperrt. Ein
+  Klick schaltet um (entsperren mit Master-Passwort bzw. sperren); das Symbol folgt
+  dem Tresor-Status automatisch.
+- **Tresor beim Programmstart automatisch entsperren** (optional): Neues Häkchen
+  im Einstellungen → Tresor. Beim Aktivieren wird das Master-Passwort einmal
+  abgefragt und gerätegebunden verschlüsselt hinterlegt (`vault.auto`, an Rechner
+  + Benutzerkonto gebunden, funktioniert nicht auf fremden Geräten); danach wird
+  der Tresor bei jedem Start automatisch entsperrt. Deutlicher Sicherheitshinweis
+  im Dialog; Häkchen entfernen löscht das Token. Master-Passwort-Änderung zieht
+  das Token automatisch nach.
+- **Passworteingabe in den Aktionsdialogen optional (Tresor zuerst)**: Neues
+  Häkchen **„Zugangsdaten aus Tresor verwenden"** (standardmäßig an, sobald ein
+  Tresor existiert) in IP-, Benutzer-, ONVIF-, Firmware- und Konfigurations-Dialog.
+  Ist es gesetzt, werden je Kamera **zuerst** Benutzer und Passwort aus dem Tresor
+  genutzt; die Felder oben sind ausgegraut und dienen nur als Rückfall. Ist der
+  Tresor beim Aktionsstart noch gesperrt, wird angeboten, ihn zu entsperren. So
+  entfällt die Passworteingabe, wenn das Passwort im Tresor liegt.
+
+## 26.07.01 — 2026-07-01
+
+- **Kamera im Browser öffnen**: Doppelklick auf einen Tabelleneintrag öffnet die
+  Weboberfläche der Kamera (`http://<IP>`) im Standard-Browser; zusätzlich neuer
+  Eintrag **„Kamera öffnen"** im Rechtsklick-Kontextmenü (bei einzelner Auswahl).
+
 ## 26.06.30b7 — 2026-06-30
 
 - **Fehler behoben: „Online prüfen" zeigte alle Kameras als online.** Die Prüfung

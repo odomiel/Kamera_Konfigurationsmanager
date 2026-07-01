@@ -88,9 +88,11 @@ class ActionDialog(tk.Toplevel):
         self.timeout_var = tk.IntVar(value=10)
 
         ttk.Label(cred, text="Benutzer:").grid(row=0, column=0, sticky=tk.W, padx=4, pady=2)
-        ttk.Entry(cred, textvariable=self.user_var, width=18).grid(row=0, column=1, padx=4, pady=2)
+        self._user_entry = ttk.Entry(cred, textvariable=self.user_var, width=18)
+        self._user_entry.grid(row=0, column=1, padx=4, pady=2)
         ttk.Label(cred, text="Passwort:").grid(row=0, column=2, sticky=tk.W, padx=4, pady=2)
-        ttk.Entry(cred, textvariable=self.pass_var, width=18, show="*").grid(row=0, column=3, padx=4, pady=2)
+        self._pass_entry = ttk.Entry(cred, textvariable=self.pass_var, width=18, show="*")
+        self._pass_entry.grid(row=0, column=3, padx=4, pady=2)
         ttk.Label(cred, text="Verbindung:").grid(row=1, column=0, sticky=tk.W, padx=4, pady=2)
         ttk.Combobox(cred, textvariable=self.scheme_var, width=15, state="readonly",
                      values=("auto", "https", "http")).grid(row=1, column=1, padx=4, pady=2)
@@ -99,6 +101,24 @@ class ActionDialog(tk.Toplevel):
         ttk.Label(cred, text="Timeout (s):").grid(row=2, column=0, sticky=tk.W, padx=4, pady=2)
         ttk.Spinbox(cred, from_=2, to=120, width=6, textvariable=self.timeout_var).grid(
             row=2, column=1, sticky=tk.W, padx=4, pady=2)
+
+        # Zugangsdaten aus dem Tresor verwenden (pro Kamera Benutzer+Passwort).
+        # Standardmaessig an, sobald ein Tresor existiert; die Felder oben dienen
+        # dann nur als Rueckfall fuer Kameras ohne Tresor-Eintrag.
+        self.use_vault_var = tk.BooleanVar(value=self.vault is not None)
+        self._vault_chk = ttk.Checkbutton(
+            cred, variable=self.use_vault_var, command=self._on_use_vault_toggle,
+            text="Zugangsdaten aus Tresor verwenden — Felder oben nur als Rückfall")
+        self._vault_chk.grid(row=3, column=0, columnspan=4, sticky=tk.W, padx=4, pady=(6, 2))
+        if self.vault is None:
+            self._vault_chk.state(["disabled"])
+        self._on_use_vault_toggle()   # Anfangszustand der Felder setzen
+
+    def _on_use_vault_toggle(self):
+        """Bei aktiver Tresor-Nutzung Benutzer/Passwort ausgrauen (optional)."""
+        state = "disabled" if self.use_vault_var.get() else "normal"
+        self._user_entry.config(state=state)
+        self._pass_entry.config(state=state)
 
     def credentials(self) -> Credentials:
         port = self.port_var.get().strip()
@@ -111,10 +131,11 @@ class ActionDialog(tk.Toplevel):
         )
 
     def creds_for(self, camera: dict) -> Credentials:
-        """Per-camera credentials: prefer a vault entry, else the dialog fields."""
+        """Zugangsdaten je Kamera. Ist „Aus Tresor verwenden" aktiv und der Tresor
+        entsperrt, gewinnt **immer** der Tresor-Eintrag (Benutzer + Passwort); die
+        Dialogfelder dienen nur als Rückfall für Kameras ohne Eintrag."""
         creds = self.credentials()
-        if self.vault and not self.vault.is_locked and not creds.password:
-            from kkm.core import camera_key
+        if self.use_vault_var.get() and self.vault and not self.vault.is_locked:
             stored = self.vault.get_password(camera_key(camera))
             if stored:
                 creds.username = stored.get("username", creds.username)
@@ -154,11 +175,15 @@ class ActionDialog(tk.Toplevel):
         """
         if self._busy:
             return
-        # Soll ins Tresor gespeichert werden, dieser ist aber gesperrt/nicht
-        # angelegt -> auf dem Main-Thread anbieten, ihn einzurichten.
-        if self._wants_vault() and self.vault is not None and self.vault.is_locked:
-            if not ensure_vault_unlocked(self, self.vault,
-                                         "Zum Speichern der Passwörter"):
+        # Tresor wird gebraucht (zum Lesen der Passwörter und/oder zum Speichern),
+        # ist aber gesperrt/nicht angelegt -> auf dem Main-Thread anbieten, ihn
+        # einzurichten. Eine Nachfrage deckt beide Fälle ab.
+        wants_read = self.use_vault_var.get()
+        wants_store = self._wants_vault()
+        if (wants_read or wants_store) and self.vault is not None and self.vault.is_locked:
+            reason = ("Zum Verwenden und Speichern der Passwörter" if wants_store
+                      else "Zum Verwenden der gespeicherten Passwörter")
+            if not ensure_vault_unlocked(self, self.vault, reason) and wants_store:
                 messagebox.showinfo(
                     self.title_text,
                     "Ohne Tresor werden die Passwörter nur für die laufende "

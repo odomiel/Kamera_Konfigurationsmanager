@@ -33,7 +33,7 @@ Tabs:
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
 
 from kkm.core import ALL_CAMERAS_ID, VaultError
 
@@ -115,6 +115,7 @@ class SettingsDialog(tk.Toplevel):
             ttk.Button(self._vault_body, text="Entsperren",
                        command=self._unlock_vault).grid(row=1, column=0, columnspan=2,
                                                         sticky=tk.W, pady=6)
+            self._autounlock_widgets(self._vault_body, start_row=2)
         else:
             self._vault_status.config(text="Status: entsperrt 🔓")
             ttk.Button(self._vault_body, text="Sperren",
@@ -129,6 +130,45 @@ class SettingsDialog(tk.Toplevel):
             ttk.Button(self._vault_body, text="Ändern",
                        command=self._change_master).grid(row=6, column=0, columnspan=2,
                                                          sticky=tk.W, pady=6)
+            ttk.Separator(self._vault_body, orient=tk.HORIZONTAL).grid(
+                row=7, column=0, columnspan=2, sticky="ew", pady=8)
+            self._autounlock_widgets(self._vault_body, start_row=8)
+
+    def _autounlock_widgets(self, parent, start_row):
+        """Checkbox + Warnhinweis für die automatische Entsperrung beim Start."""
+        from kkm.gui import theme
+        self._auto_var = tk.BooleanVar(value=self.vault.autounlock_enabled)
+        ttk.Checkbutton(parent, text="Tresor beim Programmstart automatisch entsperren",
+                        variable=self._auto_var,
+                        command=self._toggle_autounlock).grid(
+            row=start_row, column=0, columnspan=2, sticky=tk.W, pady=(2, 0))
+        ttk.Label(parent, wraplength=380, justify=tk.LEFT,
+                  foreground=theme.CURRENT.get("warn", "#c0392b"),
+                  text="Hinweis: Speichert das Master-Passwort gerätegebunden auf "
+                       "diesem Rechner. Bequem, aber weniger sicher — wer als dieser "
+                       "Benutzer Zugriff hat, kann den Tresor öffnen.").grid(
+            row=start_row + 1, column=0, columnspan=2, sticky=tk.W, pady=(2, 0))
+
+    def _toggle_autounlock(self):
+        if self._auto_var.get():
+            pw = simpledialog.askstring(
+                "Auto-Entsperrung", "Master-Passwort zur Bestätigung:",
+                show="*", parent=self)
+            if not pw:
+                self._auto_var.set(False)
+                return
+            try:
+                self.vault.enable_autounlock(pw)
+            except VaultError as exc:
+                messagebox.showerror("Tresor", str(exc), parent=self)
+                self._auto_var.set(False)
+                return
+            messagebox.showinfo(
+                "Tresor", "Auto-Entsperrung aktiviert — der Tresor wird beim Start "
+                "automatisch entsperrt.", parent=self)
+            self._render_vault()       # war evtl. gesperrt -> jetzt entsperrt
+        else:
+            self.vault.disable_autounlock()
 
     def _pw_fields(self, parent, fields, start_row=0):
         self._pw_vars = getattr(self, "_pw_vars", {})

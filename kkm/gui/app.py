@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import queue
 import threading
+import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
@@ -42,7 +43,7 @@ NET_WORKERS = 12
 
 from kkm.version import APP_NAME, __version__
 from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
-                      camera_key, PasswordVault, AppSettings)
+                      camera_key, PasswordVault, AppSettings, VaultError)
 from kkm.core.groups import config_dir
 from kkm.plugins import build_registry
 from kkm.plugins.axis.discovery import FIELD_NAMES, get_first_ip, export_results
@@ -72,6 +73,13 @@ class MainWindow(tk.Tk):
         theme.apply_theme(self, self._theme)
         self.registry = build_registry(self.settings.get("enabled_plugins"))
         self.vault = PasswordVault()
+        # Tresor beim Start automatisch entsperren, falls der Nutzer das in den
+        # Einstellungen aktiviert hat (hinterlegtes, geräte­gebundenes Token).
+        if self.vault.autounlock_enabled:
+            try:
+                self.vault.try_autounlock()
+            except Exception:  # noqa: BLE001 - Start darf daran nie scheitern
+                pass
         self.creds = Credentials()
         self._q: queue.Queue = queue.Queue()
         self._current_gid = ALL_CAMERAS_ID
@@ -119,10 +127,14 @@ class MainWindow(tk.Tk):
             self._action_buttons[cap] = btn
 
         ttk.Button(bar, text="Hilfe", command=self._open_help).pack(side=tk.RIGHT)
+        # Tresor-Schnellschalter: 🔒 gesperrt / 🔓 entsperrt, klickbar zum Umschalten.
+        self._lock_btn = ttk.Button(bar, width=3, command=self._toggle_vault_lock)
+        self._lock_btn.pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Button(bar, text="Einstellungen", command=self._open_settings).pack(
             side=tk.RIGHT, padx=(0, 6))
         ttk.Button(bar, text="Exportieren", command=self._export).pack(
             side=tk.RIGHT, padx=(0, 6))
+        self._update_lock_button()
         self.progress = ttk.Progressbar(bar, mode="indeterminate", length=140)
         self.progress.pack(side=tk.RIGHT, padx=8)
 
@@ -159,6 +171,8 @@ class MainWindow(tk.Tk):
         self.table.pack(fill=tk.BOTH, expand=True)
         # Rechtsklick -> Kameras Gruppen zuweisen (additiv) / entfernen.
         self.table.bind("<Button-3>", self._show_table_menu)
+        # Doppelklick -> Kamera-Weboberfläche im Browser öffnen.
+        self.table.bind("<Double-Button-1>", self._open_camera_web)
 
     def _build_statusbar(self):
         self.status = ttk.Label(self, text="Bereit", relief=tk.SUNKEN, anchor=tk.W)
@@ -242,6 +256,26 @@ class MainWindow(tk.Tk):
     def _selected_cameras(self) -> list[dict]:
         return [self._row_cam[r] for r in self.table.selection() if r in self._row_cam]
 
+    # ---------------------------------------------- Kamera im Browser öffnen
+    def _open_camera_web(self, event):
+        """Doppelklick: die angeklickte Kamera im Webbrowser öffnen."""
+        row = self.table.identify_row(event.y)
+        cam = self._row_cam.get(row)
+        if cam:
+            self._open_camera_web_cam(cam)
+
+    def _open_camera_web_cam(self, cam):
+        ip = get_first_ip(cam)
+        if not ip:
+            messagebox.showinfo(APP_NAME, "Für diese Kamera ist keine IP-Adresse bekannt.")
+            return
+        url = ip if "://" in ip else f"http://{ip}"
+        try:
+            webbrowser.open(url)
+            self.status.config(text=f"Kamera im Browser geöffnet: {url}")
+        except Exception as exc:
+            messagebox.showerror(APP_NAME, f"Konnte den Browser nicht öffnen:\n{exc}")
+
     # ------------------------------------------------- camera -> group (Rechtsklick)
     def _show_table_menu(self, event):
         # Rechtsklick auf eine nicht-markierte Zeile wählt sie zuerst aus.
@@ -254,6 +288,11 @@ class MainWindow(tk.Tk):
         keys = [camera_key(c) for c in cams]
 
         menu = tk.Menu(self, tearoff=0)
+        # Nur bei genau einer Auswahl mit IP im Browser öffnen anbieten.
+        if len(cams) == 1 and get_first_ip(cams[0]):
+            menu.add_command(label="Kamera öffnen",
+                             command=lambda: self._open_camera_web_cam(cams[0]))
+            menu.add_separator()
         add_menu = tk.Menu(menu, tearoff=0)
         user_groups = [(gid, g) for gid, g in self.store.groups.items()
                        if gid != ALL_CAMERAS_ID]
@@ -506,6 +545,7 @@ class MainWindow(tk.Tk):
                     messagebox.showerror(APP_NAME, payload)
         except queue.Empty:
             pass
+        self._update_lock_button()   # Schloss-Symbol mit Tresor-Status synchron halten
         self.after(150, self._poll)
 
     # -------------------------------------------------------------- actions
@@ -574,6 +614,41 @@ class MainWindow(tk.Tk):
         self.wait_window(dlg)
         # The group's online-check config may have changed -> reschedule.
         self._schedule_online_autocheck()
+        self._update_lock_button()      # Tresor-Status kann sich geändert haben
+
+    # ----------------------------------------------------------- vault lock button
+    def _update_lock_button(self):
+        """Vorhängeschloss-Symbol an den Tresor-Status anpassen."""
+        if not hasattr(self, "_lock_btn"):
+            return
+        locked = self.vault is None or self.vault.is_locked
+        self._lock_btn.config(text="🔒" if locked else "🔓")
+
+    def _toggle_vault_lock(self):
+        """Klick auf das Schloss: entsperren (oder anlegen) bzw. sperren."""
+        v = self.vault
+        if v is None:
+            return
+        if not v.is_locked:
+            v.lock()
+            self.status.config(text="Tresor gesperrt 🔒")
+        elif v.exists:
+            pw = simpledialog.askstring("Tresor entsperren", "Master-Passwort:",
+                                        show="*", parent=self)
+            if not pw:
+                return
+            try:
+                v.unlock(pw)
+            except VaultError as exc:
+                messagebox.showerror("Tresor", str(exc), parent=self)
+                return
+            self.status.config(text="Tresor entsperrt 🔓")
+        else:
+            # Noch nicht angelegt -> gemeinsamer Helfer bietet das Anlegen an.
+            if not ensure_vault_unlocked(self, v, "Zum Entsperren"):
+                return
+            self.status.config(text="Tresor entsperrt 🔓")
+        self._update_lock_button()
 
     # ------------------------------------------------------------- columns
     def apply_columns(self, hidden):

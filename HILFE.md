@@ -15,9 +15,16 @@ Kameras und laufen im Hintergrund; das Ergebnis je Kamera wird protokolliert.
   **„Alle Kameras"** (enthält alle bekannten Kameras), darunter eigene Gruppen.
 - **Rechts:** die Geräteliste der gewählten Gruppe mit den Spalten Name, Modell,
   IP-Adresse, MAC/Seriennummer, Firmware, **Gruppe(n)** und **Status** (online).
-- **Oben:** die Aktionsleiste (siehe unten).
+- **Oben:** die Aktionsleiste (siehe unten). Rechts neben **„Einstellungen"** ein
+  **Schloss-Schalter**: **🔒** = Tresor gesperrt, **🔓** = entsperrt. Ein Klick
+  schaltet um — entsperrt (fragt das Master-Passwort; legt bei Bedarf einen Tresor
+  an) bzw. sperrt den Tresor.
 
 Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
+
+**Kamera öffnen** — ein **Doppelklick** auf eine Kamera (oder Rechtsklick →
+**„Kamera öffnen"**) öffnet ihre Weboberfläche im Standard-Browser
+(`http://<IP>`).
 
 ---
 
@@ -67,9 +74,18 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
 ## Zugangsdaten (in jedem Aktionsdialog)
 
 Jeder Aktionsdialog hat oben einen Bereich **„Zugangsdaten"**: Benutzer, Passwort,
-Verbindung (auto/https/http), optionaler Port und Timeout. Ist der **Passwort-Tresor**
-entsperrt und das Passwortfeld leer, wird ein gespeichertes Kamera-Passwort
-automatisch verwendet.
+Verbindung (auto/https/http), optionaler Port und Timeout.
+
+- **„Zugangsdaten aus Tresor verwenden"** (Häkchen, standardmäßig **an**, sobald ein
+  Tresor existiert): Für **jede** Kamera werden **zuerst** Benutzer **und** Passwort
+  aus dem Passwort-Tresor genommen. Die Felder „Benutzer/Passwort" sind dann
+  ausgegraut und dienen nur als **Rückfall** für Kameras, die (noch) keinen
+  Tresor-Eintrag haben. Ist der Tresor beim Start der Aktion noch gesperrt, wird
+  angeboten, ihn zu entsperren.
+- **Häkchen entfernen**: Benutzer/Passwort werden wieder eingegeben und gelten
+  einheitlich für **alle** markierten Kameras (der Tresor wird ignoriert).
+
+So muss man das Passwort **nicht** mehr eintippen, wenn es im Tresor liegt.
 
 ---
 
@@ -129,6 +145,13 @@ Mehrere Bereiche:
 - **Tresor** — Passwort-Tresor anlegen, entsperren, sperren oder Master-Passwort
   ändern. Der Tresor speichert Kamera-Passwörter verschlüsselt (AES-256-GCM,
   abgeleitet aus dem Master-Passwort).
+  - **„Tresor beim Programmstart automatisch entsperren"** (Häkchen): Beim
+    Aktivieren wird das Master-Passwort einmal abgefragt und **gerätegebunden**
+    (verschlüsselt, an Rechner + Benutzerkonto gebunden) hinterlegt; danach ist
+    der Tresor bei jedem Start sofort entsperrt. **Sicherheitshinweis:** Das ist
+    Komfort auf Kosten der Sicherheit — wer als dieser Benutzer Zugriff auf den
+    Rechner hat, kann den Tresor öffnen. Das Token funktioniert nicht auf einem
+    anderen Rechner/Konto. Häkchen entfernen löscht das Token wieder.
 - **Plugins** — Hersteller-Plugins aktivieren/deaktivieren (derzeit nur Axis).
 - **Online-Prüfung** — pro Gruppe die automatische Online-Prüfung ein-/ausschalten
   und das Intervall festlegen.
