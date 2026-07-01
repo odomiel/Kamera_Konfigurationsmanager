@@ -4,7 +4,7 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
-## 26.07.01b4 — 2026-07-01
+## 26.07.01b5 — 2026-07-01
 
 - **Tresor-Schnellschalter in der Aktionsleiste**: rechts neben „Einstellungen" ein
   Schloss-Button — **🔒** wenn der Tresor gesperrt ist, **🔓** wenn entsperrt. Ein
