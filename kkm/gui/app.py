@@ -128,7 +128,11 @@ class MainWindow(tk.Tk):
 
         ttk.Button(bar, text="Hilfe", command=self._open_help).pack(side=tk.RIGHT)
         # Tresor-Schnellschalter: 🔒 gesperrt / 🔓 entsperrt, klickbar zum Umschalten.
-        self._lock_btn = ttk.Button(bar, width=3, command=self._toggle_vault_lock)
+        # Nur das Symbol größer (größere Schrift), Innenabstand verkleinert, damit der
+        # Button selbst so groß wie die übrigen Toolbar-Buttons bleibt.
+        ttk.Style().configure("Lock.TButton", font=("TkDefaultFont", 14), padding=0)
+        self._lock_btn = ttk.Button(bar, width=2, style="Lock.TButton",
+                                    command=self._toggle_vault_lock)
         self._lock_btn.pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Button(bar, text="Einstellungen", command=self._open_settings).pack(
             side=tk.RIGHT, padx=(0, 6))

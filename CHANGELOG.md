@@ -4,12 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
-## 26.07.01b1 — 2026-07-01
+## 26.07.01b3 — 2026-07-01
 
 - **Tresor-Schnellschalter in der Aktionsleiste**: rechts neben „Einstellungen" ein
   Schloss-Button — **🔒** wenn der Tresor gesperrt ist, **🔓** wenn entsperrt. Ein
   Klick schaltet um (entsperren mit Master-Passwort bzw. sperren); das Symbol folgt
-  dem Tresor-Status automatisch.
+  dem Tresor-Status automatisch. Das Schloss-Symbol ist vergrößert dargestellt.
 - **Tresor beim Programmstart automatisch entsperren** (optional): Neues Häkchen
   im Einstellungen → Tresor. Beim Aktivieren wird das Master-Passwort einmal
   abgefragt und gerätegebunden verschlüsselt hinterlegt (`vault.auto`, an Rechner
