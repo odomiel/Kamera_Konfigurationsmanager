@@ -157,8 +157,18 @@ class GroupStore:
 
     # --- membership ---------------------------------------------------------
     def remember(self, camera: dict) -> str:
-        """Add/refresh a camera in the roster ("Alle Kameras"). Returns its key."""
+        """Add/refresh a camera in the roster ("Alle Kameras"). Returns its key.
+
+        Bereits gelesene Zusatzinfos (Firmware/Modell) bleiben erhalten, wenn die
+        neue (mDNS-)Fassung sie nicht mitbringt — sonst würde jede Suche die per
+        VAPIX nachgelesene Firmware/Modell wieder löschen.
+        """
         key = camera_key(camera)
+        prev = self.roster.get(key)
+        if prev:
+            for field in ("_firmware", "_model"):
+                if not camera.get(field) and prev.get(field):
+                    camera[field] = prev[field]
         self.roster[key] = camera
         return key
 

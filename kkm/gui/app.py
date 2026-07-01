@@ -445,19 +445,29 @@ class MainWindow(tk.Tk):
         self.after(0, self._prompt_next_credentials)
 
     def _worker_enrich(self, cams):
-        """Liest Firmware/Modell für Kameras mit bekannten Zugangsdaten (still)."""
+        """Liest Firmware/Modell für Kameras mit bekannten Zugangsdaten (still).
+
+        Zählt Erfolge/Fehler mit, damit die Statuszeile Rückmeldung geben kann
+        (statt Lesefehler komplett stumm zu verschlucken)."""
+        stats = {"ok": 0, "fail": 0}
+        lock = threading.Lock()
         def task(cam):
             plugin = self.registry.get(cam.get("_vendor", "axis"))
             creds = self._creds_for(cam)
             if not plugin or not creds:
+                with lock:
+                    stats["fail"] += 1
                 return
             try:
                 info = plugin.device_info(cam, creds)
                 self._q.put(("device_info", (camera_key(cam), info)))
-            except Exception:  # noqa: BLE001 - still erfolglos, Feld bleibt leer
-                pass
+                with lock:
+                    stats["ok"] += 1
+            except Exception:  # noqa: BLE001 - Lesefehler -> Feld bleibt leer
+                with lock:
+                    stats["fail"] += 1
         self._run_pool(cams, task)
-        self._q.put(("enrich_done", None))
+        self._q.put(("enrich_done", (stats["ok"], stats["fail"])))
 
     def _prompt_next_credentials(self):
         # bereits aufgelöste Kameras herausfiltern
@@ -536,6 +546,13 @@ class MainWindow(tk.Tk):
                 elif kind == "enrich_done":
                     self.store.save()
                     self._refresh_table()
+                    ok, fail = payload if payload else (0, 0)
+                    if ok or fail:
+                        msg = f"Firmware/Modell gelesen: {ok} ok"
+                        if fail:
+                            msg += (f", {fail} fehlgeschlagen (Zugangsdaten/"
+                                    "Erreichbarkeit prüfen)")
+                        self.status.config(text=msg)
                 elif kind == "cred_ok":
                     key, user, pw, info = payload
                     self._cam_creds[key] = (user, pw)

@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.01b9 — 2026-07-01
+
+- **Firmware/Modell bleiben über Suchen erhalten**: `remember()` überschrieb bei
+  jeder Suche den Roster-Eintrag komplett und löschte damit die per VAPIX
+  gelesene Firmware/Modell. Diese Felder werden jetzt erhalten, wenn die neue
+  mDNS-Fassung sie nicht mitbringt (eine neue, tatsächlich gelesene Version
+  gewinnt weiterhin).
+- **Rückmeldung beim Auslesen**: Nach der Suche zeigt die Statuszeile, für wie
+  viele Kameras Firmware/Modell gelesen wurde bzw. fehlschlug (statt Lesefehler
+  still zu verschlucken) — hilft, Zugangsdaten-/Erreichbarkeitsprobleme zu erkennen.
+
 ## 26.07.01b8 — 2026-07-01
 
 - **Tresor-Schnellschalter in der Aktionsleiste**: rechts neben „Einstellungen" ein
