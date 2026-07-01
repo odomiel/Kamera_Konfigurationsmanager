@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.01b12 — 2026-07-01
+
+- **Firmware/Modell alter Kameras jetzt korrekt (root.-Präfix)**: Ältere AXIS-
+  Firmware (z. B. M7001, OS 5.x) liefert param.cgi-Werte **ohne** `root.`-Präfix
+  (`Properties.Firmware.Version=5.20.5`), neuere **mit**. Die Auswertung
+  (`_param_value`) akzeptiert nun beide Formen — betrifft Geräteinfo (Firmware/
+  Modell/Serie) und den Konfig-Export. Damit erscheint auch die M7001-Firmware.
+
 ## 26.07.01b11 — 2026-07-01
 
 - **Firmware-Auslesen für ältere Kameras (z. B. M7001, AXIS OS 5.x)**: Manche alte

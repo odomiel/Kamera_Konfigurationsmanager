@@ -189,6 +189,12 @@ def _parse_param_list(text):
     return result
 
 
+def _param_value(params, group):
+    """Liest einen param.cgi-Wert unabhaengig vom 'root.'-Praefix: neuere Firmware
+    liefert 'root.Gruppe.Name=...', aeltere (z. B. AXIS OS 5.x) nur 'Gruppe.Name=...'."""
+    return params.get(f"root.{group}") or params.get(group) or ""
+
+
 def _basic_device_info(ip, username, password, scheme="auto", port=None, timeout=10):
     """Liest Geraeteeigenschaften ueber basicdeviceinfo.cgi (JSON, AXIS OS).
 
@@ -238,9 +244,9 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
         _request_auto(ip, username, password, path, scheme, port, timeout)
     )
     info = {
-        "model": params.get("root.Brand.ProdShortName", "?"),
-        "serial": params.get("root.Properties.System.SerialNumber", "?"),
-        "firmware": params.get("root.Properties.Firmware.Version", ""),
+        "model": _param_value(params, "Brand.ProdShortName") or "?",
+        "serial": _param_value(params, "Properties.System.SerialNumber") or "?",
+        "firmware": _param_value(params, "Properties.Firmware.Version"),
     }
     # Fallback fuer moderne Geraete: fehlende Firmware/Modell per JSON-Endpunkt.
     if not info["firmware"] or info["model"] in ("", "?"):
@@ -276,7 +282,7 @@ def _single_param(ip, username, password, group, scheme="auto", port=None, timeo
             _request_auto(ip, username, password, path, scheme, port, timeout))
     except VapixError:
         return ""
-    return params.get(f"root.{group}", "")
+    return _param_value(params, group)
 
 
 def _update_params(ip, username, password, params, scheme, port, timeout):
@@ -914,11 +920,11 @@ def read_device_config(ip, username, password, scheme="auto", port=None, timeout
         raise VapixError("Keine Parameter erhalten (leere Antwort von param.cgi).")
     params = {}
     for key, value in full.items():
-        if key.startswith("root."):
-            params[key[len("root."):]] = value
+        # Neuere Firmware liefert 'root.'-Praefix, aeltere (AXIS OS 5.x) nicht.
+        params[key[len("root."):] if key.startswith("root.") else key] = value
     return {
-        "model": full.get("root.Brand.ProdShortName", ""),
-        "firmware": full.get("root.Properties.Firmware.Version", ""),
+        "model": _param_value(full, "Brand.ProdShortName"),
+        "firmware": _param_value(full, "Properties.Firmware.Version"),
         "parameters": params,
         "profiles": _stream_profiles_from_params(full),
     }
