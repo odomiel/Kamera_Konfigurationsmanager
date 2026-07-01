@@ -253,7 +253,30 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
                                  or info["model"])
             if info["serial"] in ("", "?"):
                 info["serial"] = props.get("SerialNumber", "") or info["serial"]
+    # Fallback fuer aeltere Geraete (z. B. AXIS OS 5.x): manche Firmware liefert
+    # auf eine kombinierte Gruppen-Abfrage gar nichts, beantwortet aber Einzel-
+    # gruppen. Firmware/Modell daher einzeln nachfragen, falls noch leer.
+    if not info["firmware"]:
+        info["firmware"] = _single_param(
+            ip, username, password, "Properties.Firmware.Version",
+            scheme, port, timeout) or info["firmware"]
+    if info["model"] in ("", "?"):
+        info["model"] = _single_param(
+            ip, username, password, "Brand.ProdShortName",
+            scheme, port, timeout) or info["model"]
     return info
+
+
+def _single_param(ip, username, password, group, scheme="auto", port=None, timeout=10):
+    """Liest genau einen param.cgi-Parameter (Einzelgruppe, kompatibel mit alter
+    Firmware). Liefert den Wert oder \"\" (schluckt Lesefehler bis auf 401)."""
+    path = f"/axis-cgi/param.cgi?action=list&group={group}"
+    try:
+        params = _parse_param_list(
+            _request_auto(ip, username, password, path, scheme, port, timeout))
+    except VapixError:
+        return ""
+    return params.get(f"root.{group}", "")
 
 
 def _update_params(ip, username, password, params, scheme, port, timeout):

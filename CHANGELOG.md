@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.01b11 — 2026-07-01
+
+- **Firmware-Auslesen für ältere Kameras (z. B. M7001, AXIS OS 5.x)**: Manche alte
+  Firmware beantwortet die kombinierte param.cgi-Gruppenabfrage gar nicht (und hat
+  `basicdeviceinfo.cgi` noch nicht). Firmware/Modell werden jetzt als weiterer
+  Fallback über **Einzelgruppen-Abfragen** (`group=Properties.Firmware.Version`
+  bzw. `Brand.ProdShortName`) nachgelesen.
+
 ## 26.07.01b10 — 2026-07-01
 
 - **Firmware-Auslesen robuster (basicdeviceinfo.cgi)**: Wenn `param.cgi` keine
