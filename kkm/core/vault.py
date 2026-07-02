@@ -217,6 +217,24 @@ class PasswordVault:
         self._data[camera_key] = {"username": username, "password": password}
         self._flush()
 
+    def set_many(self, items: dict) -> int:
+        """Set several entries with a single write. Returns the number stored.
+
+        *items* maps ``camera_key`` -> ``{"username": ..., "password": ...}``.
+        Nützlich beim Import vieler Zugangsdaten (statt eines Datei-Writes je Eintrag).
+        """
+        self._require_unlocked()
+        n = 0
+        for key, cred in items.items():
+            if not key:
+                continue
+            self._data[key] = {"username": cred.get("username", ""),
+                               "password": cred.get("password", "")}
+            n += 1
+        if n:
+            self._flush()
+        return n
+
     def get_password(self, camera_key: str) -> dict | None:
         self._require_unlocked()
         return self._data.get(camera_key)

@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.02b5 — 2026-07-02
+
+- **Import aus AXIS Device Manager**: Neuer Reiter *Import* in den Einstellungen
+  übernimmt Geräte **und** Gruppen aus einer Export-Datei des AXIS Device Manager
+  (JSON). Beide Dateiformate werden erkannt: **1.x** (normalisiert: `deviceTag` +
+  `deviceTagRelation`) und **2.x** (Gerätе-IDs direkt im Tag). Geräte werden
+  anhand ihrer MAC/Seriennummer in den Roster zusammengeführt (verschmelzen später
+  automatisch mit per Suche gefundenen), Gruppen gleichen Namens werden ergänzt
+  statt dupliziert. Enthaltene Zugangsdaten kommen optional in den Tresor — in
+  Format 2.x sind die Passwörter base64-kodiert und werden beim Import dekodiert.
+  Verschlüsselte Exporte werden abgewiesen. Neue Kern-Methode
+  `PasswordVault.set_many()` schreibt viele Zugangsdaten in einem Vorgang.
+
 ## 26.07.02b4 — 2026-07-02
 
 - **Gruppenliste-Scrollbalken korrekt gemessen**: In b3 erschien der horizontale

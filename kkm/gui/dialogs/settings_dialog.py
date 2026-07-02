@@ -33,9 +33,10 @@ Tabs:
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox, simpledialog, filedialog
 
-from kkm.core import ALL_CAMERAS_ID, VaultError
+from kkm.core import ALL_CAMERAS_ID, VaultError, camera_key
+from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 
 
 class SettingsDialog(tk.Toplevel):
@@ -55,6 +56,9 @@ class SettingsDialog(tk.Toplevel):
         self.apply_columns = apply_columns
         self.theme_mode = theme_mode
         self.on_theme_change = on_theme_change
+        # Wird True, sobald der Import Geräte/Gruppen geändert hat -> Hauptfenster
+        # muss danach Baum + Tabelle neu aufbauen.
+        self.data_changed = False
 
         nb = ttk.Notebook(self)
         nb.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
@@ -63,6 +67,7 @@ class SettingsDialog(tk.Toplevel):
         nb.add(self._build_plugins_tab(nb), text="Plugins")
         nb.add(self._build_online_tab(nb), text="Online-Prüfung")
         nb.add(self._build_columns_tab(nb), text="Spalten")
+        nb.add(self._build_import_tab(nb), text="Import")
 
         ttk.Button(self, text="Schließen", command=self.destroy).pack(
             anchor=tk.E, padx=8, pady=(0, 8))
@@ -288,3 +293,127 @@ class SettingsDialog(tk.Toplevel):
         self.settings.set("hidden_columns", hidden)
         if self.apply_columns:
             self.apply_columns(hidden)
+
+    # ------------------------------------------------------------------ import
+    def _build_import_tab(self, parent):
+        tab = ttk.Frame(parent, padding=10)
+        ttk.Label(tab, text="Import aus AXIS Device Manager",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
+        ttk.Label(tab, justify=tk.LEFT, text=(
+            "Übernimmt Geräte und Gruppen aus einer AXIS-Device-Manager-Export-"
+            "datei (JSON, Format 1.x und 2.x). Vorhandene Gruppen gleichen Namens "
+            "werden ergänzt, Geräte anhand ihrer MAC/Seriennummer zusammengeführt.\n"
+            "Enthaltene Zugangsdaten werden — sofern vorhanden — in den Tresor "
+            "übernommen (dazu muss er entsperrt sein).")
+        ).pack(anchor=tk.W, pady=(2, 8), fill=tk.X)
+
+        self._import_creds_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(tab, text="Zugangsdaten in den Tresor übernehmen",
+                        variable=self._import_creds_var).pack(anchor=tk.W)
+
+        ttk.Button(tab, text="Export-Datei wählen und importieren…",
+                   command=self._run_import).pack(anchor=tk.W, pady=(8, 6))
+
+        logframe = ttk.Frame(tab)
+        logframe.pack(fill=tk.BOTH, expand=True)
+        self._import_log = tk.Text(logframe, height=10, width=60, wrap=tk.WORD,
+                                   state=tk.DISABLED)
+        sb = ttk.Scrollbar(logframe, orient=tk.VERTICAL,
+                           command=self._import_log.yview)
+        self._import_log.configure(yscrollcommand=sb.set)
+        self._import_log.grid(row=0, column=0, sticky="nsew")
+        sb.grid(row=0, column=1, sticky="ns")
+        logframe.rowconfigure(0, weight=1)
+        logframe.columnconfigure(0, weight=1)
+        return tab
+
+    def _log_import(self, text):
+        self._import_log.configure(state=tk.NORMAL)
+        self._import_log.insert(tk.END, text + "\n")
+        self._import_log.see(tk.END)
+        self._import_log.configure(state=tk.DISABLED)
+        self._import_log.update_idletasks()
+
+    def _run_import(self):
+        path = filedialog.askopenfilename(
+            parent=self, title="AXIS-Device-Manager-Export wählen",
+            filetypes=[("AXIS-Export (JSON)", "*.json"), ("Alle Dateien", "*.*")])
+        if not path:
+            return
+        # Import-Parser erst hier laden (zieht das axis-Paket / zeroconf nach).
+        from kkm.plugins.axis.adm_import import parse_export, AdmImportError
+        try:
+            result = parse_export(path)
+        except AdmImportError as exc:
+            messagebox.showerror("Import", str(exc), parent=self)
+            return
+
+        summary = (f"Datei-Format {result.version}\n"
+                   f"  Geräte: {result.n_cameras}\n"
+                   f"  Gruppen: {result.n_groups}\n"
+                   f"  Zugangsdaten: {result.n_credentials}")
+        if not messagebox.askyesno(
+                "Import bestätigen",
+                summary + "\n\nJetzt importieren?", parent=self):
+            return
+
+        # Zugangsdaten -> Tresor entsperren (wenn gewünscht und vorhanden)
+        want_creds = self._import_creds_var.get() and result.n_credentials > 0
+        store_creds = False
+        if want_creds:
+            if ensure_vault_unlocked(self, self.vault,
+                                     "Zum Übernehmen der Zugangsdaten"):
+                store_creds = True
+            elif not messagebox.askyesno(
+                    "Import",
+                    "Der Tresor ist gesperrt. Ohne Übernahme der Zugangsdaten "
+                    "fortfahren?", parent=self):
+                return
+
+        self._apply_import(result, store_creds)
+
+    def _find_or_create_group(self, name):
+        """Gruppe gleichen Namens finden (außer 'Alle Kameras') oder neu anlegen."""
+        for gid, g in self.store.groups.items():
+            if gid != ALL_CAMERAS_ID and g.name == name:
+                return gid
+        return self.store.create_group(name).id
+
+    def _apply_import(self, result, store_creds):
+        self._log_import(f"— Import gestartet (Format {result.version}) —")
+        # 1) Geräte in den Roster (merge erhält vorhandene Firmware/Modell)
+        for cam in result.cameras:
+            self.store.remember(cam)
+        self._log_import(f"Geräte übernommen: {result.n_cameras}")
+
+        # 2) Gruppen anlegen/ergänzen und Mitglieder zuweisen
+        groups_new = 0
+        for name, keys in result.groups.items():
+            existed = any(gid != ALL_CAMERAS_ID and g.name == name
+                          for gid, g in self.store.groups.items())
+            gid = self._find_or_create_group(name)
+            if not existed:
+                groups_new += 1
+            self.store.assign(gid, keys)
+        self._log_import(f"Gruppen: {result.n_groups} verarbeitet "
+                         f"({groups_new} neu, {result.n_groups - groups_new} ergänzt)")
+
+        # 3) Zugangsdaten in den Tresor (ein Schreibvorgang)
+        if store_creds:
+            try:
+                n = self.vault.set_many(result.credentials)
+                self._log_import(f"Zugangsdaten im Tresor gespeichert: {n}")
+            except VaultError as exc:
+                self._log_import(f"Zugangsdaten NICHT gespeichert: {exc}")
+        elif result.n_credentials:
+            self._log_import("Zugangsdaten übersprungen.")
+
+        self.store.save()
+        for w in result.warnings:
+            self._log_import("Hinweis: " + w)
+        self._log_import("— Fertig —")
+        self.data_changed = True
+        messagebox.showinfo(
+            "Import",
+            f"Import abgeschlossen:\n{result.n_cameras} Geräte, "
+            f"{result.n_groups} Gruppen.", parent=self)

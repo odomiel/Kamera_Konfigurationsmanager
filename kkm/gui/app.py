@@ -786,6 +786,10 @@ class MainWindow(tk.Tk):
             apply_columns=self.apply_columns,
             theme_mode=self._theme, on_theme_change=self.set_theme)
         self.wait_window(dlg)
+        # Ein Import kann Geräte/Gruppen geändert haben -> Ansicht neu aufbauen.
+        if getattr(dlg, "data_changed", False):
+            self._refresh_groups()
+            self._refresh_table()
         # The group's online-check config may have changed -> reschedule.
         self._schedule_online_autocheck()
         self._update_lock_button()      # Tresor-Status kann sich geändert haben
