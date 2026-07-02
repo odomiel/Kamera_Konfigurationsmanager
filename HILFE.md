@@ -18,6 +18,9 @@ Kameras und laufen im Hintergrund; das Ergebnis je Kamera wird protokolliert.
   Ein **Klick auf einen Spaltenkopf** sortiert nach dieser Spalte (erneuter Klick
   kehrt die Richtung um; ▲/▼ zeigt die aktive Spalte). Sortiert wird „natürlich" —
   IP-Adressen und Firmware-Versionen ordnen sich zahlenrichtig.
+  Reicht die Fensterbreite nicht für alle Spalten (bzw. die Höhe nicht für alle
+  Zeilen), erscheint automatisch ein **Scrollbalken**; Gleiches gilt für die
+  Gruppenliste links.
 - **Oben:** die Aktionsleiste (siehe unten). Rechts neben **„Einstellungen"** ein
   **Schloss-Schalter**: **🔒** = Tresor gesperrt, **🔓** = entsperrt. Ein Klick
   schaltet um — entsperrt (fragt das Master-Passwort; legt bei Bedarf einen Tresor

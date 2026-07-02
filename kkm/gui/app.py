@@ -180,8 +180,10 @@ class MainWindow(tk.Tk):
         paned.add(left, weight=1)
         ttk.Label(left, text="Gerätegruppen", font=("TkDefaultFont", 11, "bold")).pack(
             anchor=tk.W, pady=(0, 4))
-        self.group_tree = ttk.Treeview(left, show="tree", selectmode="browse")
-        self.group_tree.pack(fill=tk.BOTH, expand=True)
+        gt_frame = ttk.Frame(left)
+        gt_frame.pack(fill=tk.BOTH, expand=True)
+        self.group_tree = ttk.Treeview(gt_frame, show="tree", selectmode="browse")
+        self._add_scrollbars(gt_frame, self.group_tree)
         self.group_tree.bind("<<TreeviewSelect>>", self._on_group_select)
 
         gbtns = ttk.Frame(left)
@@ -194,19 +196,50 @@ class MainWindow(tk.Tk):
         # --- right: device table ---
         right = ttk.Frame(paned)
         paned.add(right, weight=4)
-        self.table = ttk.Treeview(right, columns=TABLE_COLUMNS, show="headings",
+        tbl_frame = ttk.Frame(right)
+        tbl_frame.pack(fill=tk.BOTH, expand=True)
+        self.table = ttk.Treeview(tbl_frame, columns=TABLE_COLUMNS, show="headings",
                                   selectmode="extended")
         for col in TABLE_COLUMNS:
             self.table.heading(col, text=col,
                                command=lambda c=col: self._sort_by(c))
-            self.table.column(col, width=160, stretch=True)
-        self.table.column(ONLINE_COL, width=90, stretch=False, anchor=tk.CENTER)
+            # minwidth = Vorgabebreite: Spalten quetschen sich nicht beliebig
+            # zusammen -> ab zu schmalem Fenster erscheint der H-Scrollbalken.
+            self.table.column(col, width=160, minwidth=160, stretch=True)
+        self.table.column(ONLINE_COL, width=90, minwidth=90, stretch=False,
+                          anchor=tk.CENTER)
         self._apply_status_tags()      # Statusfarben (themen-passend): online/offline
-        self.table.pack(fill=tk.BOTH, expand=True)
+        self._add_scrollbars(tbl_frame, self.table)
         # Rechtsklick -> Kameras Gruppen zuweisen (additiv) / entfernen.
         self.table.bind("<Button-3>", self._show_table_menu)
         # Doppelklick -> Kamera-Weboberfläche im Browser öffnen.
         self.table.bind("<Double-Button-1>", self._open_camera_web)
+
+    def _add_scrollbars(self, container, tree):
+        """Bettet *tree* per Grid in *container* ein und hängt auto-versteckende
+        Scrollbalken an (vertikal rechts, horizontal unten). Ein Balken wird nur
+        eingeblendet, wenn der Inhalt in der jeweiligen Richtung nicht passt."""
+        vbar = ttk.Scrollbar(container, orient=tk.VERTICAL, command=tree.yview)
+        hbar = ttk.Scrollbar(container, orient=tk.HORIZONTAL, command=tree.xview)
+        tree.configure(
+            yscrollcommand=self._autohide_scroll(vbar, row=0, column=1, sticky="ns"),
+            xscrollcommand=self._autohide_scroll(hbar, row=1, column=0, sticky="ew"),
+        )
+        tree.grid(row=0, column=0, sticky="nsew")
+        container.rowconfigure(0, weight=1)
+        container.columnconfigure(0, weight=1)
+
+    @staticmethod
+    def _autohide_scroll(bar, row, column, sticky):
+        """Liefert ein ``set``-Callback, das *bar* nur einblendet (grid), wenn der
+        sichtbare Bereich < 1 ist, sonst ausblendet (grid_remove)."""
+        def _set(first, last):
+            if float(first) <= 0.0 and float(last) >= 1.0:
+                bar.grid_remove()
+            else:
+                bar.grid(row=row, column=column, sticky=sticky)
+            bar.set(first, last)
+        return _set
 
     def _build_statusbar(self):
         self.status = ttk.Label(self, text="Bereit", relief=tk.SUNKEN, anchor=tk.W)

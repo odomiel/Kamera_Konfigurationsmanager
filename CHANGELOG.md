@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.02b1 — 2026-07-02
+
+- **Scrollbalken für Gruppen- und Kameraliste**: Beide Listen bekommen
+  auto-versteckende Scrollbalken (vertikal + horizontal). Der horizontale Balken
+  erscheint, sobald die Fensterbreite nicht für alle Spalten reicht — die
+  Tabellenspalten quetschen sich dank `minwidth` nicht mehr unleserlich zusammen,
+  sondern lassen sich seitwärts scrollen. Ist genug Platz, bleiben die Balken
+  unsichtbar.
+
 ## 26.07.02 — 2026-07-02
 
 - **Sortierbare Tabellenspalten**: Ein Klick auf einen Spaltenkopf sortiert die
