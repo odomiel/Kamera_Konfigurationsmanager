@@ -32,6 +32,7 @@ stubbed with TODO markers — they will reuse the plugin methods in
 from __future__ import annotations
 
 import queue
+import re
 import threading
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
@@ -59,6 +60,26 @@ TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "MAC/Seriennummer", "Firmware",
                  GROUP_COL, ONLINE_COL]
 FIXED_COLUMNS = {"Name"}   # always visible, cannot be hidden
 
+_NUM_CHUNK = re.compile(r"(\d+)")
+
+
+def _sort_key(value):
+    """Natürliche Sortierung: Zahlengruppen numerisch, Rest kleingeschrieben.
+
+    Sorgt für sinnvolle Reihenfolge bei IPs (192.168.0.9 < .10), Firmware-
+    Versionen (5.20.5 < 11.9.61) und Namen. Leere Werte / Platzhalter ("—")
+    sortieren aufsteigend nach hinten."""
+    s = str(value).strip()
+    if s in ("", "—"):
+        return (1, [])
+    parts = []
+    for chunk in _NUM_CHUNK.split(s.lower()):
+        if chunk.isdigit():
+            parts.append((0, int(chunk), ""))
+        elif chunk:
+            parts.append((1, 0, chunk))
+    return (0, parts)
+
 
 class MainWindow(tk.Tk):
     def __init__(self):
@@ -85,6 +106,9 @@ class MainWindow(tk.Tk):
         self._current_gid = ALL_CAMERAS_ID
         # rowid (in tree) -> camera dict, for the device table
         self._row_cam: dict[str, dict] = {}
+        # Spalten-Sortierung: aktuelle Spalte + Richtung (None = ungeordnet)
+        self._sort_col: str | None = None
+        self._sort_reverse = False
         self._online_job = None   # after() id for the per-group auto online check
         # Session-Cache erfolgreich verwendeter Zugangsdaten je Kamera (camera_key
         # -> (user, password)); ergänzt den Tresor, falls dieser gesperrt ist.
@@ -173,7 +197,8 @@ class MainWindow(tk.Tk):
         self.table = ttk.Treeview(right, columns=TABLE_COLUMNS, show="headings",
                                   selectmode="extended")
         for col in TABLE_COLUMNS:
-            self.table.heading(col, text=col)
+            self.table.heading(col, text=col,
+                               command=lambda c=col: self._sort_by(c))
             self.table.column(col, width=160, stretch=True)
         self.table.column(ONLINE_COL, width=90, stretch=False, anchor=tk.CENTER)
         self._apply_status_tags()      # Statusfarben (themen-passend): online/offline
@@ -240,6 +265,7 @@ class MainWindow(tk.Tk):
     def _refresh_table(self):
         self.table.delete(*self.table.get_children())
         self._row_cam.clear()
+        rows = []
         for cam in self.store.cameras_in(self._current_gid):
             key = camera_key(cam)
             online = cam.get("_online")
@@ -255,12 +281,37 @@ class MainWindow(tk.Tk):
                 badge,
             ]
             tag = "" if online is None else ("online" if online else "offline")
+            rows.append((key, values, tag, cam))
+        if self._sort_col in TABLE_COLUMNS:
+            idx = TABLE_COLUMNS.index(self._sort_col)
+            rows.sort(key=lambda r: _sort_key(r[1][idx]),
+                      reverse=self._sort_reverse)
+        for key, values, tag, cam in rows:
             rowid = self.table.insert("", "end", iid=key, values=values,
                                       tags=(tag,) if tag else ())
             self._row_cam[rowid] = cam
         g = self.store.groups.get(self._current_gid)
         n = len(self._row_cam)
         self.status.config(text=f"{g.name if g else ''}: {n} Gerät(e)")
+
+    def _sort_by(self, col):
+        """Klick auf Spaltenkopf: nach dieser Spalte sortieren, Richtung togglen."""
+        if self._sort_col == col:
+            self._sort_reverse = not self._sort_reverse
+        else:
+            self._sort_col = col
+            self._sort_reverse = False
+        self._update_sort_indicators()
+        self._refresh_table()
+
+    def _update_sort_indicators(self):
+        """Pfeil (▲/▼) an den aktiv sortierten Spaltenkopf hängen."""
+        for col in TABLE_COLUMNS:
+            if col == self._sort_col:
+                arrow = " ▼" if self._sort_reverse else " ▲"
+                self.table.heading(col, text=col + arrow)
+            else:
+                self.table.heading(col, text=col)
 
     def _selected_cameras(self) -> list[dict]:
         return [self._row_cam[r] for r in self.table.selection() if r in self._row_cam]

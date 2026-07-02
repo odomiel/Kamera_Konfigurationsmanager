@@ -15,6 +15,9 @@ Kameras und laufen im Hintergrund; das Ergebnis je Kamera wird protokolliert.
   **„Alle Kameras"** (enthält alle bekannten Kameras), darunter eigene Gruppen.
 - **Rechts:** die Geräteliste der gewählten Gruppe mit den Spalten Name, Modell,
   IP-Adresse, MAC/Seriennummer, Firmware, **Gruppe(n)** und **Status** (online).
+  Ein **Klick auf einen Spaltenkopf** sortiert nach dieser Spalte (erneuter Klick
+  kehrt die Richtung um; ▲/▼ zeigt die aktive Spalte). Sortiert wird „natürlich" —
+  IP-Adressen und Firmware-Versionen ordnen sich zahlenrichtig.
 - **Oben:** die Aktionsleiste (siehe unten). Rechts neben **„Einstellungen"** ein
   **Schloss-Schalter**: **🔒** = Tresor gesperrt, **🔓** = entsperrt. Ein Klick
   schaltet um — entsperrt (fragt das Master-Passwort; legt bei Bedarf einen Tresor

@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.02 — 2026-07-02
+
+- **Sortierbare Tabellenspalten**: Ein Klick auf einen Spaltenkopf sortiert die
+  Geräteliste nach dieser Spalte aufsteigend, ein erneuter Klick absteigend; ein
+  Pfeil (▲/▼) markiert die aktive Spalte und Richtung. Die Sortierung ist
+  **natürlich** — IP-Adressen (`.9` vor `.10`), Firmware-Versionen
+  (`5.20.5` vor `11.9.61`) und Namen mit Zahlen ordnen sich sinnvoll; leere
+  Werte / „—" wandern ans Ende.
+
 ## 26.07.01b12 — 2026-07-01
 
 - **Firmware/Modell alter Kameras jetzt korrekt (root.-Präfix)**: Ältere AXIS-
