@@ -193,6 +193,17 @@ class MainWindow(tk.Tk):
             side=tk.LEFT, padx=4)
         ttk.Button(gbtns, text="Löschen", command=self._delete_group).pack(side=tk.LEFT)
 
+        # Mindestbreite der linken Spalte: die drei Gruppen-Buttons müssen immer
+        # lesbar nebeneinander passen. ttk.PanedWindow kennt keine Pro-Pane-
+        # minsize, darum klemmen wir die Sash-Position auf deren Wunschbreite.
+        self._paned = paned
+        self._left_ctrls = gbtns
+        self._left_min = 0
+        self.after_idle(self._init_left_min)
+        paned.bind("<B1-Motion>", self._enforce_left_min, add="+")
+        paned.bind("<ButtonRelease-1>", self._enforce_left_min, add="+")
+        paned.bind("<Configure>", self._enforce_left_min, add="+")
+
         # --- right: device table ---
         right = ttk.Frame(paned)
         paned.add(right, weight=4)
@@ -214,6 +225,23 @@ class MainWindow(tk.Tk):
         self.table.bind("<Button-3>", self._show_table_menu)
         # Doppelklick -> Kamera-Weboberfläche im Browser öffnen.
         self.table.bind("<Double-Button-1>", self._open_camera_web)
+
+    def _init_left_min(self):
+        """Mindestbreite der linken Spalte aus der Button-Zeile ableiten und die
+        Anfangs-Sash-Position sicherstellen."""
+        self._left_ctrls.update_idletasks()
+        self._left_min = self._left_ctrls.winfo_reqwidth() + 12
+        self._enforce_left_min()
+
+    def _enforce_left_min(self, _evt=None):
+        """Sash 0 nicht enger als ``_left_min`` zulassen (Gruppen-Buttons lesbar)."""
+        if not self._left_min:
+            return
+        try:
+            if self._paned.sashpos(0) < self._left_min:
+                self._paned.sashpos(0, self._left_min)
+        except tk.TclError:
+            pass
 
     def _add_scrollbars(self, container, tree):
         """Bettet *tree* per Grid in *container* ein und hängt auto-versteckende

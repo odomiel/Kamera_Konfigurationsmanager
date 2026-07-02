@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.02b2 — 2026-07-02
+
+- **Mindestbreite der Gruppenspalte**: Der Trenner zwischen Gruppen- und
+  Kameraliste lässt sich nicht mehr so weit nach links ziehen, dass die drei
+  Gruppen-Buttons („+ Gruppe", „Umbenennen", „Löschen") abgeschnitten werden.
+  Die Mindestbreite wird zur Laufzeit aus der Wunschbreite der Button-Zeile
+  abgeleitet (`ttk.PanedWindow` kennt keine Pro-Pane-minsize → Sash-Position
+  wird geklemmt).
+
 ## 26.07.02b1 — 2026-07-02
 
 - **Scrollbalken für Gruppen- und Kameraliste**: Beide Listen bekommen
