@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.02b4 — 2026-07-02
+
+- **Gruppenliste-Scrollbalken korrekt gemessen**: In b3 erschien der horizontale
+  Balken bei langen Gruppennamen oft trotzdem nicht — die Spaltenbreite wurde mit
+  `TkDefaultFont` statt der tatsächlichen (größeren) sv_ttk-Treeview-Schrift
+  gemessen und dadurch unterschätzt. Die stretch-Spalte dehnte sich dann nur bis
+  zur Panelbreite und klemmte den Text ab, ohne überzulaufen. Jetzt wird mit der
+  echten Schrift (Tcl `font measure`) gemessen, sodass der Balken zuverlässig
+  erscheint und der volle Name lesbar wird.
+
 ## 26.07.02b3 — 2026-07-02
 
 - **Horizontaler Scrollbalken der Gruppenliste** funktioniert jetzt: Die

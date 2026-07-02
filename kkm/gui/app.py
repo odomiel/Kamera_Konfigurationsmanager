@@ -295,18 +295,27 @@ class MainWindow(tk.Tk):
         Text ab (xview bleibt 0..1) — der horizontale Scrollbalken erschiene nie.
         Mit passender minwidth kann die Spalte bei zu schmalem Panel nicht mehr
         schrumpfen -> der Auto-Hide-H-Balken greift."""
-        import tkinter.font as tkfont
-        try:
-            measure = tkfont.nametofont("TkDefaultFont").measure  # = Treeview-Schrift
-        except Exception:
-            measure = lambda t: len(t) * 7   # grobe Schätzung, falls Font fehlt
-        indent = 20   # Einrückung je Ebene (ttk-Standard, grob)
+        # Mit der *tatsächlichen* Treeview-Schrift messen: sv_ttk setzt eine
+        # größere (SunValleyBodyFont) als TkDefaultFont. Würde man mit der
+        # falschen Schrift messen, fiele `need` zu klein aus — die stretch-Spalte
+        # dehnte sich dann nur bis zur Panelbreite und klemmte den echten Text ab,
+        # ohne dass ein Scrollbalken erscheint. Tcls `font measure` akzeptiert das
+        # Font-Objekt aus dem Style direkt.
+        tv_font = ttk.Style().lookup("Treeview", "font") or "TkDefaultFont"
+
+        def measure(text):
+            try:
+                return int(self.group_tree.tk.call("font", "measure", tv_font, text))
+            except tk.TclError:
+                return len(text) * 8   # grobe Schätzung als Rückfall
+
+        indent = 24   # Einrückung je Ebene inkl. Aufklapp-Indikator (großzügig)
         need = 0
         for iid in self.group_tree.get_children(""):   # Wurzel: Ebene 1
             need = max(need, measure(self.group_tree.item(iid, "text")) + indent)
             for child in self.group_tree.get_children(iid):   # Kinder: Ebene 2
                 need = max(need, measure(self.group_tree.item(child, "text")) + 2 * indent)
-        need += 16   # etwas Luft + Aufklapp-Indikator
+        need += 24   # etwas Luft
         try:
             self.group_tree.column("#0", width=need, minwidth=need, stretch=True)
         except tk.TclError:
