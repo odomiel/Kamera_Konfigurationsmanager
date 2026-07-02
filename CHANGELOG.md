@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.02b3 — 2026-07-02
+
+- **Horizontaler Scrollbalken der Gruppenliste** funktioniert jetzt: Die
+  Baumspalte (`#0`) füllte bisher nur die Panelbreite und klemmte lange
+  Gruppennamen einfach ab (kein Überlauf → kein Scrollbalken). Ihre `minwidth`
+  wird nun bei jedem Aktualisieren an den **längsten Gruppennamen** angepasst;
+  ist das Panel schmaler, erscheint der Auto-Hide-H-Balken und man kann den
+  Namen vollständig lesen.
+
 ## 26.07.02b2 — 2026-07-02
 
 - **Mindestbreite der Gruppenspalte**: Der Trenner zwischen Gruppen- und

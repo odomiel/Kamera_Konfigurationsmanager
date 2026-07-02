@@ -286,6 +286,31 @@ class MainWindow(tk.Tk):
             self.group_tree.insert(ALL_CAMERAS_ID, "end", iid=gid, text=f"  {g.name}")
         if self.group_tree.exists(self._current_gid):
             self.group_tree.selection_set(self._current_gid)
+        self._autosize_group_column()
+
+    def _autosize_group_column(self):
+        """minwidth der Baumspalte (#0) an den längsten Gruppennamen anpassen.
+
+        Sonst füllt die stretch-Spalte nur die Widget-Breite und klemmt langen
+        Text ab (xview bleibt 0..1) — der horizontale Scrollbalken erschiene nie.
+        Mit passender minwidth kann die Spalte bei zu schmalem Panel nicht mehr
+        schrumpfen -> der Auto-Hide-H-Balken greift."""
+        import tkinter.font as tkfont
+        try:
+            measure = tkfont.nametofont("TkDefaultFont").measure  # = Treeview-Schrift
+        except Exception:
+            measure = lambda t: len(t) * 7   # grobe Schätzung, falls Font fehlt
+        indent = 20   # Einrückung je Ebene (ttk-Standard, grob)
+        need = 0
+        for iid in self.group_tree.get_children(""):   # Wurzel: Ebene 1
+            need = max(need, measure(self.group_tree.item(iid, "text")) + indent)
+            for child in self.group_tree.get_children(iid):   # Kinder: Ebene 2
+                need = max(need, measure(self.group_tree.item(child, "text")) + 2 * indent)
+        need += 16   # etwas Luft + Aufklapp-Indikator
+        try:
+            self.group_tree.column("#0", width=need, minwidth=need, stretch=True)
+        except tk.TclError:
+            pass
 
     def _on_group_select(self, _evt=None):
         sel = self.group_tree.selection()
