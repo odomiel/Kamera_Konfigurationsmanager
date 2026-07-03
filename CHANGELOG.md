@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b5 — 2026-07-03
+
+- **Werksneue Kameras erkennen**: Nach einer Suche wird für jede Kamera mit
+  unbekannten Zugangsdaten geprüft, ob sie sich noch im **Auslieferungszustand**
+  befindet (kein Passwort gesetzt — unauthentifizierter VAPIX-Aufruf antwortet mit
+  200 statt 401). Solche Kameras werden **nicht** nach einem Passwort gefragt;
+  stattdessen erscheint in der Spalte **Firmware** der Hinweis
+  **„Ersteinrichtung erforderlich"**. Nur die restlichen unbekannten Kameras
+  lösen weiterhin die Passwortabfrage aus. Neue Plugin-Methode
+  `VendorPlugin.is_unconfigured()` (Axis nutzt das vorhandene
+  `vapix.is_unconfigured`).
+
 ## 26.07.03b4 — 2026-07-03
 
 - **Neue Sondergruppe „Ohne Gruppe"**: Zweite dauerhafte, nicht löschbare Gruppe

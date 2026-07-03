@@ -61,6 +61,8 @@ TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "MAC/Seriennummer", "Firmware",
                  GROUP_COL, ONLINE_COL]
 FIXED_COLUMNS = {"Name"}   # always visible, cannot be hidden
 GROUP_SEARCH_PLACEHOLDER = "Suche"   # Platzhalter im Gruppen-Suchfeld
+# Firmware-Spalten-Text für werksneue Kameras (statt Passwortabfrage).
+FACTORY_LABEL = "Ersteinrichtung erforderlich"
 
 _NUM_CHUNK = re.compile(r"(\d+)")
 
@@ -116,6 +118,7 @@ class MainWindow(tk.Tk):
         # -> (user, password)); ergänzt den Tresor, falls dieser gesperrt ist.
         self._cam_creds: dict[str, tuple] = {}
         self._unknown_queue: list[dict] = []
+        self._factory_found = 0   # Anzahl werksneuer Kameras der letzten Suche
 
         self._build_toolbar()
         self._build_body()
@@ -653,20 +656,35 @@ class MainWindow(tk.Tk):
         return None
 
     def _after_search(self, found):
-        """Nach der Suche: bekannte Kameras still auslesen, für unbekannte fragen."""
+        """Nach der Suche: bekannte Kameras still auslesen; unbekannte zuerst auf
+        Auslieferungszustand prüfen (werksneue nicht nach Passwort fragen, sondern
+        in der Firmware-Spalte „Ersteinrichtung erforderlich" anzeigen), erst dann
+        für die restlichen nach Zugangsdaten fragen."""
         known = [c for c in found if self._creds_known(c)]
         if known:
             threading.Thread(target=self._worker_enrich, args=(known,),
                              daemon=True).start()
-        self._unknown_queue = [c for c in found if not self._creds_known(c)]
-        # Wenn Zugangsdaten abgefragt werden und der Tresor gesperrt/nicht angelegt
-        # ist, einmal anbieten, ihn einzurichten -> sonst nur Sitzungs-Cache.
-        if self._unknown_queue and self.vault is not None and self.vault.is_locked:
-            ensure_vault_unlocked(
-                self, self.vault,
-                "Damit eingegebene Zugangsdaten dauerhaft gespeichert werden")
-        # asynchron, damit der Queue-Poll während der modalen Abfrage weiterläuft
-        self.after(0, self._prompt_next_credentials)
+        unknown = [c for c in found if not self._creds_known(c)]
+        if unknown:
+            # Werkszustand im Hintergrund prüfen; Ergebnis entscheidet, ob gefragt
+            # wird. _unknown_queue wird erst nach der Prüfung befüllt.
+            self._unknown_queue = []
+            self._factory_found = 0
+            self.progress.start(12)
+            self.status.config(text="Prüfe Auslieferungszustand…")
+            threading.Thread(target=self._worker_factory_check, args=(unknown,),
+                             daemon=True).start()
+        else:
+            self._unknown_queue = []
+
+    def _worker_factory_check(self, cams):
+        """Prüft je Kamera parallel, ob sie sich im Auslieferungszustand befindet."""
+        def task(cam):
+            plugin = self.registry.get(cam.get("_vendor", "axis"))
+            factory = bool(plugin and plugin.is_unconfigured(cam, self.creds))
+            self._q.put(("factory", (camera_key(cam), factory)))
+        self._run_pool(cams, task)
+        self._q.put(("factory_done", None))
 
     def _worker_enrich(self, cams):
         """Liest Firmware/Modell für Kameras mit bekannten Zugangsdaten (still).
@@ -765,6 +783,37 @@ class MainWindow(tk.Tk):
                 elif kind == "online_done":
                     self.progress.stop()
                     self._refresh_table()
+                elif kind == "factory":
+                    key, factory = payload
+                    cam = self.store.roster.get(key)
+                    if cam is not None:
+                        if factory:
+                            # Werksneu: nicht nach Passwort fragen, sondern in der
+                            # Firmware-Spalte den Hinweis anzeigen.
+                            cam["_factory"] = True
+                            cam["_firmware"] = FACTORY_LABEL
+                            self._factory_found += 1
+                        else:
+                            cam.pop("_factory", None)
+                            if cam.get("_firmware") == FACTORY_LABEL:
+                                cam["_firmware"] = ""   # veralteten Hinweis löschen
+                            self._unknown_queue.append(cam)   # regulär nachfragen
+                elif kind == "factory_done":
+                    self.progress.stop()
+                    self.store.save()
+                    self._refresh_table()
+                    if getattr(self, "_factory_found", 0):
+                        self.status.config(
+                            text=f"{self._factory_found} werksneue Kamera(s) — "
+                                 "Ersteinrichtung erforderlich")
+                    # Für nicht werksneue, unbekannte Kameras jetzt Zugangsdaten
+                    # abfragen; ggf. vorher den Tresor entsperren anbieten.
+                    if (self._unknown_queue and self.vault is not None
+                            and self.vault.is_locked):
+                        ensure_vault_unlocked(
+                            self, self.vault,
+                            "Damit eingegebene Zugangsdaten dauerhaft gespeichert werden")
+                    self.after(0, self._prompt_next_credentials)
                 elif kind == "device_info":
                     self._apply_device_info(*payload)
                 elif kind == "enrich_done":

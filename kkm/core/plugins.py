@@ -85,6 +85,11 @@ class VendorPlugin(abc.ABC):
         """Read extended info (model, firmware, serial). Optional."""
         raise NotImplementedError
 
+    def is_unconfigured(self, camera: dict, creds: Credentials | None = None) -> bool:
+        """True, wenn sich die Kamera noch im Auslieferungszustand befindet (kein
+        Passwort gesetzt, Ersteinrichtung nötig). Optional; Standard: False."""
+        return False
+
     # --- configuration actions ---------------------------------------------
     # These mirror the Discovery tool's "Kameraeinstellungen" tabs, which become
     # front-view toolbar buttons. Each acts on the selected cameras; per-camera
