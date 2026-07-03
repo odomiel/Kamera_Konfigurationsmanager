@@ -32,10 +32,12 @@ Tabs:
 
 from __future__ import annotations
 
+import os
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
 
 from kkm.core import ALL_CAMERAS_ID, VIRTUAL_GROUP_IDS, VaultError, camera_key
+from kkm.core.backup import create_backup, restore_backup, BackupError
 from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 
 
@@ -314,6 +316,22 @@ class SettingsDialog(tk.Toplevel):
         ttk.Button(tab, text="Export-Datei wählen und importieren…",
                    command=self._run_import).pack(anchor=tk.W, pady=(8, 6))
 
+        # --- Sicherung (Daten + Tresor) als eine verschlüsselte Datei ---------
+        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
+        ttk.Label(tab, text="Sicherung (Daten + Passwort-Tresor)",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
+        ttk.Label(tab, justify=tk.LEFT, text=(
+            "Sichert Gruppen, Geräte und den Passwort-Tresor in EINE verschlüsselte "
+            "Datei (.kkmbackup, mit Backup-Passwort, plattformübergreifend). "
+            "Wiederherstellen überschreibt die aktuellen Daten.")
+        ).pack(anchor=tk.W, pady=(2, 8), fill=tk.X)
+        brow = ttk.Frame(tab)
+        brow.pack(anchor=tk.W, pady=(0, 6))
+        ttk.Button(brow, text="Sicherung exportieren…",
+                   command=self._run_backup_export).pack(side=tk.LEFT)
+        ttk.Button(brow, text="Sicherung wiederherstellen…",
+                   command=self._run_backup_restore).pack(side=tk.LEFT, padx=6)
+
         logframe = ttk.Frame(tab)
         logframe.pack(fill=tk.BOTH, expand=True)
         self._import_log = tk.Text(logframe, height=10, width=60, wrap=tk.WORD,
@@ -417,3 +435,98 @@ class SettingsDialog(tk.Toplevel):
             "Import",
             f"Import abgeschlossen:\n{result.n_cameras} Geräte, "
             f"{result.n_groups} Gruppen.", parent=self)
+
+    # ------------------------------------------------------------- backup (7z-Ersatz)
+    def _config_dir(self) -> str:
+        """Verzeichnis mit groups.json / settings.json / vault.enc."""
+        return os.path.dirname(self.store.path)
+
+    def _ask_new_password(self, title: str) -> str | None:
+        """Backup-Passwort zweimal abfragen (Bestätigung). None bei Abbruch."""
+        pw = simpledialog.askstring(title, "Backup-Passwort:", show="*", parent=self)
+        if not pw:
+            if pw == "":
+                messagebox.showinfo(title, "Kein Passwort eingegeben — abgebrochen.",
+                                    parent=self)
+            return None
+        again = simpledialog.askstring(title, "Passwort wiederholen:", show="*",
+                                       parent=self)
+        if again != pw:
+            messagebox.showerror(title, "Die Passwörter stimmen nicht überein.",
+                                 parent=self)
+            return None
+        return pw
+
+    def _run_backup_export(self):
+        path = filedialog.asksaveasfilename(
+            parent=self, title="Sicherung speichern",
+            defaultextension=".kkmbackup",
+            filetypes=[("KKM-Sicherung", "*.kkmbackup"), ("Alle Dateien", "*.*")])
+        if not path:
+            return
+        pw = self._ask_new_password("Sicherung exportieren")
+        if pw is None:
+            return
+        try:
+            included = create_backup(path, pw, self._config_dir())
+        except BackupError as exc:
+            messagebox.showerror("Sicherung", str(exc), parent=self)
+            return
+        self._log_import(f"Sicherung exportiert: {os.path.basename(path)} "
+                         f"({', '.join(included)})")
+        messagebox.showinfo(
+            "Sicherung",
+            "Sicherung erstellt:\n" + path + "\n\nEnthalten: "
+            + ", ".join(included) + "\n\nBewahre die Datei und das Backup-Passwort "
+            "sicher auf.", parent=self)
+
+    def _run_backup_restore(self):
+        if not messagebox.askyesno(
+                "Sicherung wiederherstellen",
+                "Die aktuellen Gruppen, Geräte und der Passwort-Tresor werden durch "
+                "den Inhalt der Sicherung ERSETZT.\n\nFortfahren?", parent=self):
+            return
+        path = filedialog.askopenfilename(
+            parent=self, title="Sicherung wählen",
+            filetypes=[("KKM-Sicherung", "*.kkmbackup"), ("Alle Dateien", "*.*")])
+        if not path:
+            return
+        pw = simpledialog.askstring("Sicherung wiederherstellen",
+                                    "Backup-Passwort:", show="*", parent=self)
+        if not pw:
+            return
+        try:
+            restored = restore_backup(path, pw, self._config_dir())
+        except BackupError as exc:
+            messagebox.showerror("Sicherung", str(exc), parent=self)
+            return
+
+        # In-Memory-Objekte an die neuen Dateien angleichen (sonst würde ein späterer
+        # save() die gerade eingespielten Daten wieder überschreiben).
+        self.store.load()
+        self.settings.load()
+        if self.vault is not None:
+            self.vault.lock()   # neuer Tresor -> mit Backup-Master-Passwort entsperren
+            if "vault.enc" in restored:
+                # Altes, gerätegebundenes Auto-Entsperr-Token passt nicht mehr zum
+                # eingespielten Tresor -> entfernen (sonst stiller Fehlversuch).
+                self.vault.disable_autounlock()
+        # Sichtbare Einstellungen sofort übernehmen.
+        if self.apply_columns:
+            self.apply_columns(self.settings.get("hidden_columns", []))
+        new_theme = self.settings.get("theme", "dark")
+        if self.on_theme_change and new_theme != self.theme_mode:
+            self.on_theme_change(new_theme)
+            self.theme_mode = new_theme
+        self.data_changed = True
+
+        self._log_import(f"Sicherung wiederhergestellt: {', '.join(restored)}")
+        note = ""
+        if "vault.enc" in restored:
+            note = ("\n\nDer Tresor ist jetzt gesperrt — mit dem Master-Passwort "
+                    "aus der Sicherung entsperren.")
+        messagebox.showinfo(
+            "Sicherung",
+            "Wiederherstellung abgeschlossen (" + ", ".join(restored) + ")." + note
+            + "\n\nHinweis: Bei geänderter Plugin-Auswahl das Programm neu starten.",
+            parent=self)

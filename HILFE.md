@@ -192,6 +192,18 @@ Mehrere Bereiche:
   Tresor entsperrt, werden die enthaltenen Benutzer/Passwörter im Tresor
   gespeichert. Verschlüsselte Exporte lassen sich nicht importieren.
 
+  Im selben Reiter gibt es die **Sicherung (Daten + Passwort-Tresor)**:
+  - **Sicherung exportieren…** — schreibt Gruppen, Geräte und den Passwort-Tresor
+    in **eine** verschlüsselte Datei (`.kkmbackup`). Dabei wird ein
+    **Backup-Passwort** abgefragt (zweimal), mit dem die Datei per AES-256-GCM
+    geschützt wird. Die Datei ist plattformübergreifend (Linux/Windows) wieder
+    einlesbar. **Backup-Passwort gut aufbewahren** — ohne es ist die Sicherung
+    nicht wiederherstellbar.
+  - **Sicherung wiederherstellen…** — spielt eine `.kkmbackup`-Datei zurück und
+    **ersetzt** die aktuellen Gruppen, Geräte und den Tresor. Nach dem Einspielen
+    ist der Tresor gesperrt und wird mit dem **Master-Passwort aus der Sicherung**
+    entsperrt. Bei geänderter Plugin-Auswahl das Programm neu starten.
+
 ---
 
 ## Speicherort der Daten

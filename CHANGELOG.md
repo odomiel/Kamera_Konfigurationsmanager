@@ -4,6 +4,20 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b8 — 2026-07-03
+
+- **Sicherung & Wiederherstellung (Backup)**: Neuer Bereich im Einstellungen-Reiter
+  *Import*. **Export** bündelt Gruppen/Geräte (`groups.json`), Einstellungen
+  (`settings.json`) und den Passwort-Tresor (`vault.enc`) in **eine**
+  verschlüsselte Datei (`.kkmbackup`): tar → LZMA → AES-256-GCM mit einem
+  abgefragten **Backup-Passwort** (PBKDF2-Schlüsselableitung). **Wiederherstellen**
+  spielt die Datei zurück und ersetzt die aktuellen Daten; die In-Memory-Objekte
+  werden neu geladen (kein versehentliches Überschreiben), der Tresor gesperrt und
+  ein veraltetes Auto-Entsperr-Token entfernt. Nur Standardbibliothek + das schon
+  vorhandene `cryptography` — **keine** neue Abhängigkeit, identisch unter
+  Linux/Windows. (Bewusst kein echtes `.7z`-Format, um den schlanken Build ohne
+  Zusatzpakete/Binaries zu erhalten.) Neues Modul `kkm/core/backup.py`.
+
 ## 26.07.03b7 — 2026-07-03
 
 - **Werkszustand auch bei alter Firmware erkennen** (z. B. AXIS M7001): Diese
