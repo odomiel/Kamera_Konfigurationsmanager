@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b7 — 2026-07-03
+
+- **Werkszustand auch bei alter Firmware erkennen** (z. B. AXIS M7001): Diese
+  Geräte verlangen auch werksneu eine Authentifizierung (normaler 401, kein
+  `axis-setup`), sind aber noch mit den Werks-Standard-Zugangsdaten `root/pass`
+  erreichbar. `vapix.is_unconfigured` prüft daher bei einem normalen 401 zusätzlich,
+  ob der Standard-Login noch funktioniert, und stuft das Gerät dann als werksneu
+  ein („Ersteinrichtung erforderlich"). Gegen eine echte M7001 **und** eine
+  P3265-V verifiziert; konfigurierte Geräte (Standard-Login abgelehnt) → weiterhin
+  normale Passwortabfrage.
+
 ## 26.07.03b6 — 2026-07-03
 
 - **Werkszustands-Erkennung für AXIS OS 10/11 korrigiert**: Neuere Geräte (z. B.

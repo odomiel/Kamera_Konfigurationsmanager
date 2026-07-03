@@ -52,10 +52,12 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
   - **Firmware/Modell** stehen nicht im Suchergebnis und werden nach der Suche per
     Kamera-Login nachgelesen: Kameras mit bekannten Zugangsdaten (Tresor oder
     bereits in dieser Sitzung eingegeben) werden automatisch ausgelesen.
-  - **Werksneue Kameras** (noch kein Passwort gesetzt, Auslieferungszustand) werden
-    nach der Suche automatisch erkannt und **nicht** nach einem Passwort gefragt;
-    stattdessen steht in der Spalte **Firmware** der Hinweis
-    **„Ersteinrichtung erforderlich"**.
+  - **Werksneue Kameras** (Auslieferungszustand — noch kein individuelles Passwort
+    gesetzt bzw. noch der Werks-Standard-Login aktiv) werden nach der Suche
+    automatisch erkannt und **nicht** nach einem Passwort gefragt; stattdessen
+    steht in der Spalte **Firmware** der Hinweis **„Ersteinrichtung erforderlich"**.
+    Erkannt werden sowohl neue Geräte (AXIS OS 10/11, „Administratorkonto anlegen")
+    als auch ältere mit Werks-Standard-Zugangsdaten.
   - Für Kameras mit **unbekannten Zugangsdaten** erscheint eine **Abfrage**
     (Benutzer/Passwort). Mit der Option **„Dieses Passwort bei allen Kameras mit
     unbekannten Zugangsdaten ausprobieren"** werden die Eingaben auf alle noch

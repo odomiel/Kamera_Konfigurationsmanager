@@ -151,18 +151,43 @@ def _is_setup_response(exc) -> bool:
     return "initial admin user must be created" in body
 
 
+# Werksseitige Standard-Zugangsdaten aelterer AXIS-Geraete. Werden ausschliesslich
+# zur Werkszustands-ERKENNUNG genutzt (ein lesender pwdgrp-Aufruf) und niemals
+# gespeichert: laesst sich das Geraet damit anmelden, ist es noch werksseitig.
+FACTORY_DEFAULT_USER = "root"
+FACTORY_DEFAULT_PASSWORD = "pass"
+
+
+def _default_login_works(ip, scheme, port, timeout) -> bool:
+    """True, wenn der Werks-Standard-Login (root/pass) noch funktioniert.
+
+    Aeltere AXIS-Firmware verlangt auch werksneu eine Authentifizierung, ist dann
+    aber noch mit den Standard-Zugangsdaten erreichbar. Ein konfiguriertes Geraet
+    weist sie mit 401 ab.
+    """
+    try:
+        _request(ip, FACTORY_DEFAULT_USER, FACTORY_DEFAULT_PASSWORD,
+                 "/axis-cgi/pwdgrp.cgi?action=get", scheme=scheme, port=port,
+                 timeout=timeout, auth=True)
+        return True
+    except VapixError:
+        return False
+
+
 def is_unconfigured(ip, scheme="auto", port=None, timeout=10):
     """True, wenn sich das Geraet im Auslieferungszustand befindet (Ersteinrichtung
-    noetig, noch kein Admin-Passwort gesetzt).
+    noetig: noch kein individuelles Admin-Passwort gesetzt).
 
-    Zwei Faelle werden erkannt:
-    - **Aeltere Firmware:** ein unauthentifizierter VAPIX-Aufruf antwortet mit 200.
+    Drei Faelle werden erkannt:
+    - **Sehr alte Firmware:** ein unauthentifizierter VAPIX-Aufruf antwortet mit 200.
     - **AXIS OS 10/11:** ``pwdgrp.cgi`` antwortet mit 401, signalisiert den
       Werkszustand aber ueber den Header ``axis-setup`` bzw. den Body-Hinweis
       (siehe :func:`_is_setup_response`).
+    - **Aeltere Firmware mit Standard-Login (z. B. M7001):** normaler 401, aber der
+      Werks-Standard-Login ``root/pass`` funktioniert noch.
 
-    Ein bereits konfiguriertes Geraet liefert einen normalen 401 (Digest-Challenge)
-    -> False.
+    Ein bereits konfiguriertes Geraet liefert einen normalen 401 und lehnt den
+    Standard-Login ab -> False.
     """
     schemes = ["https", "http"] if scheme == "auto" else [scheme]
     path = "/axis-cgi/pwdgrp.cgi?action=get"
@@ -173,12 +198,14 @@ def is_unconfigured(ip, scheme="auto", port=None, timeout=10):
         try:
             with opener.open(url, timeout=timeout) as resp:
                 resp.read()
-            return True  # 200 ohne Auth -> werksneu (aeltere Firmware)
+            return True  # 200 ohne Auth -> werksneu (sehr alte Firmware)
         except urllib.error.HTTPError as exc:
             if _is_setup_response(exc):
                 return True   # AXIS OS: Ersteinrichtung noetig
             if exc.code == 401:
-                return False  # normaler Auth-Challenge -> konfiguriert
+                # Normaler Auth-Challenge: koennte werksneu (Standard-Login aktiv)
+                # oder konfiguriert sein -> per root/pass nachpruefen.
+                return _default_login_works(ip, sc, p, timeout)
             continue  # anderer HTTP-Fehler: naechstes Schema versuchen
         except (urllib.error.URLError, TimeoutError, OSError):
             continue  # nicht erreichbar ueber dieses Schema
