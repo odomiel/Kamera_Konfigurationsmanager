@@ -35,6 +35,8 @@ DEFAULTS = {
     "enabled_plugins": None,     # None -> all on
     "hidden_columns": [],
     "theme": "dark",             # "dark" | "light" (Sun-Valley-Theme)
+    "firmware_parallel": True,   # Firmware-Updates nebenläufig statt nacheinander
+    "firmware_max_parallel": 4,  # max. gleichzeitige Firmware-Updates
 }
 
 

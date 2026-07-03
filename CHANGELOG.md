@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b16 — 2026-07-03
+
+- **Firmware-Updates parallel**: Neuer Einstellungen-Reiter **„Firmwareupdates"**
+  mit Schalter „Firmware-Updates parallel ausführen" (+ „Maximal gleichzeitig").
+  Ist er aktiv (Standard), werden mehrere markierte Kameras gleichzeitig
+  aktualisiert statt nacheinander — gerade weil jetzt bei jeder Kamera auf den
+  Neustart gewartet wird, verkürzt das Sammel-Updates erheblich. `run_per_camera`
+  unterstützt dafür einen gedeckelten Thread-Pool (`parallel`/`max_workers`); der
+  Firmware-Dialog liest die Einstellung. Andere Aktionen bleiben sequenziell. Neue
+  Settings-Schlüssel `firmware_parallel` / `firmware_max_parallel`.
+
 ## 26.07.03b15 — 2026-07-03
 
 - **Firmware-Update: verfrühte Erfolgsmeldung bei alter Firmware behoben** (z. B.

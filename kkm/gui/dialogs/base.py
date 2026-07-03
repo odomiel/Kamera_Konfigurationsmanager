@@ -35,6 +35,7 @@ import queue
 import threading
 import time
 import tkinter as tk
+from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox
 
 from kkm.core import Credentials, camera_key
@@ -194,14 +195,20 @@ class ActionDialog(tk.Toplevel):
             cache[key] = (username, password)
 
     # ------------------------------------------------------------- background run
-    def run_per_camera(self, op, done_msg="Fertig."):
+    def run_per_camera(self, op, done_msg="Fertig.", parallel=False, max_workers=4):
         """Run ``op(plugin, camera, creds)`` for each camera in a worker thread.
 
         ``op`` returns a short status string on success or raises on failure; each
         outcome is logged per camera. Disables re-entry while busy.
+
+        Mit ``parallel=True`` werden die Kameras nebenläufig (Thread-Pool, höchstens
+        ``max_workers`` gleichzeitig) statt nacheinander abgearbeitet — sinnvoll für
+        langlaufende Operationen wie Firmware-Updates.
         """
         if self._busy:
             return
+        self._parallel = parallel
+        self._max_workers = max(1, int(max_workers))
         # Tresor wird gebraucht (zum Lesen der Passwörter und/oder zum Speichern),
         # ist aber gesperrt/nicht angelegt -> auf dem Main-Thread anbieten, ihn
         # einzurichten. Eine Nachfrage deckt beide Fälle ab.
@@ -220,19 +227,30 @@ class ActionDialog(tk.Toplevel):
         self._log_clear()
         threading.Thread(target=self._worker, args=(op, done_msg), daemon=True).start()
 
+    def _run_one(self, op, cam):
+        """Führt ``op`` für **eine** Kamera aus und protokolliert das Ergebnis."""
+        ip = get_first_ip(cam) or "?"
+        name = cam.get("Name", "?")
+        plugin = self.plugin_for(cam)
+        if plugin is None:
+            self._q.put(("line", f"✗ {name} ({ip}): kein Plugin"))
+            return
+        try:
+            msg = op(plugin, cam, self.creds_for(cam))
+            self._q.put(("line", f"✓ {name} ({ip}): {msg or 'OK'}"))
+        except Exception as exc:  # noqa: BLE001 - per-camera failure is logged
+            self._q.put(("line", f"✗ {name} ({ip}): {exc}"))
+
     def _worker(self, op, done_msg):
-        for cam in self.cameras:
-            ip = get_first_ip(cam) or "?"
-            name = cam.get("Name", "?")
-            plugin = self.plugin_for(cam)
-            if plugin is None:
-                self._q.put(("line", f"✗ {name} ({ip}): kein Plugin"))
-                continue
-            try:
-                msg = op(plugin, cam, self.creds_for(cam))
-                self._q.put(("line", f"✓ {name} ({ip}): {msg or 'OK'}"))
-            except Exception as exc:  # noqa: BLE001 - per-camera failure is logged
-                self._q.put(("line", f"✗ {name} ({ip}): {exc}"))
+        if getattr(self, "_parallel", False) and len(self.cameras) > 1:
+            # Nebenläufig, aber gedeckelt (max_workers). Die Ergebnis-Queue ist
+            # thread-sicher; Log-Zeilen können sich dadurch verschränken.
+            workers = min(self._max_workers, len(self.cameras))
+            with ThreadPoolExecutor(max_workers=workers) as ex:
+                list(ex.map(lambda cam: self._run_one(op, cam), self.cameras))
+        else:
+            for cam in self.cameras:
+                self._run_one(op, cam)
         self._q.put(("done", done_msg))
 
     # --------------------------------------------------------------------- queue

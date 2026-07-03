@@ -204,7 +204,12 @@ class FirmwareDialog(ActionDialog):
             return (f"Firmware {fname} aufgespielt — Kamera nicht rechtzeitig "
                     "zurück (Version später prüfen)")
 
-        self.run_per_camera(op, done_msg="Firmware-Update abgeschlossen.")
+        # Parallel-Modus aus den Einstellungen (neuer Reiter „Firmwareupdates").
+        settings = getattr(self.master, "settings", None)
+        parallel = bool(settings.get("firmware_parallel", True)) if settings else True
+        max_workers = int(settings.get("firmware_max_parallel", 4)) if settings else 4
+        self.run_per_camera(op, done_msg="Firmware-Update abgeschlossen.",
+                            parallel=parallel, max_workers=max_workers)
 
     def _wait_reboot_and_info(self, plugin, camera, creds, old_fw, name, ip,
                               timeout=REBOOT_TIMEOUT, interval=REBOOT_INTERVAL):

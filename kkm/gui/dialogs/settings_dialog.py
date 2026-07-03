@@ -69,6 +69,7 @@ class SettingsDialog(tk.Toplevel):
         nb.add(self._build_plugins_tab(nb), text="Plugins")
         nb.add(self._build_online_tab(nb), text="Online-Prüfung")
         nb.add(self._build_columns_tab(nb), text="Spalten")
+        nb.add(self._build_firmware_tab(nb), text="Firmwareupdates")
         nb.add(self._build_import_tab(nb), text="Import und Sicherung")
 
         ttk.Button(self, text="Schließen", command=self.destroy).pack(
@@ -295,6 +296,52 @@ class SettingsDialog(tk.Toplevel):
         self.settings.set("hidden_columns", hidden)
         if self.apply_columns:
             self.apply_columns(hidden)
+
+    # -------------------------------------------------------------- firmwareupdates
+    def _build_firmware_tab(self, parent):
+        tab = ttk.Frame(parent, padding=10)
+        ttk.Label(tab, text="Firmware-Updates",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 6))
+
+        self._fw_parallel = tk.BooleanVar(
+            value=bool(self.settings.get("firmware_parallel", True)))
+        ttk.Checkbutton(
+            tab, text="Firmware-Updates parallel ausführen (statt nacheinander)",
+            variable=self._fw_parallel, command=self._save_firmware).pack(anchor=tk.W)
+
+        row = ttk.Frame(tab)
+        row.pack(anchor=tk.W, pady=(6, 0))
+        ttk.Label(row, text="Maximal gleichzeitig:").pack(side=tk.LEFT)
+        self._fw_max = tk.IntVar(
+            value=int(self.settings.get("firmware_max_parallel", 4) or 4))
+        self._fw_max_spin = ttk.Spinbox(
+            row, from_=1, to=32, width=5, textvariable=self._fw_max,
+            command=self._save_firmware)
+        self._fw_max_spin.pack(side=tk.LEFT, padx=6)
+        self._fw_max_spin.bind("<FocusOut>", lambda _e: self._save_firmware())
+
+        ttk.Label(
+            tab, justify=tk.LEFT, wraplength=460,
+            text="Ist die Option aktiv, werden mehrere ausgewählte Kameras "
+                 "gleichzeitig aktualisiert (bis zur angegebenen Anzahl), statt eine "
+                 "nach der anderen. Das verkürzt Sammel-Updates deutlich, da bei "
+                 "jeder Kamera auf den Neustart gewartet wird.").pack(
+            anchor=tk.W, pady=(8, 0))
+        self._update_fw_state()
+        return tab
+
+    def _update_fw_state(self):
+        state = "normal" if self._fw_parallel.get() else "disabled"
+        self._fw_max_spin.config(state=state)
+
+    def _save_firmware(self):
+        self.settings.set("firmware_parallel", bool(self._fw_parallel.get()))
+        try:
+            n = max(1, min(32, int(self._fw_max.get())))
+        except (tk.TclError, ValueError):
+            n = 4
+        self.settings.set("firmware_max_parallel", n)
+        self._update_fw_state()
 
     # ------------------------------------------------------------------ import
     def _build_import_tab(self, parent):
