@@ -372,6 +372,34 @@ def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
     return _update_params(ip, username, password, params, scheme, port, timeout)
 
 
+def factory_default(ip, username, password, keep_ip=True,
+                    scheme="auto", port=None, timeout=30):
+    """Setzt die Kamera auf Werkseinstellungen zurueck. Das Geraet startet danach neu.
+
+    - ``keep_ip=True``  -> ``factorydefault.cgi``: alle Parameter **ausser** den
+      Netzwerkeinstellungen (IP, Maske, Gateway, BootProto) werden zurueckgesetzt.
+    - ``keep_ip=False`` -> ``hardfactorydefault.cgi``: **alle** Parameter inkl.
+      Netzwerk (die IP faellt auf den Auslieferungszustand/DHCP zurueck).
+
+    Vorgehen: erst die Zugangsdaten pruefen (klare Fehlermeldung bei falschem
+    Passwort), dann den Reset ausloesen. Beim Zuruecksetzen kappt das Geraet oft die
+    Verbindung (Neustart) -> ein danach auftretender Verbindungsfehler ist KEIN
+    Fehler und wird als Erfolg gewertet.
+    """
+    # 1) Auth vorab verifizieren (wirft VapixError bei 401).
+    _request_auto(ip, username, password, "/axis-cgi/pwdgrp.cgi?action=get",
+                  scheme, port, min(timeout, 10))
+    # 2) Reset ausloesen.
+    cgi = "factorydefault.cgi" if keep_ip else "hardfactorydefault.cgi"
+    try:
+        _request_auto(ip, username, password, f"/axis-cgi/{cgi}",
+                      scheme, port, timeout)
+    except VapixError:
+        pass   # Reboot kappt die Verbindung -> erwartet, kein Fehler
+    return "auf Werkseinstellungen zurückgesetzt" + (
+        " (IP erhalten)" if keep_ip else " (inkl. IP)")
+
+
 def next_ip(ip_str, step=1):
     """Liefert die um 'step' erhoehte IPv4-Adresse als String (fuer Start-IP-Modus)."""
     parts = [int(p) for p in ip_str.split(".")]

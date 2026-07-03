@@ -159,6 +159,16 @@ Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
 - **Exportieren** — Konfiguration der ersten markierten Kamera auslesen, in einer
   durchsuchbaren Liste die gewünschten Parameter auswählen und als `.cfg` speichern
   (optional mit Stream-Profilen).
+- **Auf Werkseinstellungen zurücksetzen** — setzt die markierten Kameras zurück
+  (sie starten danach neu). Zur Auswahl stehen:
+  - **Werksreset mit Erhalt der IP-Adresse** — alle Einstellungen zurück, aber die
+    Netzwerk-/IP-Konfiguration bleibt erhalten (die Kamera bleibt unter derselben
+    Adresse erreichbar).
+  - **Kompletter Werksreset (inkl. IP-Adresse)** — auch die Netzwerkeinstellungen
+    werden zurückgesetzt (die Kamera fällt auf den Auslieferungszustand/DHCP zurück).
+
+  Eine Sicherheitsabfrage muss bestätigt werden; die Aktion lässt sich nicht
+  rückgängig machen.
 
 ---
 

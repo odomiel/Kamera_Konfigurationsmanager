@@ -77,7 +77,41 @@ class ConfigDialog(ActionDialog):
         ttk.Button(exp, text="Konfiguration auslesen…", command=self._do_export_read).pack(
             anchor=tk.W, pady=(6, 0))
 
+        # --- Werkseinstellungen (Reset) — nur wenn das Plugin es unterstützt ---
+        plugin0 = self.plugin_for(self.cameras[0]) if self.cameras else None
+        if plugin0 and plugin0.supports(Capability.FACTORY_RESET):
+            self._reset_mode = tk.StringVar(value="keep")
+            rst = ttk.LabelFrame(
+                parent, text="Werkseinstellungen (auf alle ausgewählten Kameras)",
+                padding=8)
+            rst.pack(fill=tk.X, pady=(6, 0))
+            ttk.Label(rst, text="Setzt die Kamera(s) zurück; sie starten danach neu.").pack(
+                anchor=tk.W)
+            ttk.Radiobutton(rst, text="Werksreset mit Erhalt der IP-Adresse",
+                            value="keep", variable=self._reset_mode).pack(anchor=tk.W)
+            ttk.Radiobutton(rst, text="Kompletter Werksreset (inkl. IP-Adresse)",
+                            value="full", variable=self._reset_mode).pack(anchor=tk.W)
+            ttk.Button(rst, text="Auf Werkseinstellungen zurücksetzen",
+                       command=self._do_factory_reset).pack(anchor=tk.W, pady=(6, 0))
+
         self.after(120, self._check_read)
+
+    # ------------------------------------------------------------- factory reset
+    def _do_factory_reset(self):
+        keep_ip = self._reset_mode.get() == "keep"
+        mode = ("mit Erhalt der IP-Adresse" if keep_ip
+                else "inkl. IP-Adresse — kompletter Reset")
+        if not messagebox.askyesno(
+                self.title_text,
+                f"{len(self.cameras)} Kamera(s) auf Werkseinstellungen zurücksetzen "
+                f"({mode})?\n\nDie Kameras starten danach neu. Diese Aktion kann "
+                "nicht rückgängig gemacht werden.", parent=self):
+            return
+
+        def op(plugin, camera, creds):
+            return plugin.factory_reset(camera, creds, keep_ip=keep_ip)
+
+        self.run_per_camera(op, done_msg="Werksreset abgeschlossen.")
 
     # ----------------------------------------------------------------- import
     def _choose_cfg(self):

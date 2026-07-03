@@ -47,6 +47,7 @@ class AxisPlugin(VendorPlugin):
         Capability.ONVIF_USERS,
         Capability.FIRMWARE,
         Capability.CONFIG,
+        Capability.FACTORY_RESET,
     }
 
     # --- helpers ------------------------------------------------------------
@@ -168,6 +169,11 @@ class AxisPlugin(VendorPlugin):
         ip = self.ip_of(camera)
         return vapix.read_device_config(ip, creds.username, creds.password,
                                         **self._conn(creds))
+
+    def factory_reset(self, camera, creds: Credentials, keep_ip: bool = True):
+        ip = self.ip_of(camera)
+        return vapix.factory_default(ip, creds.username, creds.password,
+                                     keep_ip=keep_ip, **self._conn(creds))
 
     def export_config(self, camera, creds: Credentials, out_path,
                       selected_params=None, with_profiles=True):

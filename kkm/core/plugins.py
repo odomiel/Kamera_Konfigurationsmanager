@@ -53,6 +53,7 @@ class Capability:
     ONVIF_USERS = "onvif_users"
     FIRMWARE = "firmware"
     CONFIG = "config"
+    FACTORY_RESET = "factory_reset"
 
 
 # A progress callback receives (ip, ok, message) per camera for live result logs.
@@ -89,6 +90,12 @@ class VendorPlugin(abc.ABC):
         """True, wenn sich die Kamera noch im Auslieferungszustand befindet (kein
         Passwort gesetzt, Ersteinrichtung nötig). Optional; Standard: False."""
         return False
+
+    def factory_reset(self, camera: dict, creds: Credentials, keep_ip: bool = True):
+        """Setzt die Kamera auf Werkseinstellungen zurück. ``keep_ip`` erhält die
+        Netzwerk-/IP-Einstellungen. Nur verfügbar, wenn das Plugin
+        ``Capability.FACTORY_RESET`` meldet."""
+        raise NotImplementedError
 
     # --- configuration actions ---------------------------------------------
     # These mirror the Discovery tool's "Kameraeinstellungen" tabs, which become

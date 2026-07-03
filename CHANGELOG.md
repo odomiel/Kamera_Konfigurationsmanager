@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b12 — 2026-07-03
+
+- **Werksreset im Konfigurations-Dialog**: Neuer Bereich „Werkseinstellungen" mit
+  Auswahl zwischen **Werksreset mit Erhalt der IP-Adresse**
+  (`factorydefault.cgi` — Netzwerk/IP bleiben) und **komplettem Werksreset**
+  (`hardfactorydefault.cgi` — inkl. IP). Sicherheitsabfrage; wirkt auf alle
+  markierten Kameras. Neue Capability `FACTORY_RESET` (Abschnitt erscheint nur,
+  wenn das Plugin ihn unterstützt), Plugin-Methode `factory_reset` und
+  `vapix.factory_default` (prüft erst die Zugangsdaten, wertet den
+  reboot-bedingten Verbindungsabbruch als Erfolg).
+
 ## 26.07.03b11 — 2026-07-03
 
 - **Aktionen im Rechtsklick-Menü**: Die fünf Vorderansicht-Aktionen (IP-Adresse,
