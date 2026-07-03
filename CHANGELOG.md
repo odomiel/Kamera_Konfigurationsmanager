@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b17 — 2026-07-03
+
+- **Firmware-Dialog: aktuelle Version + aufklappbare Kameras + grüne Erfolge**: Die
+  Modell-Tabelle hat jetzt eine Spalte **„Aktuelle Firmware"** und lässt sich pro
+  Modellzeile **aufklappen**, sodass die einzelnen Kameras (Name, IP, aktuelle
+  Firmware) sichtbar werden. Bei erfolgreichem Update wird die jeweilige
+  Kamerazeile **grün** und ihre Version auf die neue aktualisiert; die Modellzeile
+  wird grün, sobald alle ihre Kameras fertig sind. Die Rückmeldung erfolgt live —
+  auch im Parallelbetrieb — über eine thread-sichere Erfolgs-Queue.
+
 ## 26.07.03b16 — 2026-07-03
 
 - **Firmware-Updates parallel**: Neuer Einstellungen-Reiter **„Firmwareupdates"**

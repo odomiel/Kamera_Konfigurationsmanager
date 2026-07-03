@@ -151,11 +151,16 @@ Aktualisiert die Firmware **mehrerer Kameras verschiedener Modelle gleichzeitig*
 - Option **Werkseinstellungen (factory default)**,
 - Modelle ohne zugewiesene Datei werden übersprungen.
 
+In der Tabelle zeigt die Spalte **„Aktuelle Firmware"** die derzeit installierte
+Version. Eine **Modellzeile lässt sich aufklappen**, um die einzelnen Kameras (mit
+Name, IP und aktueller Firmware) zu sehen.
+
 Nach dem Aufspielen **wartet** das Programm, bis die Kamera neu gestartet und wieder
 erreichbar ist, meldet erst dann den Erfolg und **liest die neue Firmware-Version
-aus** und aktualisiert sie in der Geräteliste. Ist die Option *Werkseinstellungen*
-gesetzt, kommt die Kamera werksneu zurück und wird als „Ersteinrichtung
-erforderlich" gekennzeichnet.
+aus** und aktualisiert sie in der Geräteliste. Die zugehörige Zeile im Dialog wird
+bei Erfolg **grün** (die Modellzeile, sobald alle ihre Kameras fertig sind). Ist die
+Option *Werkseinstellungen* gesetzt, kommt die Kamera werksneu zurück und wird als
+„Ersteinrichtung erforderlich" gekennzeichnet.
 
 Achtung: Die Firmware muss zum Modell passen; die Kameras starten danach neu.
 

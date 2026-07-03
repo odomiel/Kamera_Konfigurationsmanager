@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import os
 import time
+import queue
 import dataclasses
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -61,6 +62,11 @@ class FirmwareDialog(ActionDialog):
         self._fw_updates: dict[str, dict] = {}       # key -> device_info (neue FW)
         self._reset_all_keys: list[str] = []         # bei factory-default: Creds weg
         self._reset_factory_keys: list[str] = []     # bestätigt werksneu
+        # Erfolge fließen (thread-sicher) aus dem Worker in die GUI zurück, damit
+        # die Zeilen live grün werden — auch im Parallelbetrieb.
+        self._success_q: queue.Queue = queue.Queue()
+        self._cam_row: dict[str, str] = {}           # camera_key -> Kind-iid
+        self._model_of_key: dict[str, str] = {}      # camera_key -> Modell-iid
         # model -> assigned firmware path
         self._fw_by_model: dict[str, str] = {}
         # model -> list of cameras
@@ -70,24 +76,41 @@ class FirmwareDialog(ActionDialog):
 
         ttk.Label(
             parent,
-            text="Pro Modell eine passende Firmware-Datei zuweisen. "
-                 "Es werden alle ausgewählten Kameras gleichzeitig aktualisiert.",
+            text="Pro Modell eine passende Firmware-Datei zuweisen. Eine Modellzeile "
+                 "lässt sich aufklappen, um die einzelnen Kameras zu sehen.",
             wraplength=560, justify=tk.LEFT,
         ).pack(anchor=tk.W, pady=(0, 6))
 
-        cols = ("count", "file")
-        self.tree = ttk.Treeview(parent, columns=cols, show="tree headings", height=8,
+        cols = ("count", "current", "file")
+        self.tree = ttk.Treeview(parent, columns=cols, show="tree headings", height=10,
                                  selectmode="browse")
-        self.tree.heading("#0", text="Modell")
+        self.tree.heading("#0", text="Modell / Kamera")
         self.tree.heading("count", text="Kameras")
-        self.tree.heading("file", text="Firmware-Datei")
-        self.tree.column("#0", width=180)
+        self.tree.heading("current", text="Aktuelle Firmware")
+        self.tree.heading("file", text="Neue Firmware-Datei")
+        self.tree.column("#0", width=210)
         self.tree.column("count", width=70, anchor=tk.CENTER)
-        self.tree.column("file", width=320)
+        self.tree.column("current", width=130, anchor=tk.CENTER)
+        self.tree.column("file", width=240)
         self.tree.pack(fill=tk.X)
+        # Erfolgs-Markierung: grüne Zeile.
+        self.tree.tag_configure("done", background="#2e7d32", foreground="white")
         for model, cams in sorted(self._by_model.items()):
-            self.tree.insert("", "end", iid=model, text=model,
-                             values=(len(cams), "—"))
+            fws = sorted({(c.get("_firmware") or "").strip()
+                          for c in cams if (c.get("_firmware") or "").strip()})
+            summary = fws[0] if len(fws) == 1 else ("verschieden" if fws else "—")
+            self.tree.insert("", "end", iid=model, text=model, open=False,
+                             values=(len(cams), summary, "—"))
+            for cam in cams:
+                key = camera_key(cam)
+                child = f"cam::{key}"
+                name = cam.get("Name", "?")
+                ip = get_first_ip(cam) or "—"
+                cur = (cam.get("_firmware") or "").strip() or "?"
+                self.tree.insert(model, "end", iid=child, text=f"{name} ({ip})",
+                                 values=("", cur, ""))
+                self._cam_row[key] = child
+                self._model_of_key[key] = model
 
         row = ttk.Frame(parent)
         row.pack(fill=tk.X, pady=6)
@@ -112,10 +135,16 @@ class FirmwareDialog(ActionDialog):
         ttk.Button(parent, text="Firmware aufspielen",
                    command=self._do_upgrade).pack(anchor=tk.W)
 
+        self.after(200, self._drain_success)   # Erfolge -> Zeilen grün färben
+
     # --------------------------------------------------------------- assignment
     def _selected_model(self) -> str | None:
+        """Ausgewähltes Modell — auch, wenn eine einzelne Kamera (Kind) markiert ist
+        (dann liefern wir deren Modellzeile)."""
         sel = self.tree.selection()
-        return sel[0] if sel else None
+        if not sel:
+            return None
+        return self.tree.parent(sel[0]) or sel[0]
 
     def _choose_for_model(self):
         model = self._selected_model()
@@ -190,6 +219,7 @@ class FirmwareDialog(ActionDialog):
                                    REBOOT_TIMEOUT, REBOOT_INTERVAL, start_msg=msg):
                     self._reset_all_keys.append(key)
                     self._reset_factory_keys.append(key)
+                    self._success_q.put((key, "werksneu"))
                     return (f"Firmware {fname} aufgespielt — Kamera werksneu "
                             "(Erstkonfiguration erforderlich)")
                 return (f"Firmware {fname} aufgespielt — Kamera nicht rechtzeitig "
@@ -199,6 +229,7 @@ class FirmwareDialog(ActionDialog):
             info = self._wait_reboot_and_info(plugin, camera, probe, old_fw, name, ip)
             if info is not None:
                 self._fw_updates[key] = info
+                self._success_q.put((key, info.get("firmware") or "?"))
                 return (f"Firmware {fname} aufgespielt — Kamera wieder erreichbar, "
                         f"Version {info.get('firmware') or '?'}")
             return (f"Firmware {fname} aufgespielt — Kamera nicht rechtzeitig "
@@ -243,6 +274,32 @@ class FirmwareDialog(ActionDialog):
                     return info
             time.sleep(interval)
         return None
+
+    # ------------------------------------------------------------- grüne Markierung
+    def _drain_success(self):
+        """Erfolge aus dem Worker (thread-sicher) verarbeiten und die zugehörige
+        Zeile grün färben; läuft im Main-Thread."""
+        try:
+            while True:
+                key, new_fw = self._success_q.get_nowait()
+                self._mark_row_done(key, new_fw)
+        except queue.Empty:
+            pass
+        if self.winfo_exists():
+            self.after(200, self._drain_success)
+
+    def _mark_row_done(self, key, new_fw):
+        child = self._cam_row.get(key)
+        if child and self.tree.exists(child):
+            if new_fw:
+                self.tree.set(child, "current", new_fw)   # neue Version anzeigen
+            self.tree.item(child, tags=("done",))
+        # Modellzeile grün, sobald alle ihre Kameras erledigt sind.
+        model = self._model_of_key.get(key)
+        if model and self.tree.exists(model):
+            kids = self.tree.get_children(model)
+            if kids and all("done" in self.tree.item(k, "tags") for k in kids):
+                self.tree.item(model, tags=("done",))
 
     def _on_done(self):
         """Neue Firmware-Versionen bzw. Werkszustand nach dem Update in die Liste
