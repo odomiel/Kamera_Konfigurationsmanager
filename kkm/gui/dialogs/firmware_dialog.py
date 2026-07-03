@@ -32,6 +32,7 @@ VAPIX).
 from __future__ import annotations
 
 import os
+import time
 import dataclasses
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -169,11 +170,19 @@ class FirmwareDialog(ActionDialog):
             key = camera_key(camera)
             name = camera.get("Name", "?")
             ip = get_first_ip(camera) or "?"
+            # Kurzes Timeout zum Anklopfen (nicht das lange Upload-Timeout).
+            probe = dataclasses.replace(creds, timeout=PROBE_TIMEOUT)
+            # Aktuelle Firmware vor dem Update merken (Fallback-Signal: Versionswechsel).
+            old_fw = camera.get("_firmware") or ""
+            try:
+                pre = plugin.device_info(camera, probe)
+                old_fw = pre.get("firmware") or old_fw
+            except Exception:  # noqa: BLE001 - vorab-Lesen ist nur best effort
+                pass
+
             creds.timeout = max(creds.timeout, FIRMWARE_TIMEOUT)
             plugin.upgrade_firmware(camera, creds, path, factory_default=factory)
 
-            # Kurzes Timeout zum Anklopfen (nicht das lange Upload-Timeout).
-            probe = dataclasses.replace(creds, timeout=PROBE_TIMEOUT)
             if factory:
                 # factory-default beim Update -> Kamera kommt werksneu zurück.
                 msg = f"… {name} ({ip}): warte auf Neustart (Werkszustand)…"
@@ -186,10 +195,8 @@ class FirmwareDialog(ActionDialog):
                 return (f"Firmware {fname} aufgespielt — Kamera nicht rechtzeitig "
                         "zurück (später prüfen)")
 
-            # Normalfall: warten bis erreichbar + neue Firmware auslesen.
-            msg = f"… {name} ({ip}): warte auf Neustart und lese neue Firmware…"
-            info = self.poll_until(lambda: self._read_info(plugin, camera, probe),
-                                   REBOOT_TIMEOUT, REBOOT_INTERVAL, start_msg=msg)
+            # Normalfall: auf den Reboot-Zyklus warten und neue Firmware auslesen.
+            info = self._wait_reboot_and_info(plugin, camera, probe, old_fw, name, ip)
             if info is not None:
                 self._fw_updates[key] = info
                 return (f"Firmware {fname} aufgespielt — Kamera wieder erreichbar, "
@@ -199,13 +206,37 @@ class FirmwareDialog(ActionDialog):
 
         self.run_per_camera(op, done_msg="Firmware-Update abgeschlossen.")
 
-    @staticmethod
-    def _read_info(plugin, camera, creds):
-        """device_info lesen; nur zurückgeben, wenn eine Firmware/Modell-Angabe da
-        ist (sonst gilt die Kamera noch nicht als vollständig wieder oben)."""
-        info = plugin.device_info(camera, creds)
-        if info and (info.get("firmware") or info.get("model")):
-            return info
+    def _wait_reboot_and_info(self, plugin, camera, creds, old_fw, name, ip,
+                              timeout=REBOOT_TIMEOUT, interval=REBOOT_INTERVAL):
+        """Wartet auf den kompletten Reboot-Zyklus nach dem Firmware-Update und
+        liest dann die neue Version.
+
+        Wichtig für **alte** Firmware (z. B. M7001): dort bleibt die Kamera nach dem
+        Upload zunächst noch erreichbar (alte Firmware) und startet erst danach neu.
+        Ein simpler „ist erreichbar?"-Check würde sofort einen Fehl-Erfolg melden.
+        Daher gilt als „fertig" erst, wenn die Kamera **zwischendurch offline war**
+        (Reboot beobachtet) und wieder antwortet — oder wenn sich die
+        **Firmware-Version geändert** hat (falls das Gerät den Neustart intern
+        durchläuft, ohne dass wir das Offline-Fenster sehen)."""
+        self._q.put(("line", f"… {name} ({ip}): warte auf Neustart "
+                             "und lese neue Firmware…"))
+        deadline = time.time() + timeout
+        went_down = False
+        time.sleep(interval)
+        while time.time() < deadline:
+            if not plugin.check_online(camera, creds):
+                went_down = True          # Reboot hat begonnen
+                time.sleep(interval)
+                continue
+            try:
+                info = plugin.device_info(camera, creds)
+            except Exception:  # noqa: BLE001 - Reboot -> Fehler erwartbar
+                info = None
+            if info:
+                new_fw = info.get("firmware") or ""
+                if went_down or (new_fw and new_fw != old_fw):
+                    return info
+            time.sleep(interval)
         return None
 
     def _on_done(self):

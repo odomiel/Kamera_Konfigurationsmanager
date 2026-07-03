@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b15 — 2026-07-03
+
+- **Firmware-Update: verfrühte Erfolgsmeldung bei alter Firmware behoben** (z. B.
+  AXIS M7001): Dort bleibt die Kamera nach dem Upload zunächst erreichbar (alte
+  Firmware) und startet erst danach neu — die bisherige Poll-Logik meldete deshalb
+  sofort „Erfolg". Jetzt wird auf den **kompletten Reboot-Zyklus** gewartet: fertig
+  ist es erst, wenn die Kamera zwischendurch **offline** war und wieder antwortet,
+  oder wenn sich die **Firmware-Version geändert** hat (Fallback, falls das Gerät
+  intern durchbootet). Erst dann kommt die Erfolgsmeldung mit der neuen Version.
+  Gegen die echte M7001 (device_info liest `5.20.5` korrekt) abgesichert;
+  Zustandslogik per Simulation verifiziert.
+
 ## 26.07.03b14 — 2026-07-03
 
 - **Firmware-Update: Rückmeldung erst nach Erreichbarkeit + Versions-Update**:
