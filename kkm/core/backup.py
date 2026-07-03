@@ -19,9 +19,9 @@
 Buendelt die App-Dateien (``groups.json``, ``settings.json``, ``vault.enc``) in
 **eine** portable Datei:
 
-    Dateien --tar--> --LZMA--> --AES-256-GCM--> .kkmbackup
+    Dateien --tar--> --zlib(deflate)--> --AES-256-GCM--> .kkmbackup
 
-- Nur Python-Standardbibliothek (``tarfile``, ``lzma``, ``hashlib``) plus das schon
+- Nur Python-Standardbibliothek (``tarfile``, ``zlib``, ``hashlib``) plus das schon
   vorhandene ``cryptography`` (AES-256-GCM). Kein externes Programm, kein
   plattformspezifisches Binary -> identisch unter Linux und Windows.
 - Der Schluessel wird per PBKDF2-HMAC-SHA256 aus einem **Backup-Passwort**
@@ -34,13 +34,16 @@ Dateiformat (binaer):
 
     MAGIC (11 B) | salt (16 B) | nonce (12 B) | iterations (4 B, big-endian) | ct
 
-``ct`` = AES-256-GCM(nonce, LZMA(tar(dateien)), aad=MAGIC).
+``ct`` = AES-256-GCM(nonce, zlib(tar(dateien)), aad=MAGIC).
+
+(zlib statt LZMA, weil der gebuendelte AppImage-Interpreter ``_lzma`` nicht
+enthaelt, ``zlib`` aber immer — die JSON-Daten komprimieren damit gut genug.)
 """
 
 from __future__ import annotations
 
 import io
-import lzma
+import zlib
 import os
 import tarfile
 import hashlib
@@ -97,7 +100,7 @@ def create_backup(out_path: str, password: str, config_dir: str) -> list[str]:
     if not included:
         raise BackupError("Keine zu sichernden Daten gefunden.")
 
-    plain = lzma.compress(buf.getvalue())
+    plain = zlib.compress(buf.getvalue(), level=9)
     salt = os.urandom(SALT_LEN)
     nonce = os.urandom(NONCE_LEN)
     key = _derive(password, salt, KDF_ITERATIONS)
@@ -143,8 +146,8 @@ def read_backup(in_path: str, password: str) -> dict[str, bytes]:
         raise BackupError("Falsches Passwort oder beschädigte Backup-Datei.") from exc
 
     try:
-        tar_bytes = lzma.decompress(plain)
-    except lzma.LZMAError as exc:
+        tar_bytes = zlib.decompress(plain)
+    except zlib.error as exc:
         raise BackupError(f"Backup-Inhalt beschädigt: {exc}") from exc
 
     out: dict[str, bytes] = {}

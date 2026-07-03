@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b9 — 2026-07-03
+
+- **Backup-Kompression auf zlib umgestellt**: Der gebündelte AppImage-Interpreter
+  enthält kein `_lzma`-Modul — die Sicherung nutzt daher `zlib` (Deflate) statt
+  LZMA. Für die JSON-Daten praktisch gleichwertig, und im Bundle garantiert
+  vorhanden (verifiziert). Format-/Feature-Verhalten sonst unverändert.
+
 ## 26.07.03b8 — 2026-07-03
 
 - **Sicherung & Wiederherstellung (Backup)**: Neuer Bereich im Einstellungen-Reiter
