@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b11 — 2026-07-03
+
+- **Aktionen im Rechtsklick-Menü**: Die fünf Vorderansicht-Aktionen (IP-Adresse,
+  Benutzer, ONVIF-Benutzer, Firmware, Konfiguration) sind jetzt zusätzlich zur
+  Toolbar auch im Kontextmenü der Geräteliste erreichbar und wirken auf die
+  markierten Kameras. Aktionsliste als gemeinsame Konstante `ACTION_ITEMS`.
+
 ## 26.07.03b10 — 2026-07-03
 
 - **Reiter umbenannt**: Der Einstellungen-Reiter *Import* heißt jetzt

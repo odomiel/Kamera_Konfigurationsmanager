@@ -113,6 +113,10 @@ So muss man das Passwort **nicht** mehr eintippen, wenn es im Tresor liegt.
 
 ## Aktionen (Buttons in der Aktionsleiste)
 
+Dieselben fünf Aktionen (IP-Adresse, Benutzer, ONVIF-Benutzer, Firmware,
+Konfiguration) stehen auch im **Rechtsklick-Menü** der Geräteliste bereit und
+wirken dort ebenfalls auf die markierten Kameras.
+
 ### IP-Adresse
 Stellt die Netzwerk-Adresse der markierten Kameras um:
 - **Auf DHCP umstellen.**

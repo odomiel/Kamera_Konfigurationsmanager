@@ -63,6 +63,14 @@ FIXED_COLUMNS = {"Name"}   # always visible, cannot be hidden
 GROUP_SEARCH_PLACEHOLDER = "Suche"   # Platzhalter im Gruppen-Suchfeld
 # Firmware-Spalten-Text für werksneue Kameras (statt Passwortabfrage).
 FACTORY_LABEL = "Ersteinrichtung erforderlich"
+# Vorderansicht-Aktionen (ehem. "Kameraeinstellungen"-Reiter): Toolbar + Rechtsklick.
+ACTION_ITEMS = [
+    ("IP-Adresse", Capability.SET_IP),
+    ("Benutzer", Capability.USERS),
+    ("ONVIF-Benutzer", Capability.ONVIF_USERS),
+    ("Firmware", Capability.FIRMWARE),
+    ("Konfiguration", Capability.CONFIG),
+]
 
 _NUM_CHUNK = re.compile(r"(\d+)")
 
@@ -142,14 +150,7 @@ class MainWindow(tk.Tk):
 
         # Front-view action buttons = former "Kameraeinstellungen" tabs.
         self._action_buttons: dict[str, ttk.Button] = {}
-        actions = [
-            ("IP-Adresse", Capability.SET_IP),
-            ("Benutzer", Capability.USERS),
-            ("ONVIF-Benutzer", Capability.ONVIF_USERS),
-            ("Firmware", Capability.FIRMWARE),
-            ("Konfiguration", Capability.CONFIG),
-        ]
-        for label, cap in actions:
+        for label, cap in ACTION_ITEMS:
             btn = ttk.Button(bar, text=label,
                              command=lambda c=cap, l=label: self._open_action(c, l))
             btn.pack(side=tk.LEFT, padx=(0, 4))
@@ -525,6 +526,13 @@ class MainWindow(tk.Tk):
             menu.add_command(label="Kamera öffnen",
                              command=lambda: self._open_camera_web_cam(cams[0]))
             menu.add_separator()
+
+        # Vorderansicht-Aktionen (wie die Toolbar-Buttons): wirken auf die Auswahl.
+        for label, cap in ACTION_ITEMS:
+            menu.add_command(label=label,
+                             command=lambda c=cap, l=label: self._open_action(c, l))
+        menu.add_separator()
+
         add_menu = tk.Menu(menu, tearoff=0)
         user_groups = [(gid, g) for gid, g in self.store.groups.items()
                        if gid not in VIRTUAL_GROUP_IDS]
