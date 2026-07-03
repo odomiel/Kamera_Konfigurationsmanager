@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b1 — 2026-07-03
+
+- **Suche in der Gruppenliste**: Rechts neben der Überschrift *Gerätegruppen*
+  gibt es jetzt ein Suchfeld. Während der Eingabe wird die Gruppenliste live auf
+  Gruppen gefiltert, deren Name den Suchtext enthält (case-insensitiv).
+  „Alle Kameras" bleibt immer sichtbar; ein leeres Feld zeigt wieder alle Gruppen.
+
 ## 26.07.03 — 2026-07-03
 
 - **Gruppenliste alphabetisch**: Die eigenen Gerätegruppen links werden jetzt

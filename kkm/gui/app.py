@@ -178,8 +178,14 @@ class MainWindow(tk.Tk):
         # --- left: group tree + group controls ---
         left = ttk.Frame(paned)
         paned.add(left, weight=1)
-        ttk.Label(left, text="Gerätegruppen", font=("TkDefaultFont", 11, "bold")).pack(
-            anchor=tk.W, pady=(0, 4))
+        ghead = ttk.Frame(left)
+        ghead.pack(fill=tk.X, pady=(0, 4))
+        ttk.Label(ghead, text="Gerätegruppen",
+                  font=("TkDefaultFont", 11, "bold")).pack(side=tk.LEFT)
+        self._group_filter = tk.StringVar()
+        self._group_filter.trace_add("write", lambda *_: self._refresh_groups())
+        gsearch = ttk.Entry(ghead, textvariable=self._group_filter, width=12)
+        gsearch.pack(side=tk.RIGHT)
         gt_frame = ttk.Frame(left)
         gt_frame.pack(fill=tk.BOTH, expand=True)
         self.group_tree = ttk.Treeview(gt_frame, show="tree", selectmode="browse")
@@ -280,8 +286,10 @@ class MainWindow(tk.Tk):
         self.group_tree.insert("", "end", iid=ALL_CAMERAS_ID,
                                text=f"  {self.store.groups[ALL_CAMERAS_ID].name}",
                                open=True)
+        needle = self._group_filter.get().strip().casefold()
         own = [(gid, g) for gid, g in self.store.groups.items()
-               if gid != ALL_CAMERAS_ID]
+               if gid != ALL_CAMERAS_ID
+               and (not needle or needle in g.name.casefold())]
         own.sort(key=lambda item: item[1].name.casefold())
         for gid, g in own:
             self.group_tree.insert(ALL_CAMERAS_ID, "end", iid=gid, text=f"  {g.name}")
