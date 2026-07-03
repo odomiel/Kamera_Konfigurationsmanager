@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b20 — 2026-07-03
+
+- **Windows: Dunkelmodus repariert (Build)**: Das Windows-Build-Skript
+  (`build_windows.ps1`) installierte **`sv-ttk` nicht** — dadurch fehlte das
+  Sun-Valley-Theme in der `.exe` und die App blieb beim hellen Standard-Theme
+  („Dunkel" bewirkte nichts). Das Skript installiert die Laufzeit-Abhängigkeiten
+  jetzt vollständig via `requirements.txt` (inkl. `sv-ttk`); `BUILD_WINDOWS.md`
+  entsprechend korrigiert. Zum Beheben die `.exe` mit dem aktualisierten Skript
+  neu bauen. (Kein App-Code betroffen; die Linux-AppImage war nie betroffen.)
+
 ## 26.07.03b19 — 2026-07-03
 
 - **Nativer System-Dateidialog**: Datei öffnen/speichern nutzt jetzt – sofern

@@ -11,11 +11,15 @@ muss **auf Windows** laufen.
 - Paketabhaengigkeiten:
 
 ```powershell
-py -3.13 -m pip install --upgrade pip pyinstaller zeroconf cryptography
+py -3.13 -m pip install --upgrade pip pyinstaller
+py -3.13 -m pip install -r requirements.txt
 ```
 
 `tkinter` ist im offiziellen Windows-Python bereits enthalten. `cryptography`
 liefert ein fertiges Wheel inkl. Krypto-Backend (fuer den Passwort-Tresor).
+`requirements.txt` bringt ausserdem **`sv-ttk`** mit — ohne dieses Wheel fehlt in
+der `.exe` das Sun-Valley-Theme und der **Dunkelmodus funktioniert nicht**
+(die App bleibt beim hellen Windows-Standard-Theme).
 
 ## Bauen
 
