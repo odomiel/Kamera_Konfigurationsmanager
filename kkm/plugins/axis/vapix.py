@@ -130,11 +130,39 @@ def _post_form_auto(ip, username, password, path, fields, scheme="auto", port=No
         return _post_form(ip, username, password, path, fields, "http", port, timeout)
 
 
-def is_unconfigured(ip, scheme="auto", port=None, timeout=10):
-    """True, wenn das Geraet ohne Authentifizierung antwortet (Auslieferungszustand).
+def _is_setup_response(exc) -> bool:
+    """Erkennt an einer 401-Antwort von ``pwdgrp.cgi``, ob das Geraet noch die
+    Ersteinrichtung verlangt (AXIS-OS-Werkszustand).
 
-    Ein werksneues Axis-Geraet hat kein Passwort gesetzt und beantwortet einen
-    unauthentifizierten VAPIX-Aufruf mit 200; ein konfiguriertes Geraet mit 401.
+    AXIS OS 10/11 verlangt auch werksneu eine Authentifizierung, kennzeichnet den
+    Setup-Zustand aber ueber den Antwort-Header ``axis-setup: vapix`` bzw. den Body
+    ``Error: initial admin user must be created first.`` — im Gegensatz zum
+    normalen Digest-Challenge eines bereits konfigurierten Geraets.
+    """
+    try:
+        if exc.headers is not None and exc.headers.get("axis-setup"):
+            return True
+    except Exception:  # noqa: BLE001 - defensiv, Header duerfen fehlen
+        pass
+    try:
+        body = exc.read().decode("utf-8", errors="replace").lower()
+    except Exception:  # noqa: BLE001 - Body evtl. nicht lesbar
+        return False
+    return "initial admin user must be created" in body
+
+
+def is_unconfigured(ip, scheme="auto", port=None, timeout=10):
+    """True, wenn sich das Geraet im Auslieferungszustand befindet (Ersteinrichtung
+    noetig, noch kein Admin-Passwort gesetzt).
+
+    Zwei Faelle werden erkannt:
+    - **Aeltere Firmware:** ein unauthentifizierter VAPIX-Aufruf antwortet mit 200.
+    - **AXIS OS 10/11:** ``pwdgrp.cgi`` antwortet mit 401, signalisiert den
+      Werkszustand aber ueber den Header ``axis-setup`` bzw. den Body-Hinweis
+      (siehe :func:`_is_setup_response`).
+
+    Ein bereits konfiguriertes Geraet liefert einen normalen 401 (Digest-Challenge)
+    -> False.
     """
     schemes = ["https", "http"] if scheme == "auto" else [scheme]
     path = "/axis-cgi/pwdgrp.cgi?action=get"
@@ -145,10 +173,12 @@ def is_unconfigured(ip, scheme="auto", port=None, timeout=10):
         try:
             with opener.open(url, timeout=timeout) as resp:
                 resp.read()
-            return True  # 200 ohne Auth -> unkonfiguriert
+            return True  # 200 ohne Auth -> werksneu (aeltere Firmware)
         except urllib.error.HTTPError as exc:
+            if _is_setup_response(exc):
+                return True   # AXIS OS: Ersteinrichtung noetig
             if exc.code == 401:
-                return False  # Auth verlangt -> konfiguriert
+                return False  # normaler Auth-Challenge -> konfiguriert
             continue  # anderer HTTP-Fehler: naechstes Schema versuchen
         except (urllib.error.URLError, TimeoutError, OSError):
             continue  # nicht erreichbar ueber dieses Schema

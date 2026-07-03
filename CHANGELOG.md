@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b6 — 2026-07-03
+
+- **Werkszustands-Erkennung für AXIS OS 10/11 korrigiert**: Neuere Geräte (z. B.
+  AXIS P3265-V) verlangen auch werksneu eine Authentifizierung, `pwdgrp.cgi`
+  antwortet also mit 401 statt 200 — die bisherige Erkennung (b5) schlug dort fehl.
+  `vapix.is_unconfigured` wertet jetzt zusätzlich den Antwort-Header
+  `axis-setup` bzw. den Body-Hinweis „initial admin user must be created" aus und
+  erkennt so den Ersteinrichtungs-Zustand zuverlässig (gegen eine echte P3265-V
+  verifiziert). Der 200-Fall älterer Firmware bleibt erhalten.
+
 ## 26.07.03b5 — 2026-07-03
 
 - **Werksneue Kameras erkennen**: Nach einer Suche wird für jede Kamera mit
