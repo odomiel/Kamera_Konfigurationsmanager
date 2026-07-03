@@ -4,6 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b2 — 2026-07-03
+
+- **Platzhalter im Gruppen-Suchfeld**: Das Suchfeld zeigt jetzt den grauen
+  Hinweistext „Suche", der beim Hineinklicken/Tippen verschwindet und bei leerem
+  Feld wieder erscheint.
+
 ## 26.07.03b1 — 2026-07-03
 
 - **Suche in der Gruppenliste**: Rechts neben der Überschrift *Gerätegruppen*

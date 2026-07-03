@@ -14,7 +14,8 @@ Kameras und laufen im Hintergrund; das Ergebnis je Kamera wird protokolliert.
 - **Links:** die Gerätegruppen. Ganz oben die nicht löschbare Gruppe
   **„Alle Kameras"** (enthält alle bekannten Kameras), darunter die eigenen Gruppen
   **alphabetisch** sortiert. Rechts neben der Überschrift **„Gerätegruppen"** ein
-  **Suchfeld**: Während der Eingabe wird die Liste live auf Gruppen gefiltert,
+  **Suchfeld** (mit grauem Hinweistext „Suche", der beim Tippen verschwindet):
+  Während der Eingabe wird die Liste live auf Gruppen gefiltert,
   deren Name den Suchtext enthält (case-insensitiv); „Alle Kameras" bleibt immer
   sichtbar, ein leeres Feld zeigt wieder alle Gruppen. Der Trenner zwischen linker
   und rechter Seite lässt sich verschieben, aber nicht enger als nötig, damit die

@@ -59,6 +59,7 @@ GROUP_COL = "Gruppe(n)"
 TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "MAC/Seriennummer", "Firmware",
                  GROUP_COL, ONLINE_COL]
 FIXED_COLUMNS = {"Name"}   # always visible, cannot be hidden
+GROUP_SEARCH_PLACEHOLDER = "Suche"   # Platzhalter im Gruppen-Suchfeld
 
 _NUM_CHUNK = re.compile(r"(\d+)")
 
@@ -186,6 +187,13 @@ class MainWindow(tk.Tk):
         self._group_filter.trace_add("write", lambda *_: self._refresh_groups())
         gsearch = ttk.Entry(ghead, textvariable=self._group_filter, width=12)
         gsearch.pack(side=tk.RIGHT)
+        self._group_search = gsearch
+        self._group_fg_default = gsearch.cget("foreground")
+        self._group_search_ph = True
+        self._group_filter.set(GROUP_SEARCH_PLACEHOLDER)
+        gsearch.configure(foreground="grey")
+        gsearch.bind("<FocusIn>", self._group_search_focus_in)
+        gsearch.bind("<FocusOut>", self._group_search_focus_out)
         gt_frame = ttk.Frame(left)
         gt_frame.pack(fill=tk.BOTH, expand=True)
         self.group_tree = ttk.Treeview(gt_frame, show="tree", selectmode="browse")
@@ -280,13 +288,34 @@ class MainWindow(tk.Tk):
         self.status.pack(side=tk.BOTTOM, fill=tk.X)
 
     # -------------------------------------------------------------- groups
+    def _group_search_text(self) -> str:
+        """Effektiver Suchtext des Gruppen-Suchfelds (leer, wenn nur der
+        Platzhalter angezeigt wird)."""
+        if getattr(self, "_group_search_ph", False):
+            return ""
+        return self._group_filter.get().strip()
+
+    def _group_search_focus_in(self, _evt=None):
+        """Beim Fokussieren den Platzhalter entfernen."""
+        if self._group_search_ph:
+            self._group_search_ph = False
+            self._group_search.configure(foreground=self._group_fg_default)
+            self._group_filter.set("")
+
+    def _group_search_focus_out(self, _evt=None):
+        """Ist das Feld leer, den Platzhalter wieder einblenden."""
+        if not self._group_filter.get().strip():
+            self._group_search_ph = True
+            self._group_search.configure(foreground="grey")
+            self._group_filter.set(GROUP_SEARCH_PLACEHOLDER)
+
     def _refresh_groups(self):
         self.group_tree.delete(*self.group_tree.get_children())
         # "Alle Kameras" always first and non-deletable.
         self.group_tree.insert("", "end", iid=ALL_CAMERAS_ID,
                                text=f"  {self.store.groups[ALL_CAMERAS_ID].name}",
                                open=True)
-        needle = self._group_filter.get().strip().casefold()
+        needle = self._group_search_text().casefold()
         own = [(gid, g) for gid, g in self.store.groups.items()
                if gid != ALL_CAMERAS_ID
                and (not needle or needle in g.name.casefold())]
