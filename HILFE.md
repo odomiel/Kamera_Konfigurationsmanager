@@ -182,8 +182,9 @@ Mehrere Bereiche:
   und das Intervall festlegen.
 - **Spalten** — einzelne Spalten der Geräteliste ein-/ausblenden (die Spalte
   „Name" bleibt immer sichtbar).
-- **Import** — Geräte und Gruppen aus einer **AXIS-Device-Manager**-Export-Datei
-  (JSON) übernehmen. Unterstützt werden die Datei-Formate **1.x** und **2.x**.
+- **Import und Sicherung** — Geräte und Gruppen aus einer
+  **AXIS-Device-Manager**-Export-Datei (JSON) übernehmen sowie eigene Sicherungen
+  erstellen/einspielen. Unterstützt werden die Datei-Formate **1.x** und **2.x**.
   Über „Export-Datei wählen und importieren…" die Datei auswählen; eine Vorschau
   zeigt Version, Anzahl Geräte/Gruppen/Zugangsdaten, danach bestätigen. Geräte
   werden anhand der MAC/Seriennummer zusammengeführt (kein Duplikat, wenn sie

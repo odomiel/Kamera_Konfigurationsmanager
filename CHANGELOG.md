@@ -4,6 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b10 — 2026-07-03
+
+- **Reiter umbenannt**: Der Einstellungen-Reiter *Import* heißt jetzt
+  *Import und Sicherung* (er enthält neben dem AXIS-Import auch Export/Restore
+  der Sicherung).
+
 ## 26.07.03b9 — 2026-07-03
 
 - **Backup-Kompression auf zlib umgestellt**: Der gebündelte AppImage-Interpreter

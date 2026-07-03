@@ -69,7 +69,7 @@ class SettingsDialog(tk.Toplevel):
         nb.add(self._build_plugins_tab(nb), text="Plugins")
         nb.add(self._build_online_tab(nb), text="Online-Prüfung")
         nb.add(self._build_columns_tab(nb), text="Spalten")
-        nb.add(self._build_import_tab(nb), text="Import")
+        nb.add(self._build_import_tab(nb), text="Import und Sicherung")
 
         ttk.Button(self, text="Schließen", command=self.destroy).pack(
             anchor=tk.E, padx=8, pady=(0, 8))
