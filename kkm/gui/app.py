@@ -280,9 +280,10 @@ class MainWindow(tk.Tk):
         self.group_tree.insert("", "end", iid=ALL_CAMERAS_ID,
                                text=f"  {self.store.groups[ALL_CAMERAS_ID].name}",
                                open=True)
-        for gid, g in self.store.groups.items():
-            if gid == ALL_CAMERAS_ID:
-                continue
+        own = [(gid, g) for gid, g in self.store.groups.items()
+               if gid != ALL_CAMERAS_ID]
+        own.sort(key=lambda item: item[1].name.casefold())
+        for gid, g in own:
             self.group_tree.insert(ALL_CAMERAS_ID, "end", iid=gid, text=f"  {g.name}")
         if self.group_tree.exists(self._current_gid):
             self.group_tree.selection_set(self._current_gid)

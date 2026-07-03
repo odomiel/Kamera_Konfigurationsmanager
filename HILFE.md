@@ -12,9 +12,10 @@ Kameras und laufen im Hintergrund; das Ergebnis je Kamera wird protokolliert.
 ## Hauptfenster
 
 - **Links:** die Gerätegruppen. Ganz oben die nicht löschbare Gruppe
-  **„Alle Kameras"** (enthält alle bekannten Kameras), darunter eigene Gruppen.
-  Der Trenner zwischen linker und rechter Seite lässt sich verschieben, aber nicht
-  enger als nötig, damit die Gruppen-Buttons lesbar bleiben.
+  **„Alle Kameras"** (enthält alle bekannten Kameras), darunter die eigenen Gruppen
+  **alphabetisch** sortiert. Der Trenner zwischen linker und rechter Seite lässt
+  sich verschieben, aber nicht enger als nötig, damit die Gruppen-Buttons lesbar
+  bleiben.
 - **Rechts:** die Geräteliste der gewählten Gruppe mit den Spalten Name, Modell,
   IP-Adresse, MAC/Seriennummer, Firmware, **Gruppe(n)** und **Status** (online).
   Ein **Klick auf einen Spaltenkopf** sortiert nach dieser Spalte (erneuter Klick

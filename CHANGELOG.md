@@ -4,6 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03 — 2026-07-03
+
+- **Gruppenliste alphabetisch**: Die eigenen Gerätegruppen links werden jetzt
+  alphabetisch (case-insensitiv) sortiert angezeigt statt in Anlage-Reihenfolge.
+  „Alle Kameras" bleibt fest an erster Stelle.
+
 ## 26.07.02b5 — 2026-07-02
 
 - **Import aus AXIS Device Manager**: Neuer Reiter *Import* in den Einstellungen
