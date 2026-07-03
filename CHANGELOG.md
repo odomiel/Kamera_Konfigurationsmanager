@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b13 — 2026-07-03
+
+- **Werksreset: Rückmeldung erst nach Erreichbarkeit + Listen-Update**: Beim
+  Werksreset *mit Erhalt der IP* wartet das Programm jetzt, bis die Kamera neu
+  gestartet und wieder erreichbar **und** im Werkszustand ist (Polling über
+  `is_unconfigured`), und meldet den Erfolg erst dann. Anschließend wird die
+  Kamera in der Liste als „Ersteinrichtung erforderlich" markiert und ihre nun
+  ungültigen Zugangsdaten (Tresor + Sitzungs-Cache) werden verworfen — damit eine
+  spätere Suche sie korrekt als werksneu erkennt. Beim kompletten Reset (IP ändert
+  sich) folgt ein Hinweis, per Suche neu zu finden. Neuer Hook
+  `MainWindow.after_factory_reset`.
+
 ## 26.07.03b12 — 2026-07-03
 
 - **Werksreset im Konfigurations-Dialog**: Neuer Bereich „Werkseinstellungen" mit

@@ -476,6 +476,31 @@ class MainWindow(tk.Tk):
             self.store.save()
             self._refresh_table()
 
+    def after_factory_reset(self, all_keys: list, factory_keys: list) -> None:
+        """Nach einem Werksreset: die (nun ungültigen) Zugangsdaten der
+        zurückgesetzten Kameras verwerfen und bestätigt werksneue Kameras in der
+        Liste als „Ersteinrichtung erforderlich" kennzeichnen."""
+        factory = set(factory_keys)
+        changed = False
+        for key in all_keys:
+            # Alte Zugangsdaten passen nach dem Reset nicht mehr -> entfernen, damit
+            # die nächste Suche die Kamera als werksneu erkennt statt sie still mit
+            # ungültigen Daten auszulesen.
+            self._cam_creds.pop(key, None)
+            if self.vault and not self.vault.is_locked:
+                self.vault.delete(key)
+            cam = self.store.roster.get(key)
+            if cam is None:
+                continue
+            if key in factory:
+                cam["_factory"] = True
+                cam["_firmware"] = FACTORY_LABEL
+                cam["_online"] = True
+            changed = True
+        if changed:
+            self.store.save()
+            self._refresh_table()
+
     def _move_key(self, old_key: str, new_key: str) -> None:
         """Sitzungs-Cache und Tresor-Eintrag auf den neuen Kameraschlüssel umziehen."""
         cache = self._cam_creds

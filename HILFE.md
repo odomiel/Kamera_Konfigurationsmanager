@@ -163,12 +163,18 @@ Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
   (sie starten danach neu). Zur Auswahl stehen:
   - **Werksreset mit Erhalt der IP-Adresse** — alle Einstellungen zurück, aber die
     Netzwerk-/IP-Konfiguration bleibt erhalten (die Kamera bleibt unter derselben
-    Adresse erreichbar).
+    Adresse erreichbar). Das Programm **wartet**, bis die Kamera neu gestartet und
+    wieder erreichbar ist, und meldet den Erfolg erst, wenn sie sich wieder im
+    **Erstkonfigurations-Modus** befindet; in der Geräteliste erscheint dann
+    „Ersteinrichtung erforderlich".
   - **Kompletter Werksreset (inkl. IP-Adresse)** — auch die Netzwerkeinstellungen
     werden zurückgesetzt (die Kamera fällt auf den Auslieferungszustand/DHCP zurück).
+    Da sich dabei die IP ändert, ist die Kamera anschließend über **Suchen** neu
+    zu finden.
 
   Eine Sicherheitsabfrage muss bestätigt werden; die Aktion lässt sich nicht
-  rückgängig machen.
+  rückgängig machen. Nach dem Reset gespeicherte Zugangsdaten der Kamera werden
+  verworfen (sie gelten nicht mehr).
 
 ---
 

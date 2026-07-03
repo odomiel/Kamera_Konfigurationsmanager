@@ -34,10 +34,11 @@ from __future__ import annotations
 
 import queue
 import threading
+import time
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from kkm.core import Capability
+from kkm.core import Capability, camera_key
 from kkm.plugins.axis.discovery import get_first_ip
 from kkm.plugins.axis import vapix
 from .base import ActionDialog
@@ -80,6 +81,10 @@ class ConfigDialog(ActionDialog):
         # --- Werkseinstellungen (Reset) — nur wenn das Plugin es unterstützt ---
         plugin0 = self.plugin_for(self.cameras[0]) if self.cameras else None
         if plugin0 and plugin0.supports(Capability.FACTORY_RESET):
+            # camera_keys der zurückgesetzten Kameras: alle (Zugangsdaten ungültig
+            # -> aufräumen) bzw. bestätigt werksneu (-> in der Liste kennzeichnen).
+            self._reset_all_keys: list[str] = []
+            self._reset_factory_keys: list[str] = []
             self._reset_mode = tk.StringVar(value="keep")
             rst = ttk.LabelFrame(
                 parent, text="Werkseinstellungen (auf alle ausgewählten Kameras)",
@@ -107,11 +112,59 @@ class ConfigDialog(ActionDialog):
                 f"({mode})?\n\nDie Kameras starten danach neu. Diese Aktion kann "
                 "nicht rückgängig gemacht werden.", parent=self):
             return
+        self._reset_all_keys.clear()
+        self._reset_factory_keys.clear()
 
         def op(plugin, camera, creds):
-            return plugin.factory_reset(camera, creds, keep_ip=keep_ip)
+            key = camera_key(camera)
+            plugin.factory_reset(camera, creds, keep_ip=keep_ip)   # löst Reset aus
+            self._reset_all_keys.append(key)   # Zugangsdaten sind jetzt ungültig
+            if not keep_ip:
+                # IP ändert sich -> nicht am alten Ziel pollbar. Nur Hinweis.
+                return ("Reset ausgelöst — Kamera startet neu und ist danach unter "
+                        "Standard-/DHCP-Adresse erreichbar (bitte neu suchen).")
+            # keep_ip: warten, bis die Kamera neu gestartet und wieder erreichbar
+            # UND im Werkszustand (Erstkonfiguration) ist.
+            if self._wait_until_factory(plugin, camera, creds):
+                self._reset_factory_keys.append(key)
+                return ("Werksreset erfolgreich — Kamera wieder erreichbar, "
+                        "Erstkonfiguration erforderlich.")
+            return ("Reset ausgelöst, aber Kamera kam im Zeitfenster nicht "
+                    "erreichbar/werksneu zurück — später erneut suchen.")
 
         self.run_per_camera(op, done_msg="Werksreset abgeschlossen.")
+
+    def _wait_until_factory(self, plugin, camera, creds,
+                            timeout=180, interval=5) -> bool:
+        """Pollt (im Worker-Thread) die Kamera, bis sie nach dem Neustart wieder
+        antwortet und sich im Auslieferungszustand befindet. Zeigt Zwischenstände
+        im Ergebnis-Log. Gibt True zurück, sobald der Werkszustand bestätigt ist."""
+        name = camera.get("Name", "?")
+        ip = get_first_ip(camera) or "?"
+        self._q.put(("line", f"… {name} ({ip}): warte auf Neustart "
+                             "und Erstkonfigurationsmodus…"))
+        deadline = time.time() + timeout
+        time.sleep(interval)   # Gerät geht erst offline
+        while time.time() < deadline:
+            try:
+                if plugin.is_unconfigured(camera, creds):
+                    return True
+            except Exception:  # noqa: BLE001 - Reboot -> Fehler sind erwartbar
+                pass
+            time.sleep(interval)
+        return False
+
+    def _on_done(self):
+        """Nach dem Durchlauf: Zugangsdaten der zurückgesetzten Kameras verwerfen
+        und werksneu bestätigte Kameras in der Liste kennzeichnen."""
+        all_keys = getattr(self, "_reset_all_keys", None)
+        if not all_keys:
+            return
+        hook = getattr(self.master, "after_factory_reset", None)
+        if callable(hook):
+            hook(list(all_keys), list(self._reset_factory_keys))
+        self._reset_all_keys.clear()
+        self._reset_factory_keys.clear()
 
     # ----------------------------------------------------------------- import
     def _choose_cfg(self):
