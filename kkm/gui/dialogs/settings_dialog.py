@@ -34,7 +34,8 @@ from __future__ import annotations
 
 import os
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog, filedialog
+from tkinter import ttk, messagebox, simpledialog
+from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import ALL_CAMERAS_ID, VIRTUAL_GROUP_IDS, VaultError, camera_key
 from kkm.core.backup import create_backup, restore_backup, BackupError

@@ -36,7 +36,8 @@ import time
 import queue
 import dataclasses
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, messagebox
+from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import Capability, camera_key
 from kkm.plugins.axis.discovery import get_first_ip

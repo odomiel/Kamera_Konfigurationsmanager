@@ -37,7 +37,8 @@ import threading
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog, filedialog
+from tkinter import ttk, messagebox, simpledialog
+from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 # Parallele Netzwerk-Zugriffe (Firmware/Online/Zugangsdaten) je Suche.
 NET_WORKERS = 12
@@ -917,6 +918,7 @@ class MainWindow(tk.Tk):
         if not cams:
             return
         path = filedialog.asksaveasfilename(
+            parent=self,
             defaultextension=".csv",
             filetypes=[("CSV", "*.csv"), ("Text", "*.txt")])
         if path:

@@ -29,7 +29,8 @@ Three modes: anlegen / Passwort ändern / Stapel-Import
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, messagebox
+from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import Capability
 from kkm.plugins.axis.plugin import AxisPlugin

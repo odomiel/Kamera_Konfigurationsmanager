@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b18 — 2026-07-03
+
+- **Datei-Dialog: feste Größe**: Der (unter Linux nicht-native) Tk-Dateidialog
+  passte seine Größe an den Ordnerpfad an und sprang dadurch beim Öffnen. Neue
+  dünne Wrapper (`kkm/gui/filedialogs.py`) erzwingen beim Erscheinen eine feste
+  Standardgröße (780×520). Alle Öffnen/Speichern-Dialoge nutzen sie jetzt. Auf
+  Plattformen mit nativem Dialog (Windows/macOS) ist es ein No-op.
+
 ## 26.07.03b17 — 2026-07-03
 
 - **Firmware-Dialog: aktuelle Version + aufklappbare Kameras + grüne Erfolge**: Die
