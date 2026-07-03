@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import queue
 import threading
-import time
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
@@ -137,22 +136,14 @@ class ConfigDialog(ActionDialog):
     def _wait_until_factory(self, plugin, camera, creds,
                             timeout=180, interval=5) -> bool:
         """Pollt (im Worker-Thread) die Kamera, bis sie nach dem Neustart wieder
-        antwortet und sich im Auslieferungszustand befindet. Zeigt Zwischenstände
-        im Ergebnis-Log. Gibt True zurück, sobald der Werkszustand bestätigt ist."""
+        antwortet und sich im Auslieferungszustand befindet. Gibt True zurück,
+        sobald der Werkszustand bestätigt ist."""
         name = camera.get("Name", "?")
         ip = get_first_ip(camera) or "?"
-        self._q.put(("line", f"… {name} ({ip}): warte auf Neustart "
-                             "und Erstkonfigurationsmodus…"))
-        deadline = time.time() + timeout
-        time.sleep(interval)   # Gerät geht erst offline
-        while time.time() < deadline:
-            try:
-                if plugin.is_unconfigured(camera, creds):
-                    return True
-            except Exception:  # noqa: BLE001 - Reboot -> Fehler sind erwartbar
-                pass
-            time.sleep(interval)
-        return False
+        msg = f"… {name} ({ip}): warte auf Neustart und Erstkonfigurationsmodus…"
+        return bool(self.poll_until(
+            lambda: plugin.is_unconfigured(camera, creds),
+            timeout, interval, start_msg=msg))
 
     def _on_done(self):
         """Nach dem Durchlauf: Zugangsdaten der zurückgesetzten Kameras verwerfen

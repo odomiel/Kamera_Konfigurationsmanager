@@ -32,13 +32,19 @@ VAPIX).
 from __future__ import annotations
 
 import os
+import dataclasses
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from kkm.core import Capability
+from kkm.core import Capability, camera_key
+from kkm.plugins.axis.discovery import get_first_ip
 from .base import ActionDialog
 
 FIRMWARE_TIMEOUT = 600   # seconds; upload + flash takes far longer than a probe
+# Warten auf Wiedererreichbarkeit nach dem Neustart (Flash + Reboot dauern lange).
+REBOOT_TIMEOUT = 600
+REBOOT_INTERVAL = 8
+PROBE_TIMEOUT = 15       # kurzes Timeout je Erreichbarkeits-Versuch
 
 
 def _model_of(camera: dict) -> str:
@@ -50,6 +56,10 @@ class FirmwareDialog(ActionDialog):
     capability = Capability.FIRMWARE
 
     def build_body(self, parent):
+        # Nach dem Update in die Liste zu übernehmen:
+        self._fw_updates: dict[str, dict] = {}       # key -> device_info (neue FW)
+        self._reset_all_keys: list[str] = []         # bei factory-default: Creds weg
+        self._reset_factory_keys: list[str] = []     # bestätigt werksneu
         # model -> assigned firmware path
         self._fw_by_model: dict[str, str] = {}
         # model -> list of cameras
@@ -146,14 +156,69 @@ class FirmwareDialog(ActionDialog):
 
         fw_by_model = dict(self._fw_by_model)
         factory = self._factory.get()
+        self._fw_updates.clear()
+        self._reset_all_keys.clear()
+        self._reset_factory_keys.clear()
 
         def op(plugin, camera, creds):
             model = _model_of(camera)
             path = fw_by_model.get(model)
             if not path:
                 raise RuntimeError("übersprungen (keine Firmware für dieses Modell)")
+            fname = os.path.basename(path)
+            key = camera_key(camera)
+            name = camera.get("Name", "?")
+            ip = get_first_ip(camera) or "?"
             creds.timeout = max(creds.timeout, FIRMWARE_TIMEOUT)
             plugin.upgrade_firmware(camera, creds, path, factory_default=factory)
-            return f"Firmware {os.path.basename(path)} aufgespielt"
+
+            # Kurzes Timeout zum Anklopfen (nicht das lange Upload-Timeout).
+            probe = dataclasses.replace(creds, timeout=PROBE_TIMEOUT)
+            if factory:
+                # factory-default beim Update -> Kamera kommt werksneu zurück.
+                msg = f"… {name} ({ip}): warte auf Neustart (Werkszustand)…"
+                if self.poll_until(lambda: plugin.is_unconfigured(camera, probe),
+                                   REBOOT_TIMEOUT, REBOOT_INTERVAL, start_msg=msg):
+                    self._reset_all_keys.append(key)
+                    self._reset_factory_keys.append(key)
+                    return (f"Firmware {fname} aufgespielt — Kamera werksneu "
+                            "(Erstkonfiguration erforderlich)")
+                return (f"Firmware {fname} aufgespielt — Kamera nicht rechtzeitig "
+                        "zurück (später prüfen)")
+
+            # Normalfall: warten bis erreichbar + neue Firmware auslesen.
+            msg = f"… {name} ({ip}): warte auf Neustart und lese neue Firmware…"
+            info = self.poll_until(lambda: self._read_info(plugin, camera, probe),
+                                   REBOOT_TIMEOUT, REBOOT_INTERVAL, start_msg=msg)
+            if info is not None:
+                self._fw_updates[key] = info
+                return (f"Firmware {fname} aufgespielt — Kamera wieder erreichbar, "
+                        f"Version {info.get('firmware') or '?'}")
+            return (f"Firmware {fname} aufgespielt — Kamera nicht rechtzeitig "
+                    "zurück (Version später prüfen)")
 
         self.run_per_camera(op, done_msg="Firmware-Update abgeschlossen.")
+
+    @staticmethod
+    def _read_info(plugin, camera, creds):
+        """device_info lesen; nur zurückgeben, wenn eine Firmware/Modell-Angabe da
+        ist (sonst gilt die Kamera noch nicht als vollständig wieder oben)."""
+        info = plugin.device_info(camera, creds)
+        if info and (info.get("firmware") or info.get("model")):
+            return info
+        return None
+
+    def _on_done(self):
+        """Neue Firmware-Versionen bzw. Werkszustand nach dem Update in die Liste
+        des Hauptfensters übernehmen."""
+        if self._fw_updates:
+            hook = getattr(self.master, "apply_firmware_update", None)
+            if callable(hook):
+                hook(dict(self._fw_updates))
+            self._fw_updates.clear()
+        if self._reset_all_keys:
+            hook = getattr(self.master, "after_factory_reset", None)
+            if callable(hook):
+                hook(list(self._reset_all_keys), list(self._reset_factory_keys))
+            self._reset_all_keys.clear()
+            self._reset_factory_keys.clear()

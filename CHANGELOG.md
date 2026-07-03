@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b14 — 2026-07-03
+
+- **Firmware-Update: Rückmeldung erst nach Erreichbarkeit + Versions-Update**:
+  Nach dem Aufspielen wartet der Firmware-Dialog jetzt, bis die Kamera neu
+  gestartet und wieder erreichbar ist, liest die **neue Firmware-Version** aus und
+  meldet erst dann den Erfolg; die Version wird automatisch in der Geräteliste
+  aktualisiert (`MainWindow.apply_firmware_update`). Mit Option *factory default*
+  kommt die Kamera werksneu zurück und wird als „Ersteinrichtung erforderlich"
+  markiert (wie beim Werksreset). Gemeinsamer Poll-Helfer `ActionDialog.poll_until`
+  (auch vom Werksreset genutzt).
+
 ## 26.07.03b13 — 2026-07-03
 
 - **Werksreset: Rückmeldung erst nach Erreichbarkeit + Listen-Update**: Beim

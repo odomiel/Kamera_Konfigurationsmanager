@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import queue
 import threading
+import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -152,6 +153,28 @@ class ActionDialog(tk.Toplevel):
     def _on_done(self):
         """Hook: läuft im Main-Thread, sobald ein ``run_per_camera``-Durchlauf
         fertig ist. Unterklassen können hier die Kameraliste aktualisieren."""
+
+    # ------------------------------------------------------------- poll-Helfer
+    def poll_until(self, predicate, timeout, interval, start_msg=None):
+        """Im Worker-Thread wiederholt ``predicate()`` auswerten, bis es einen
+        truthy-Wert liefert (der zurückgegeben wird) oder *timeout* (Sekunden)
+        abläuft (dann ``None``). Nützlich, um nach einem Neustart auf die
+        Wiedererreichbarkeit einer Kamera zu warten. Fehler in ``predicate`` (z. B.
+        während des Reboots) werden verschluckt und weiter gepollt. *start_msg*
+        wird — falls gesetzt — einmal ins Ergebnis-Log geschrieben."""
+        if start_msg:
+            self._q.put(("line", start_msg))
+        deadline = time.time() + timeout
+        time.sleep(interval)        # das Gerät geht nach dem Auslösen erst offline
+        while time.time() < deadline:
+            try:
+                result = predicate()
+                if result:
+                    return result
+            except Exception:  # noqa: BLE001 - Reboot -> Fehler sind erwartbar
+                pass
+            time.sleep(interval)
+        return None
 
     # --------------------------------------------------------------- vault store
     def _wants_vault(self) -> bool:

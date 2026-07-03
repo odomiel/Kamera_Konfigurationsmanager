@@ -501,6 +501,21 @@ class MainWindow(tk.Tk):
             self.store.save()
             self._refresh_table()
 
+    def apply_firmware_update(self, mapping: dict) -> None:
+        """Nach einem Firmware-Update die neue Firmware/Modell-Angabe (camera_key ->
+        device_info) in die Liste übernehmen. Wird vom Firmware-Dialog aufgerufen."""
+        changed = False
+        for key, info in mapping.items():
+            cam = self.store.roster.get(key)
+            if cam is None:
+                continue
+            self._apply_device_info(key, info)   # setzt _firmware/_model
+            cam["_online"] = True
+            changed = True
+        if changed:
+            self.store.save()
+            self._refresh_table()
+
     def _move_key(self, old_key: str, new_key: str) -> None:
         """Sitzungs-Cache und Tresor-Eintrag auf den neuen Kameraschlüssel umziehen."""
         cache = self._cam_creds
