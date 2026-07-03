@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b19 — 2026-07-03
+
+- **Nativer System-Dateidialog**: Datei öffnen/speichern nutzt jetzt – sofern
+  vorhanden – den **System-Dateidialog** (`zenity` für GTK/GNOME, `kdialog` für
+  KDE) statt des größenspringenden Tk-Dialogs. Beim Start aus dem AppImage wird die
+  gebündelte `LD_LIBRARY_PATH`/`PYTHON*`-Umgebung entfernt, damit das
+  System-Werkzeug seine eigenen Bibliotheken lädt. Ist kein solches Werkzeug da
+  (bzw. unter Windows/macOS, wo Tk ohnehin nativ ist), wird wie zuvor der
+  Tk-Dialog mit fixierter Größe verwendet. `filetypes` werden auf die jeweilige
+  Filter-Syntax abgebildet, `defaultextension` beim Speichern ergänzt.
+
 ## 26.07.03b18 — 2026-07-03
 
 - **Datei-Dialog: feste Größe**: Der (unter Linux nicht-native) Tk-Dateidialog
