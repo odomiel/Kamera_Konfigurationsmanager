@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b4 — 2026-07-03
+
+- **Neue Sondergruppe „Ohne Gruppe"**: Zweite dauerhafte, nicht löschbare Gruppe
+  (unter „Alle Kameras"), die alle bekannten Kameras zeigt, die noch **keiner
+  Benutzergruppe** zugeordnet sind — z. B. bei einer Suche neu gefundene. Sobald
+  eine Kamera einer Gruppe zugewiesen wird, verschwindet sie automatisch aus
+  „Ohne Gruppe". Die Mitgliedschaft wird dynamisch aus Roster + Zuordnungen
+  berechnet (nicht gespeichert). Sie ist kein Zuordnungsziel und wird von der
+  Gruppensuche nicht ausgeblendet. Neue Kern-Konstanten `UNGROUPED_ID` /
+  `VIRTUAL_GROUP_IDS`.
+
 ## 26.07.03b3 — 2026-07-03
 
 - **IP-Umstellung aktualisiert die Liste**: Wird über die Aktion *IP-Adresse* eine

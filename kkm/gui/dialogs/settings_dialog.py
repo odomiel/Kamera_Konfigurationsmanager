@@ -35,7 +35,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
 
-from kkm.core import ALL_CAMERAS_ID, VaultError, camera_key
+from kkm.core import ALL_CAMERAS_ID, VIRTUAL_GROUP_IDS, VaultError, camera_key
 from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 
 
@@ -375,7 +375,7 @@ class SettingsDialog(tk.Toplevel):
     def _find_or_create_group(self, name):
         """Gruppe gleichen Namens finden (außer 'Alle Kameras') oder neu anlegen."""
         for gid, g in self.store.groups.items():
-            if gid != ALL_CAMERAS_ID and g.name == name:
+            if gid not in VIRTUAL_GROUP_IDS and g.name == name:
                 return gid
         return self.store.create_group(name).id
 
@@ -389,7 +389,7 @@ class SettingsDialog(tk.Toplevel):
         # 2) Gruppen anlegen/ergänzen und Mitglieder zuweisen
         groups_new = 0
         for name, keys in result.groups.items():
-            existed = any(gid != ALL_CAMERAS_ID and g.name == name
+            existed = any(gid not in VIRTUAL_GROUP_IDS and g.name == name
                           for gid, g in self.store.groups.items())
             gid = self._find_or_create_group(name)
             if not existed:

@@ -12,8 +12,11 @@ Kameras und laufen im Hintergrund; das Ergebnis je Kamera wird protokolliert.
 ## Hauptfenster
 
 - **Links:** die Gerätegruppen. Ganz oben die nicht löschbare Gruppe
-  **„Alle Kameras"** (enthält alle bekannten Kameras), darunter die eigenen Gruppen
-  **alphabetisch** sortiert. Rechts neben der Überschrift **„Gerätegruppen"** ein
+  **„Alle Kameras"** (enthält alle bekannten Kameras), direkt darunter die ebenfalls
+  dauerhafte Gruppe **„Ohne Gruppe"** (alle Kameras, die noch keiner eigenen Gruppe
+  zugeordnet sind — etwa bei einer Suche neu gefundene; sie verschwinden dort
+  automatisch, sobald sie einer Gruppe zugewiesen werden), darunter die eigenen
+  Gruppen **alphabetisch** sortiert. Rechts neben der Überschrift **„Gerätegruppen"** ein
   **Suchfeld** (mit grauem Hinweistext „Suche", der beim Tippen verschwindet):
   Während der Eingabe wird die Liste live auf Gruppen gefiltert,
   deren Name den Suchtext enthält (case-insensitiv); „Alle Kameras" bleibt immer

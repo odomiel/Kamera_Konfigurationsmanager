@@ -35,6 +35,13 @@ from dataclasses import dataclass, field, asdict
 
 ALL_CAMERAS_ID = "all"
 ALL_CAMERAS_NAME = "Alle Kameras"
+# Zweite virtuelle, nicht löschbare Gruppe: alle Kameras im Roster, die (noch)
+# keiner Benutzergruppe zugeordnet sind. Ihre Mitgliedschaft wird dynamisch aus
+# dem Roster + Index berechnet (keine gespeicherten Mitglieder).
+UNGROUPED_ID = "ungrouped"
+UNGROUPED_NAME = "Ohne Gruppe"
+# IDs der berechneten Sondergruppen (keine echten Mitglieder, kein Zuordnungsziel).
+VIRTUAL_GROUP_IDS = (ALL_CAMERAS_ID, UNGROUPED_ID)
 
 
 def config_dir() -> str:
@@ -98,12 +105,17 @@ class GroupStore:
             self.groups[ALL_CAMERAS_ID] = Group(
                 id=ALL_CAMERAS_ID, name=ALL_CAMERAS_NAME, deletable=False
             )
+        # Zweite Sondergruppe "Ohne Gruppe" (virtuell, nicht löschbar).
+        if UNGROUPED_ID not in self.groups:
+            self.groups[UNGROUPED_ID] = Group(
+                id=UNGROUPED_ID, name=UNGROUPED_NAME, deletable=False
+            )
         self._rebuild_index()
 
     def _rebuild_index(self) -> None:
         self._index = {}
         for gid, g in self.groups.items():
-            if gid == ALL_CAMERAS_ID:
+            if gid in VIRTUAL_GROUP_IDS:
                 continue
             for key in g.members:
                 self._index.setdefault(key, set()).add(gid)
@@ -194,7 +206,7 @@ class GroupStore:
 
     def assign(self, gid: str, camera_keys: list[str]) -> None:
         g = self.groups.get(gid)
-        if not g or gid == ALL_CAMERAS_ID:
+        if not g or gid in VIRTUAL_GROUP_IDS:
             return
         for key in camera_keys:
             idx = self._index.setdefault(key, set())
@@ -205,7 +217,7 @@ class GroupStore:
 
     def unassign(self, gid: str, camera_keys: list[str]) -> None:
         g = self.groups.get(gid)
-        if not g or gid == ALL_CAMERAS_ID:
+        if not g or gid in VIRTUAL_GROUP_IDS:
             return
         drop = set(camera_keys)
         g.members = [k for k in g.members if k not in drop]
@@ -221,6 +233,10 @@ class GroupStore:
         """Resolve a group's cameras from the roster."""
         if gid == ALL_CAMERAS_ID:
             return list(self.roster.values())
+        if gid == UNGROUPED_ID:
+            # Kameras ohne Zuordnung zu einer Benutzergruppe (Index leer/fehlt).
+            return [cam for key, cam in self.roster.items()
+                    if not self._index.get(key)]
         g = self.groups.get(gid)
         if not g:
             return []

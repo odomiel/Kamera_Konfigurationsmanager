@@ -44,7 +44,8 @@ NET_WORKERS = 12
 
 from kkm.version import APP_NAME, __version__
 from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
-                      camera_key, PasswordVault, AppSettings, VaultError)
+                      UNGROUPED_ID, VIRTUAL_GROUP_IDS, camera_key, PasswordVault,
+                      AppSettings, VaultError)
 from kkm.core.groups import config_dir
 from kkm.plugins import build_registry
 from kkm.plugins.axis.discovery import FIELD_NAMES, get_first_ip, export_results
@@ -315,9 +316,13 @@ class MainWindow(tk.Tk):
         self.group_tree.insert("", "end", iid=ALL_CAMERAS_ID,
                                text=f"  {self.store.groups[ALL_CAMERAS_ID].name}",
                                open=True)
+        # "Ohne Gruppe" fest als erstes Kind (virtuell, nicht durch die Suche
+        # gefiltert): zeigt Roster-Kameras ohne Zuordnung zu einer Benutzergruppe.
+        self.group_tree.insert(ALL_CAMERAS_ID, "end", iid=UNGROUPED_ID,
+                               text=f"  {self.store.groups[UNGROUPED_ID].name}")
         needle = self._group_search_text().casefold()
         own = [(gid, g) for gid, g in self.store.groups.items()
-               if gid != ALL_CAMERAS_ID
+               if gid not in VIRTUAL_GROUP_IDS
                and (not needle or needle in g.name.casefold())]
         own.sort(key=lambda item: item[1].name.casefold())
         for gid, g in own:
@@ -519,7 +524,7 @@ class MainWindow(tk.Tk):
             menu.add_separator()
         add_menu = tk.Menu(menu, tearoff=0)
         user_groups = [(gid, g) for gid, g in self.store.groups.items()
-                       if gid != ALL_CAMERAS_ID]
+                       if gid not in VIRTUAL_GROUP_IDS]
         for gid, g in user_groups:
             add_menu.add_command(label=g.name,
                                  command=lambda gid=gid: self._assign_selected(gid, keys))
@@ -531,7 +536,7 @@ class MainWindow(tk.Tk):
                          menu=add_menu)
 
         g = self.store.groups.get(self._current_gid)
-        if g and self._current_gid != ALL_CAMERAS_ID:
+        if g and self._current_gid not in VIRTUAL_GROUP_IDS:
             menu.add_separator()
             menu.add_command(label=f"Aus „{g.name}“ entfernen",
                              command=lambda: self._unassign_selected(self._current_gid, keys))
@@ -546,7 +551,9 @@ class MainWindow(tk.Tk):
     def _assign_selected(self, gid, keys):
         self.store.assign(gid, keys)
         name = self.store.groups[gid].name
-        if self._current_gid == gid:
+        # Zeigt die aktuelle Ansicht die Zielgruppe oder "Ohne Gruppe" (aus der die
+        # Kameras jetzt verschwinden), Tabelle aktualisieren.
+        if self._current_gid in (gid, UNGROUPED_ID):
             self._refresh_table()
         self.status.config(text=f"{len(keys)} Kamera(s) zu „{name}“ hinzugefügt")
 
@@ -557,6 +564,8 @@ class MainWindow(tk.Tk):
         g = self.store.create_group(name.strip())
         self.store.assign(g.id, keys)
         self._refresh_groups()
+        if self._current_gid == UNGROUPED_ID:   # Kameras verlassen "Ohne Gruppe"
+            self._refresh_table()
         self.status.config(text=f"{len(keys)} Kamera(s) zu neuer Gruppe „{g.name}“ hinzugefügt")
 
     def _unassign_selected(self, gid, keys):
