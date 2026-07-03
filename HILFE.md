@@ -113,7 +113,10 @@ Stellt die Netzwerk-Adresse der markierten Kameras um:
   vorbefüllt).
 
 Die Ziel-Adressen werden vor der Umstellung geprüft; danach sind die Kameras ggf.
-unter neuer Adresse erreichbar.
+unter neuer Adresse erreichbar. Bei einer festen IP wird die **Geräteliste im
+Erfolgsfall sofort auf die neue Adresse aktualisiert** (nur für erfolgreich
+umgestellte Kameras). Bei DHCP bleibt die angezeigte Adresse unverändert, weil die
+neue Adresse vom DHCP-Server vergeben wird und dem Programm nicht bekannt ist.
 
 ### Benutzer
 Reguläre Kamera-Benutzer verwalten:

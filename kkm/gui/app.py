@@ -449,6 +449,37 @@ class MainWindow(tk.Tk):
     def _selected_cameras(self) -> list[dict]:
         return [self._row_cam[r] for r in self.table.selection() if r in self._row_cam]
 
+    def apply_ip_changes(self, mapping: dict) -> None:
+        """Neue feste IPs (camera_key vor der Umstellung -> IP) in Roster, Gruppen
+        und Tabelle übernehmen. Wird vom IP-Dialog nach Erfolg aufgerufen."""
+        changed = False
+        for old_key, new_ip in mapping.items():
+            cam = self.store.roster.get(old_key)
+            if cam is None:
+                continue
+            cam["IP Adresse: Konfiguriert"] = new_ip
+            new_key = camera_key(cam)
+            if new_key != old_key:
+                self.store.rekey_camera(old_key, new_key)
+                self._move_key(old_key, new_key)
+            changed = True
+        if changed:
+            self.store.save()
+            self._refresh_table()
+
+    def _move_key(self, old_key: str, new_key: str) -> None:
+        """Sitzungs-Cache und Tresor-Eintrag auf den neuen Kameraschlüssel umziehen."""
+        cache = self._cam_creds
+        if old_key in cache:
+            cache[new_key] = cache.pop(old_key)
+        vault = getattr(self, "vault", None)
+        if vault and not vault.is_locked:
+            stored = vault.get_password(old_key)
+            if stored:
+                vault.set_password(new_key, stored.get("username", ""),
+                                   stored.get("password", ""))
+                vault.delete(old_key)
+
     # ---------------------------------------------- Kamera im Browser öffnen
     def _open_camera_web(self, event):
         """Doppelklick: die angeklickte Kamera im Webbrowser öffnen."""

@@ -149,6 +149,10 @@ class ActionDialog(tk.Toplevel):
     def build_body(self, parent):  # pragma: no cover - overridden
         raise NotImplementedError
 
+    def _on_done(self):
+        """Hook: läuft im Main-Thread, sobald ein ``run_per_camera``-Durchlauf
+        fertig ist. Unterklassen können hier die Kameraliste aktualisieren."""
+
     # --------------------------------------------------------------- vault store
     def _wants_vault(self) -> bool:
         var = getattr(self, "store_vault", None)
@@ -219,6 +223,7 @@ class ActionDialog(tk.Toplevel):
                     self.progress.stop()
                     self._busy = False
                     self._log_line(f"— {payload}")
+                    self._on_done()
         except queue.Empty:
             pass
         self.after(120, self._poll)

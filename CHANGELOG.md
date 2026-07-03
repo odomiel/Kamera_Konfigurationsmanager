@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.03b3 — 2026-07-03
+
+- **IP-Umstellung aktualisiert die Liste**: Wird über die Aktion *IP-Adresse* eine
+  **feste IP** gesetzt, übernimmt die Geräteliste im Erfolgsfall die neue Adresse
+  sofort (pro Kamera, nur für erfolgreich umgestellte). Hat die Kamera keine
+  MAC/Seriennummer, wird ihr Identitätsschlüssel (Name@IP) in Roster, Gruppen,
+  Sitzungs-Cache und Tresor mitgezogen. DHCP-Umstellungen ändern die Anzeige
+  nicht, da die neue Adresse vom DHCP-Server vergeben und hier nicht bekannt ist.
+  Neue Kern-Methode `GroupStore.rekey_camera()`.
+
 ## 26.07.03b2 — 2026-07-03
 
 - **Platzhalter im Gruppen-Suchfeld**: Das Suchfeld zeigt jetzt den grauen

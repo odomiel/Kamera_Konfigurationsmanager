@@ -45,6 +45,9 @@ class IpDialog(ActionDialog):
     capability = Capability.SET_IP
 
     def build_body(self, parent):
+        # camera_key (vor der Umstellung) -> erfolgreich gesetzte neue IP; wird nach
+        # dem Durchlauf ins Hauptfenster übernommen, damit die Liste stimmt.
+        self._applied_ips: dict[str, str] = {}
         self._mode = tk.StringVar(value="dhcp")
         self.mask = tk.StringVar(value="255.255.255.0")
         self.gateway = tk.StringVar()
@@ -154,8 +157,21 @@ class IpDialog(ActionDialog):
             return
 
         def op(plugin, camera, creds):
-            new_ip = targets[camera_key(camera)]
+            key = camera_key(camera)
+            new_ip = targets[key]
             plugin.set_static_ip(camera, creds, new_ip, mask, gateway)
+            self._applied_ips[key] = new_ip   # nur bei Erfolg (sonst raise davor)
             return f"feste IP {new_ip} gesetzt"
 
         self.run_per_camera(op, done_msg="IP-Umstellung abgeschlossen.")
+
+    def _on_done(self):
+        """Erfolgreich gesetzte feste IPs in die Kameraliste des Hauptfensters
+        übernehmen. (DHCP wird nicht übernommen — die neue Adresse vergibt der
+        DHCP-Server und ist hier nicht bekannt.)"""
+        if not self._applied_ips:
+            return
+        apply = getattr(self.master, "apply_ip_changes", None)
+        if callable(apply):
+            apply(dict(self._applied_ips))
+        self._applied_ips.clear()

@@ -177,6 +177,21 @@ class GroupStore:
             self.remember(cam)
         self.save()
 
+    def rekey_camera(self, old_key: str, new_key: str) -> None:
+        """Ändert die Identität einer Kamera im Roster und in allen Gruppen.
+
+        Nötig, wenn sich der aus Name+IP abgeleitete Schlüssel ändert (Kamera ohne
+        MAC/Seriennummer, deren IP umgestellt wurde). Kein Save — der Aufrufer
+        speichert gebündelt.
+        """
+        if old_key == new_key or old_key not in self.roster:
+            return
+        self.roster[new_key] = self.roster.pop(old_key)
+        for g in self.groups.values():
+            if old_key in g.members:
+                g.members = [new_key if k == old_key else k for k in g.members]
+        self._rebuild_index()
+
     def assign(self, gid: str, camera_keys: list[str]) -> None:
         g = self.groups.get(gid)
         if not g or gid == ALL_CAMERAS_ID:
