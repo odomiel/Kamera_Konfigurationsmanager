@@ -33,6 +33,7 @@ Tabs:
 from __future__ import annotations
 
 import os
+import platform
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
@@ -40,6 +41,24 @@ from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 from kkm.core import ALL_CAMERAS_ID, VIRTUAL_GROUP_IDS, VaultError, camera_key
 from kkm.core.backup import create_backup, restore_backup, BackupError
 from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
+from kkm.version import __version__, APP_NAME
+
+
+def _dep_version(dist_name: str, module_name: str | None = None) -> str:
+    """Version einer Abhängigkeit ermitteln (Paket-Metadaten, dann Modul-Attribut)."""
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            return version(dist_name)
+        except PackageNotFoundError:
+            pass
+    except Exception:
+        pass
+    try:
+        mod = __import__(module_name or dist_name)
+        return getattr(mod, "__version__", "unbekannt")
+    except Exception:
+        return "nicht installiert"
 
 
 class SettingsDialog(tk.Toplevel):
@@ -72,6 +91,7 @@ class SettingsDialog(tk.Toplevel):
         nb.add(self._build_columns_tab(nb), text="Spalten")
         nb.add(self._build_firmware_tab(nb), text="Firmwareupdates")
         nb.add(self._build_import_tab(nb), text="Import und Sicherung")
+        nb.add(self._build_about_tab(nb), text="Über")
 
         ttk.Button(self, text="Schließen", command=self.destroy).pack(
             anchor=tk.E, padx=8, pady=(0, 8))
@@ -578,3 +598,40 @@ class SettingsDialog(tk.Toplevel):
             "Wiederherstellung abgeschlossen (" + ", ".join(restored) + ")." + note
             + "\n\nHinweis: Bei geänderter Plugin-Auswahl das Programm neu starten.",
             parent=self)
+
+    # -------------------------------------------------------------------- über
+    def _build_about_tab(self, parent):
+        tab = ttk.Frame(parent, padding=12)
+
+        ttk.Label(tab, text=APP_NAME.replace("_", " "),
+                  font=("TkDefaultFont", 12, "bold")).pack(anchor=tk.W)
+        ttk.Label(tab, text=f"Version {__version__}").pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(tab, text="Erstellt von Mirik · GPL-3.0-or-later").pack(anchor=tk.W)
+
+        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
+        ttk.Label(tab, text="Verwendete Komponenten",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 4))
+
+        try:
+            tcltk = self.tk.call("info", "patchlevel")
+        except tk.TclError:
+            tcltk = "unbekannt"
+        components = [
+            ("Python", platform.python_version()),
+            ("Tcl/Tk", str(tcltk)),
+            ("zeroconf", _dep_version("zeroconf")),
+            ("cryptography", _dep_version("cryptography")),
+            ("sv-ttk", _dep_version("sv-ttk", "sv_ttk")),
+        ]
+        grid = ttk.Frame(tab)
+        grid.pack(anchor=tk.W)
+        for i, (name, ver) in enumerate(components):
+            ttk.Label(grid, text=name + ":").grid(row=i, column=0, sticky=tk.W,
+                                                  padx=(0, 12), pady=1)
+            ttk.Label(grid, text=ver).grid(row=i, column=1, sticky=tk.W, pady=1)
+
+        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
+        ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=(
+            "Dieses Programm wurde mit Unterstützung von künstlicher Intelligenz "
+            "(Claude von Anthropic) entwickelt.")).pack(anchor=tk.W)
+        return tab

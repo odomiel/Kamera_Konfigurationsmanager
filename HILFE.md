@@ -241,6 +241,11 @@ Mehrere Bereiche:
     ist der Tresor gesperrt und wird mit dem **Master-Passwort aus der Sicherung**
     entsperrt. Bei geänderter Plugin-Auswahl das Programm neu starten.
 
+- **Über** — zeigt die Programmversion, die Versionen der verwendeten Komponenten
+  (Python, Tcl/Tk, zeroconf, cryptography, sv-ttk), den Ersteller und die Lizenz
+  sowie den Hinweis, dass das Programm mit Unterstützung von künstlicher Intelligenz
+  entwickelt wurde.
+
 ---
 
 ## Speicherort der Daten

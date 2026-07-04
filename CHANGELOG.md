@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.04 — 2026-07-04
+
+- **Neuer Reiter „Über" in den Einstellungen**: zeigt die Programmversion, die
+  Versionen der verwendeten Komponenten (Python, Tcl/Tk, `zeroconf`,
+  `cryptography`, `sv-ttk` — zur Laufzeit ermittelt), den Ersteller (Mirik) und die
+  Lizenz (GPL-3.0-or-later) sowie den Hinweis, dass das Programm mit Unterstützung
+  von künstlicher Intelligenz entwickelt wurde.
+
 ## 26.07.03b20 — 2026-07-03
 
 - **Windows: Dunkelmodus repariert (Build)**: Das Windows-Build-Skript

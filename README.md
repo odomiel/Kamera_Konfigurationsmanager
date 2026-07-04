@@ -66,6 +66,8 @@ anlegen/entsperren/sperren/ändern), Plugin-Manager (Hersteller an/aus, persiste
 Online-Prüfung je Gruppe (an/aus + Intervall, mit automatischer Prüfung der
 gewählten Gruppe im Hauptfenster) und Spalten-Sichtbarkeit; Tresor ist ins
 Hauptfenster eingebunden (Aktions-Dialoge füllen gespeicherte Passwörter vor).
+Ein Reiter **„Über"** zeigt Programm- und Komponentenversionen, Ersteller/Lizenz
+sowie den Hinweis auf die KI-gestützte Entwicklung.
 **Build-Skripte fertig:** Linux-AppImage und Windows-`.exe` (siehe unten). Die
 Programm-Features sind damit vollständig.
 
