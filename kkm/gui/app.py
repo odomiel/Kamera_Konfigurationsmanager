@@ -143,7 +143,7 @@ class MainWindow(tk.Tk):
         bar = ttk.Frame(self, padding=6)
         bar.pack(side=tk.TOP, fill=tk.X)
 
-        ttk.Button(bar, text="Suchen", command=self.start_search).pack(side=tk.LEFT)
+        ttk.Button(bar, text="Suchen/aktualisieren", command=self.start_search).pack(side=tk.LEFT)
         ttk.Button(bar, text="Online prüfen", command=self.start_online_check).pack(
             side=tk.LEFT, padx=(6, 0))
 

@@ -4,6 +4,11 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.04b2 — 2026-07-04
+
+- **Button „Suchen" heißt jetzt „Suchen/aktualisieren"** — verdeutlicht, dass die
+  Aktion auch bereits bekannte Kameras neu einliest/aktualisiert. HILFE angepasst.
+
 ## 26.07.04b1 — 2026-07-04
 
 - **Tcl/Tk auf 9.0.4 aktualisiert** (AppImage-Build, vorher 9.0.3). Reine

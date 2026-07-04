@@ -46,9 +46,9 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
 
 ## Suchen & Status
 
-- **Suchen** — durchsucht das lokale Netzwerk nach Kameras (mDNS) und nimmt sie in
-  „Alle Kameras" auf. Bereits bekannte Kameras bleiben erhalten, auch wenn sie
-  gerade offline sind.
+- **Suchen/aktualisieren** — durchsucht das lokale Netzwerk nach Kameras (mDNS) und
+  nimmt sie in „Alle Kameras" auf. Bereits bekannte Kameras bleiben erhalten, auch
+  wenn sie gerade offline sind.
   - **Firmware/Modell** stehen nicht im Suchergebnis und werden nach der Suche per
     Kamera-Login nachgelesen: Kameras mit bekannten Zugangsdaten (Tresor oder
     bereits in dieser Sitzung eingegeben) werden automatisch ausgelesen.
