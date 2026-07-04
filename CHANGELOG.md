@@ -4,6 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.04b5 — 2026-07-04
+
+- **Parameter-Auswahl beim Konfigurations-Export zeigt jetzt die Anzahl** der aktuell
+  ausgewählten Parameter unten an („Ausgewählt: N von M Parametern") — aktualisiert
+  sich live beim An-/Abwählen sowie über „Alle"/„Keine".
+
 ## 26.07.04b4 — 2026-07-04
 
 - **Konfigurations-Import: schreibgeschützte `Properties.*`-Parameter werden

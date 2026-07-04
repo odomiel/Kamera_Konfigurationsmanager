@@ -303,12 +303,19 @@ class ParameterSelectDialog(tk.Toplevel):
         ttk.Checkbutton(outer, text="Stream-Profile mit exportieren",
                         variable=self._with_profiles).pack(anchor=tk.W)
 
+        self._count_lbl = ttk.Label(outer)
+        self._count_lbl.pack(anchor=tk.W, pady=(6, 0))
+
         btns = ttk.Frame(outer)
         btns.pack(fill=tk.X, pady=(8, 0))
         ttk.Button(btns, text="Speichern…", command=self._ok).pack(side=tk.RIGHT)
         ttk.Button(btns, text="Abbrechen", command=self.destroy).pack(side=tk.RIGHT, padx=6)
 
         self._refresh()
+
+    def _update_count(self):
+        self._count_lbl.config(
+            text=f"Ausgewählt: {len(self._selected)} von {len(self._all)} Parametern")
 
     def _checkbox(self, name: str) -> str:
         return "☑" if name in self._selected else "☐"
@@ -322,6 +329,7 @@ class ParameterSelectDialog(tk.Toplevel):
             self.tree.insert("", "end", iid=name,
                              text=f"{self._checkbox(name)}  {name}",
                              values=(self._values.get(name, ""),))
+        self._update_count()
 
     def _toggle(self, event):
         row = self.tree.identify_row(event.y)
@@ -332,6 +340,7 @@ class ParameterSelectDialog(tk.Toplevel):
         else:
             self._selected.add(row)
         self.tree.item(row, text=f"{self._checkbox(row)}  {row}")
+        self._update_count()
 
     def _select_all(self):
         self._selected = set(self._all)
