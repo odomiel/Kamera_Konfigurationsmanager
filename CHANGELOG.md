@@ -4,6 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.04b1 — 2026-07-04
+
+- **Tcl/Tk auf 9.0.4 aktualisiert** (AppImage-Build, vorher 9.0.3). Reine
+  Wartungs-Aktualisierung der gebündelten GUI-Bibliothek; `THIRD_PARTY_LICENSES.md`
+  entsprechend gepflegt. (Windows nutzt das System-Tcl/Tk und ist nicht betroffen.)
+
 ## 26.07.04 — 2026-07-04
 
 - **Neuer Reiter „Über" in den Einstellungen**: zeigt die Programmversion, die

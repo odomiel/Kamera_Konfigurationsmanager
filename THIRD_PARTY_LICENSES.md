@@ -10,8 +10,8 @@ eigene Programmcode (Paket `kkm/`, `main.py`, `bump_version.py`,
 | Komponente | Version | Lizenz | Im Bundle |
 |---|---|---|---|
 | CPython | 3.13.x | PSF License Agreement | AppImage + .exe |
-| Tcl | 9.0.3 | Tcl/Tk License (BSD-artig) | AppImage (Windows: System-Tcl/Tk) |
-| Tk | 9.0.3 | Tcl/Tk License (BSD-artig) | AppImage (Windows: System-Tcl/Tk) |
+| Tcl | 9.0.4 | Tcl/Tk License (BSD-artig) | AppImage (Windows: System-Tcl/Tk) |
+| Tk | 9.0.4 | Tcl/Tk License (BSD-artig) | AppImage (Windows: System-Tcl/Tk) |
 | libffi | 3.6.0 | libffi License (MIT-artig) | AppImage |
 | OpenSSL | 3.5.x | Apache License 2.0 | AppImage (ssl-Modul) |
 | zeroconf | aktuell | **LGPL-2.1-or-later** | AppImage + .exe |
@@ -46,7 +46,7 @@ Vollständiger Text: https://docs.python.org/3/license.html
 
 ---
 
-## Tcl 9.0.3 und Tk 9.0.3
+## Tcl 9.0.4 und Tk 9.0.4
 
 This software is copyrighted by the Regents of the University of California, Sun
 Microsystems, Inc., Scriptics Corporation, ActiveState Corporation, Apple Inc.
