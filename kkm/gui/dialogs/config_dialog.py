@@ -288,6 +288,10 @@ class ParameterSelectDialog(tk.Toplevel):
         ttk.Entry(top, textvariable=self._filter, width=30).pack(side=tk.LEFT, padx=4)
         ttk.Button(top, text="Alle", command=self._select_all).pack(side=tk.RIGHT)
         ttk.Button(top, text="Keine", command=self._select_none).pack(side=tk.RIGHT, padx=4)
+        self._only_selected = tk.BooleanVar(value=False)
+        ttk.Checkbutton(top, text="Nur Ausgewählte anzeigen",
+                        variable=self._only_selected,
+                        command=self._refresh).pack(side=tk.RIGHT, padx=4)
 
         self.tree = ttk.Treeview(outer, columns=("value",), show="tree headings",
                                  selectmode="none", height=16)
@@ -322,9 +326,12 @@ class ParameterSelectDialog(tk.Toplevel):
 
     def _refresh(self):
         flt = self._filter.get().lower()
+        only_sel = self._only_selected.get()
         self.tree.delete(*self.tree.get_children())
         for name in self._all:
             if flt and flt not in name.lower():
+                continue
+            if only_sel and name not in self._selected:
                 continue
             self.tree.insert("", "end", iid=name,
                              text=f"{self._checkbox(name)}  {name}",
@@ -339,8 +346,12 @@ class ParameterSelectDialog(tk.Toplevel):
             self._selected.discard(row)
         else:
             self._selected.add(row)
-        self.tree.item(row, text=f"{self._checkbox(row)}  {row}")
-        self._update_count()
+        if self._only_selected.get():
+            # In der Ansicht "Nur Ausgewählte" abgewählte Zeilen sofort ausblenden.
+            self._refresh()
+        else:
+            self.tree.item(row, text=f"{self._checkbox(row)}  {row}")
+            self._update_count()
 
     def _select_all(self):
         self._selected = set(self._all)

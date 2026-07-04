@@ -173,7 +173,9 @@ Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
   fehlgeschlagen" (HTTP 401) ablehnen.
 - **Exportieren** — Konfiguration der ersten markierten Kamera auslesen, in einer
   durchsuchbaren Liste die gewünschten Parameter auswählen und als `.cfg` speichern
-  (optional mit Stream-Profilen).
+  (optional mit Stream-Profilen). Buttons **„Alle"/„Keine"**, ein Umschalter
+  **„Nur Ausgewählte anzeigen"** und unten die Anzahl der ausgewählten Parameter
+  helfen bei der Auswahl.
 - **Auf Werkseinstellungen zurücksetzen** — setzt die markierten Kameras zurück
   (sie starten danach neu). Zur Auswahl stehen:
   - **Werksreset mit Erhalt der IP-Adresse** — alle Einstellungen zurück, aber die

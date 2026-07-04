@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.04b6 — 2026-07-04
+
+- **Parameter-Auswahl: Umschalter „Nur Ausgewählte anzeigen"** (neben „Alle"/„Keine")
+  blendet die Liste auf die aktuell ausgewählten Parameter ein — praktisch, um vor
+  dem Speichern die Auswahl zu überprüfen. Wird zusammen mit dem Textfilter
+  angewandt.
+
 ## 26.07.04b5 — 2026-07-04
 
 - **Parameter-Auswahl beim Konfigurations-Export zeigt jetzt die Anzahl** der aktuell
