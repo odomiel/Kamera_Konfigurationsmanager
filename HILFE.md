@@ -167,6 +167,10 @@ Achtung: Die Firmware muss zum Modell passen; die Kameras starten danach neu.
 ### Konfiguration (Axis `.cfg`)
 Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
 - **Importieren** — eine `.cfg` auf alle markierten Kameras anwenden.
+  Schreibgeschützte `Properties.*`-Parameter (Geräte-Eigenschaften, die ein
+  AXIS-Device-Manager-Export mitschreibt) werden dabei automatisch übersprungen —
+  sonst würde die Kamera den kompletten Import mit „Authentifizierung
+  fehlgeschlagen" (HTTP 401) ablehnen.
 - **Exportieren** — Konfiguration der ersten markierten Kamera auslesen, in einer
   durchsuchbaren Liste die gewünschten Parameter auswählen und als `.cfg` speichern
   (optional mit Stream-Profilen).

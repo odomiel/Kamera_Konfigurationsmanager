@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.04b4 — 2026-07-04
+
+- **Konfigurations-Import: schreibgeschützte `Properties.*`-Parameter werden
+  übersprungen.** AXIS-Device-Manager-Exporte schreiben die Read-only-Gruppe
+  `Properties.*` (Geräte-Eigenschaften) mit. Wurde sie an `param.cgi?action=update`
+  gesendet, wies die Kamera (AXIS OS 12) den **gesamten** Batch mit HTTP 401
+  („Authentifizierung fehlgeschlagen") ab — dadurch schlug z. B. eine Overlay-
+  Vorlage komplett fehl, obwohl nur die 2 `Properties.*`-Einträge das Problem waren.
+  `apply_parameters` filtert diese Gruppe jetzt vor dem Anwenden heraus (gegen eine
+  echte P3265-V verifiziert: vorher 401, jetzt „10 Parameter angewendet").
+
 ## 26.07.04b3 — 2026-07-04
 
 - **Option „Beim Start maximiert öffnen"** (Einstellungen → Darstellung): Ist sie

@@ -859,8 +859,26 @@ def parse_adm_config(path):
     }
 
 
+# Schreibgeschuetzte VAPIX-Parametergruppen: param.cgi?action=update akzeptiert sie
+# nicht. AXIS-Device-Manager-Exporte schreiben sie dennoch mit (dumpen alles) --
+# wird die Gruppe mitgesendet, lehnt die Kamera den GESAMTEN Update-Batch ab
+# (AXIS OS 12: HTTP 401 "Basic realm=..."). Daher vor dem Anwenden herausfiltern.
+READONLY_PARAM_PREFIXES = ("Properties.",)
+
+
+def _writable_params(params):
+    """Entfernt schreibgeschuetzte (Properties.*) Parameter aus einem Param-Dict."""
+    return {k: v for k, v in params.items()
+            if not k.startswith(READONLY_PARAM_PREFIXES)}
+
+
 def apply_parameters(ip, username, password, params, scheme="auto", port=None, timeout=30):
-    """Setzt eine Reihe von param.cgi-Parametern (per POST) in einem Aufruf."""
+    """Setzt eine Reihe von param.cgi-Parametern (per POST) in einem Aufruf.
+
+    Schreibgeschuetzte ``Properties.*``-Parameter werden ignoriert (sonst weist die
+    Kamera den kompletten Batch mit 401 ab).
+    """
+    params = _writable_params(params)
     if not params:
         return 0
     fields = {"action": "update"}
