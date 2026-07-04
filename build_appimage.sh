@@ -37,15 +37,18 @@ dl() {  # dl <url> <zieldatei>
 }
 
 # --------------------------------------------------------------- 1. Quellen
-dl "https://downloads.sourceforge.net/project/tcl/Tcl/$TCL_VER/tcl$TCL_VER-src.tar.gz" "$SRC/tcl.tar.gz"
-dl "https://downloads.sourceforge.net/project/tcl/Tcl/$TK_VER/tk$TK_VER-src.tar.gz"    "$SRC/tk.tar.gz"
-dl "https://www.python.org/ftp/python/$PY_VER/Python-$PY_VER.tgz"                       "$SRC/python.tgz"
-dl "https://github.com/libffi/libffi/releases/download/v$FFI_VER/libffi-$FFI_VER.tar.gz" "$SRC/libffi.tar.gz"
-dl "https://github.com/openssl/openssl/releases/download/openssl-$SSL_VER/openssl-$SSL_VER.tar.gz" "$SRC/openssl.tar.gz"
+# Cache-Dateinamen enthalten die Version, damit ein Versions-Bump automatisch neu
+# lädt (sonst bliebe ein alter Tarball gleichen Namens liegen -> falsche Version).
+dl "https://downloads.sourceforge.net/project/tcl/Tcl/$TCL_VER/tcl$TCL_VER-src.tar.gz" "$SRC/tcl-$TCL_VER.tar.gz"
+dl "https://downloads.sourceforge.net/project/tcl/Tcl/$TK_VER/tk$TK_VER-src.tar.gz"    "$SRC/tk-$TK_VER.tar.gz"
+dl "https://www.python.org/ftp/python/$PY_VER/Python-$PY_VER.tgz"                       "$SRC/python-$PY_VER.tgz"
+dl "https://github.com/libffi/libffi/releases/download/v$FFI_VER/libffi-$FFI_VER.tar.gz" "$SRC/libffi-$FFI_VER.tar.gz"
+dl "https://github.com/openssl/openssl/releases/download/openssl-$SSL_VER/openssl-$SSL_VER.tar.gz" "$SRC/openssl-$SSL_VER.tar.gz"
 
 cd "$SRC"
 rm -rf "tcl$TCL_VER" "tk$TK_VER" "Python-$PY_VER" "libffi-$FFI_VER" "openssl-$SSL_VER"
-tar xf tcl.tar.gz; tar xf tk.tar.gz; tar xf python.tgz; tar xf libffi.tar.gz; tar xf openssl.tar.gz
+tar xf "tcl-$TCL_VER.tar.gz"; tar xf "tk-$TK_VER.tar.gz"; tar xf "python-$PY_VER.tgz"
+tar xf "libffi-$FFI_VER.tar.gz"; tar xf "openssl-$SSL_VER.tar.gz"
 
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
 export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
@@ -68,6 +71,10 @@ make install_sw >/dev/null
 # --------------------------------------------------------------- 3. Tcl 9
 echo "==== Tcl $TCL_VER ===="
 cd "$SRC/tcl$TCL_VER/unix"
+# Tcl 9 baut beim zipfs-Schritt eine frische libtcl9.0.so und fuehrt den ebenso
+# frischen tclsh aus -> dieser muss die Lib im Build-Verzeichnis finden (sonst
+# "cannot open libtcl9.0.so"). Build-Verzeichnis daher auf den Loader-Pfad legen.
+export LD_LIBRARY_PATH="$PWD${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 ./configure --prefix="$PREFIX" --enable-shared --enable-64bit >/dev/null
 make -j"$JOBS" >/dev/null
 make install >/dev/null
