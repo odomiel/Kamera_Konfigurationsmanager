@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.04b3 — 2026-07-04
+
+- **Option „Beim Start maximiert öffnen"** (Einstellungen → Darstellung): Ist sie
+  aktiv, öffnet das Hauptfenster beim nächsten Start bildschirmfüllend
+  (plattformübergreifend: `zoomed` unter Windows/macOS, `-zoomed` unter Linux/X11,
+  sonst Bildschirmgröße als Fallback). Standardmäßig aus.
+
 ## 26.07.04b2 — 2026-07-04
 
 - **Button „Suchen" heißt jetzt „Suchen/aktualisieren"** — verdeutlicht, dass die

@@ -37,6 +37,7 @@ DEFAULTS = {
     "theme": "dark",             # "dark" | "light" (Sun-Valley-Theme)
     "firmware_parallel": True,   # Firmware-Updates nebenläufig statt nacheinander
     "firmware_max_parallel": 4,  # max. gleichzeitige Firmware-Updates
+    "start_maximized": False,    # Hauptfenster beim Start maximiert öffnen
 }
 
 

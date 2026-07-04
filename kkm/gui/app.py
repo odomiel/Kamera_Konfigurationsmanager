@@ -137,6 +137,20 @@ class MainWindow(tk.Tk):
         self._refresh_table()
         self.after(100, self._poll)
         self._schedule_online_autocheck()
+        if self.settings.get("start_maximized", False):
+            # Nach dem ersten Zeichnen maximieren, damit der Fenstermanager es annimmt.
+            self.after(10, self._maximize_window)
+
+    def _maximize_window(self):
+        """Fenster maximieren — plattformübergreifend (Windows/macOS vs. Linux/X11)."""
+        try:
+            self.state("zoomed")                     # Windows / macOS
+        except tk.TclError:
+            try:
+                self.attributes("-zoomed", True)     # Linux/X11
+            except tk.TclError:                      # Fallback: Bildschirmgröße
+                self.geometry(f"{self.winfo_screenwidth()}x"
+                              f"{self.winfo_screenheight()}+0+0")
 
     # ------------------------------------------------------------------ UI
     def _build_toolbar(self):

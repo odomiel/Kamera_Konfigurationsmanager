@@ -107,11 +107,25 @@ class SettingsDialog(tk.Toplevel):
                             command=self._on_theme).pack(anchor=tk.W, pady=1)
         ttk.Label(tab, text="Modernes Sun-Valley-Design. Wirkt sofort.").pack(
             anchor=tk.W, pady=(6, 0))
+
+        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
+        ttk.Label(tab, text="Fenster:",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 4))
+        self._start_max_var = tk.BooleanVar(
+            value=bool(self.settings.get("start_maximized", False)))
+        ttk.Checkbutton(tab, text="Beim Start maximiert öffnen",
+                        variable=self._start_max_var,
+                        command=self._save_start_maximized).pack(anchor=tk.W)
+        ttk.Label(tab, text="Wirkt beim nächsten Programmstart.").pack(
+            anchor=tk.W, pady=(2, 0))
         return tab
 
     def _on_theme(self):
         if self.on_theme_change:
             self.on_theme_change(self._theme_var.get())
+
+    def _save_start_maximized(self):
+        self.settings.set("start_maximized", bool(self._start_max_var.get()))
 
     # ------------------------------------------------------------------- vault
     def _build_vault_tab(self, parent):
