@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.05b5 — 2026-07-05
+
+- **Linux-AppImage jetzt ebenfalls auf Python 3.14** (vorher 3.13) — zur
+  Vereinheitlichung mit der Windows-`.exe`. Tk 9 hatte die AppImage schon (Python
+  wird gegen selbst kompiliertes Tcl/Tk 9.0.4 gebaut), daher rein interner
+  Interpreter-Sprung: `build_appimage.sh` auf 3.14.6 gezogen, Wheel-Filter auf
+  `cp314` (regulär, nicht free-threaded `cp314t`) angepasst. Funktion unverändert.
+
 ## 26.07.05b4 — 2026-07-05
 
 - **Windows-`.exe` wird jetzt mit Tcl/Tk 9 gebaut** (bisher Tk 8.6). Der Build läuft

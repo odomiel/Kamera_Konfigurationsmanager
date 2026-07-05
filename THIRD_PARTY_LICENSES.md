@@ -9,7 +9,7 @@ eigene Programmcode (Paket `kkm/`, `main.py`, `bump_version.py`,
 
 | Komponente | Version | Lizenz | Im Bundle |
 |---|---|---|---|
-| CPython | AppImage 3.13.x · .exe 3.14.x | PSF License Agreement | AppImage + .exe |
+| CPython | 3.14.x | PSF License Agreement | AppImage + .exe |
 | Tcl | 9.0.x | Tcl/Tk License (BSD-artig) | AppImage (Quelltext) + .exe (aus Python 3.14) |
 | Tk | 9.0.x | Tcl/Tk License (BSD-artig) | AppImage (Quelltext) + .exe (aus Python 3.14) |
 | libffi | 3.6.0 | libffi License (MIT-artig) | AppImage |
@@ -37,7 +37,7 @@ eigene Programmcode (Paket `kkm/`, `main.py`, `bump_version.py`,
 
 ---
 
-## CPython 3.13
+## CPython 3.14
 
 Copyright © 2001-2025 Python Software Foundation. Alle Rechte vorbehalten.
 

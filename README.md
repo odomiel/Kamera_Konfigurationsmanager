@@ -3,7 +3,7 @@
 Plattformübergreifendes Desktop-Tool zum Verwalten und Konfigurieren von
 Netzwerkkameras — Aufbau grob wie der AXIS Device Manager, **ohne Live-Überwachung**.
 Windows portabel (`.exe`) und Linux (AppImage), gleicher Stack wie das
-Axis_Kamera_Discovery-Tool (Python 3.13 + Tkinter/Tk9).
+Axis_Kamera_Discovery-Tool (Python 3.14 + Tkinter/Tk9).
 
 ## Funktionen (Zielbild)
 
@@ -81,7 +81,7 @@ python3 main.py
 
 ## Bauen
 
-**Linux (AppImage)** — baut Tcl/Tk 9 + Python 3.13 + OpenSSL aus dem Quelltext
+**Linux (AppImage)** — baut Tcl/Tk 9 + Python 3.14 + OpenSSL aus dem Quelltext
 und vendort `zeroconf` + `cryptography` als Wheels (kein pip im Ergebnis nötig):
 
 ```bash

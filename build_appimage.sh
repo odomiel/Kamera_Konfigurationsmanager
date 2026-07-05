@@ -3,7 +3,7 @@
 # Baut ein eigenstaendiges AppImage des Kamera_Konfigurationsmanagers mit Tcl/Tk 9.
 #
 # Wie beim Axis_Kamera_Discovery-Tool: da kein Basis-Image mit Tk 9 existiert,
-# werden Tcl 9, Tk 9 und Python 3.13 aus dem Quellcode gebaut. libffi (fuer
+# werden Tcl 9, Tk 9 und Python 3.14 aus dem Quellcode gebaut. libffi (fuer
 # _ctypes -> ifaddr/zeroconf) und OpenSSL (fuer das ssl-Modul -> HTTPS/VAPIX)
 # ebenfalls. Reine Laufzeit-Pakete kommen als fertige Wheels (kein pip noetig):
 # zeroconf (+ifaddr) fuer die Discovery, cryptography (+cffi/pycparser) fuer den
@@ -20,8 +20,8 @@ JOBS="$(nproc)"
 
 TCL_VER=9.0.4
 TK_VER=9.0.4
-PY_VER=3.13.14
-PY_XY=3.13
+PY_VER=3.14.6
+PY_XY=3.14
 FFI_VER=3.6.0
 SSL_VER=3.5.7
 
@@ -88,7 +88,7 @@ cd "$SRC/tk$TK_VER/unix"
 make -j"$JOBS" >/dev/null
 make install >/dev/null
 
-# --------------------------------------------------------------- 5. Python 3.13
+# --------------------------------------------------------------- 5. Python 3.14
 echo "==== Python $PY_VER (gegen Tcl/Tk 9) ===="
 cd "$SRC/Python-$PY_VER"
 ./configure \
@@ -131,12 +131,13 @@ for f in d['releases'][v]:
     curl -fsSL "$url" -o "$BUILD/$pkg.whl"
     "$PYBIN" -m zipfile -e "$BUILD/$pkg.whl" "$SITE/"
 }
-# Discovery (mDNS/Zeroconf)
-wheel zeroconf     "'cp313' in n and 'manylinux' in n and 'x86_64' in n"
+# Discovery (mDNS/Zeroconf). Filter 'cp314-cp314-' waehlt die regulaere ABI und
+# schliesst die free-threaded 't'-Wheels (cp314t) aus -- unser Python ist GIL-Build.
+wheel zeroconf     "'cp314-cp314-' in n and 'manylinux' in n and 'x86_64' in n"
 wheel ifaddr       "n.endswith('.whl')"
 # Passwort-Tresor (AES-256-GCM). cryptography-Wheels sind abi3 (cp39+).
 wheel cryptography "'abi3' in n and 'manylinux' in n and 'x86_64' in n"
-wheel cffi         "'cp313' in n and 'manylinux' in n and 'x86_64' in n"
+wheel cffi         "'cp314-cp314-' in n and 'manylinux' in n and 'x86_64' in n"
 wheel pycparser    "n.endswith('.whl')"
 # Modernes Sun-Valley-Theme (reines py3-none-any-Wheel inkl. Tcl-Dateien)
 wheel sv-ttk       "n.endswith('.whl')"
