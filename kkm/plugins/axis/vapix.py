@@ -27,6 +27,7 @@ import json
 import os
 import re
 import ssl
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -130,6 +131,30 @@ def _post_form_auto(ip, username, password, path, fields, scheme="auto", port=No
         return _post_form(ip, username, password, path, fields, "http", port, timeout)
 
 
+def _http_error_detail(exc) -> str:
+    """Liefert eine kurze, lesbare Ursache aus dem Body einer HTTPError-Antwort.
+
+    AXIS-JSON-APIs betten die eigentliche Fehlermeldung meist als JSON
+    (``error.message``) oder Klartext in den Body ein — auch bei HTTP 500.
+    """
+    try:
+        raw = exc.read().decode("utf-8", errors="replace").strip()
+    except Exception:  # noqa: BLE001 - Body evtl. nicht lesbar
+        return ""
+    if not raw:
+        return ""
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return raw[:200]
+    err = data.get("error") if isinstance(data, dict) else None
+    if isinstance(err, dict):
+        return str(err.get("message") or err.get("code") or err)[:200]
+    if err:
+        return str(err)[:200]
+    return raw[:200]
+
+
 def _post_json(ip, username, password, path, obj, scheme, port, timeout):
     """POSTet einen JSON-Body und liefert die geparste JSON-Antwort (Dict).
 
@@ -150,7 +175,11 @@ def _post_json(ip, username, password, path, obj, scheme, port, timeout):
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
             raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
-        raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}")
+        # AXIS-JSON-APIs liefern die eigentliche Ursache oft im Fehler-Body mit --
+        # unbedingt anzeigen (z. B. bei 500 vom VMD4-control.cgi).
+        detail = _http_error_detail(exc)
+        raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}"
+                         + (f" — {detail}" if detail else ""))
     except urllib.error.URLError as exc:
         raise VapixError(f"Nicht erreichbar: {exc.reason}")
     except (TimeoutError, OSError) as exc:
@@ -1017,18 +1046,65 @@ def apply_stream_profiles(ip, username, password, profiles, scheme, port, timeou
 # Steuer-API (nicht param.cgi). ADM exportiert/importiert die Konfiguration darueber.
 VMD4_CONTROL_PATH = "/local/vmd/control.cgi"
 VMD4_API_VERSION = "1.4"
+VMD4_PACKAGE = "vmd"
+
+
+def _app_control(ip, username, password, action, package, scheme, port, timeout):
+    """Startet/stoppt eine ACAP-Anwendung ueber applications/control.cgi.
+
+    Liefert den (Klartext-)Antworttext. Wirft VapixError bei HTTP-/Netzwerkfehler.
+    """
+    path = f"/axis-cgi/applications/control.cgi?action={action}&package={package}"
+    return _request_auto(ip, username, password, path, scheme, port, timeout)
+
+
+def _vmd4_ping(ip, username, password, scheme, port, timeout):
+    """True, wenn die VMD4-Steuer-API antwortet (App laeuft). Ein gestopptes ACAP
+    liefert an seinem control.cgi einen generischen HTTP 500."""
+    try:
+        data = _post_json_auto(
+            ip, username, password, VMD4_CONTROL_PATH,
+            {"apiVersion": VMD4_API_VERSION, "method": "getSupportedVersions"},
+            scheme, port, timeout)
+        return isinstance(data, dict) and (
+            "data" in data or "apiVersion" in data or "error" in data)
+    except VapixError:
+        return False
+
+
+def _ensure_vmd_running(ip, username, password, scheme, port, timeout):
+    """Stellt sicher, dass die VMD-Anwendung laeuft — sonst antwortet ihr
+    control.cgi mit HTTP 500. Startet sie bei Bedarf und wartet, bis die Steuer-API
+    erreichbar ist. Wirft VapixError, wenn das nicht gelingt.
+    """
+    if _vmd4_ping(ip, username, password, scheme, port, timeout):
+        return
+    try:
+        _app_control(ip, username, password, "start", VMD4_PACKAGE, scheme, port, timeout)
+    except VapixError as exc:
+        raise VapixError(
+            "VMD4-Anwendung ist nicht aktiv und liess sich nicht starten "
+            f"({exc}). Ist 'AXIS Video Motion Detection' auf der Kamera installiert?")
+    for _ in range(8):                     # App braucht nach dem Start einen Moment
+        time.sleep(1)
+        if _vmd4_ping(ip, username, password, scheme, port, timeout):
+            return
+    raise VapixError("VMD4-Anwendung wurde gestartet, antwortet aber nicht "
+                     "rechtzeitig — bitte erneut versuchen.")
 
 
 def _vmd4_api_version(ip, username, password, scheme, port, timeout):
     """Ermittelt die hoechste von der Kamera unterstuetzte VMD4-API-Version.
 
-    Verschiedene Firmware unterstuetzt verschiedene Versionen (AXIS OS 9 z. B. eine
-    aeltere als OS 11/12). Faellt bei nicht verfuegbarer Auskunft auf
-    ``VMD4_API_VERSION`` zurueck.
+    Verschiedene Firmware unterstuetzt verschiedene Versionen. Faellt bei nicht
+    verfuegbarer Auskunft auf ``VMD4_API_VERSION`` zurueck. (getSupportedVersions
+    selbst verlangt ein ``apiVersion``-Feld, sonst Fehler 2003.)
     """
     try:
-        data = _post_json_auto(ip, username, password, VMD4_CONTROL_PATH,
-                               {"method": "getSupportedVersions"}, scheme, port, timeout)
+        data = _post_json_auto(
+            ip, username, password, VMD4_CONTROL_PATH,
+            {"apiVersion": "1.0", "method": "getSupportedVersions"},
+            scheme, port, timeout)
         versions = (data.get("data") or {}).get("apiVersions") or []
     except VapixError:
         versions = []
@@ -1043,10 +1119,12 @@ def apply_vmd4_config(ip, username, password, vmd4, scheme="auto", port=None, ti
     """Wendet eine VMD4-(Bewegungserkennung)-Konfiguration an.
 
     'vmd4' ist das geparste Konfigurationsobjekt (parse_adm_config()['vmd4'] —
-    cameras/profiles/…). Nutzt die JSON-Steuer-API der VMD4-ACAP-Anwendung
-    (POST /local/vmd/control.cgi, method 'setConfiguration'). Wirft VapixError,
-    wenn die Anwendung fehlt (HTTP 404) oder die Konfiguration ablehnt.
+    cameras/profiles/…). Startet bei Bedarf zuerst die VMD-Anwendung und nutzt dann
+    die JSON-Steuer-API (POST /local/vmd/control.cgi, method 'setConfiguration').
+    Wirft VapixError, wenn die Anwendung fehlt/nicht startet oder die Konfiguration
+    abgelehnt wird.
     """
+    _ensure_vmd_running(ip, username, password, scheme, port, timeout)
     api_version = _vmd4_api_version(ip, username, password, scheme, port, timeout)
     body = {"apiVersion": api_version, "context": "kkm",
             "method": "setConfiguration", "params": vmd4}

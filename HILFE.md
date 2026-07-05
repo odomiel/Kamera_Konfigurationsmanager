@@ -174,8 +174,11 @@ Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
   - Enthält die `.cfg` eine **Bewegungserkennung (VMD4)** — der AXIS Device Manager
     legt sie als eigenen Block ab, nicht als `param.cgi`-Parameter —, wird sie über
     die VMD4-App-Schnittstelle (`/local/vmd/control.cgi`) mitangewendet. In der
-    Dateiinfo erscheint dann der Hinweis „Bewegungserkennung (VMD4)". Voraussetzung:
-    Die Ziel-Kamera hat die VMD4-Anwendung (sonst meldet der Import einen Fehler).
+    Dateiinfo erscheint dann der Hinweis „Bewegungserkennung (VMD4)". Ist die
+    VMD-Anwendung auf der Kamera **gestoppt**, wird sie vor dem Anwenden
+    **automatisch gestartet** (eine gestoppte App würde sonst mit „HTTP-Fehler 500"
+    antworten). Voraussetzung: Die Ziel-Kamera hat die Anwendung „AXIS Video Motion
+    Detection" installiert (sonst meldet der Import einen Fehler).
 - **Exportieren** — Konfiguration der ersten markierten Kamera auslesen, in einer
   durchsuchbaren Liste die gewünschten Parameter auswählen und als `.cfg` speichern
   (optional mit Stream-Profilen). Buttons **„Alle"/„Keine"**, ein Umschalter

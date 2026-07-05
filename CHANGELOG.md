@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.05b2 — 2026-07-05
+
+- **VMD4-Import: gestoppte VMD-Anwendung wird automatisch gestartet.** Eine
+  gestoppte VMD-App antwortet an ihrem `control.cgi` mit einem generischen
+  „HTTP-Fehler 500" — der Import startet sie deshalb vorab (`applications/
+  control.cgi?action=start&package=vmd`) und wartet, bis die Steuer-API bereit ist.
+  Gegen eine echte P3265-V (AXIS OS 12.10) verifiziert. Zusätzlich: die
+  Versionsaushandlung sendet jetzt korrekt ein `apiVersion`-Feld (sonst Fehler
+  2003), und HTTP-Fehler der JSON-APIs zeigen jetzt den Antwort-Body der Kamera mit.
+
 ## 26.07.05b1 — 2026-07-05
 
 - **Konfigurations-Import versteht jetzt Bewegungserkennung (VMD4).** ADM-`.cfg`-
