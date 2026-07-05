@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.05b3 — 2026-07-05
+
+- **Konfigurations-Export kann jetzt auch die Bewegungserkennung (VMD4)
+  mitschreiben** — analog zu den Stream-Profilen. Das Auslesen holt die
+  VMD4-Konfiguration per `getConfiguration` (ohne die App zu starten); im
+  Parameter-Auswahlfenster gibt es die Option „Bewegungserkennung (VMD4) mit
+  exportieren" (ausgegraut, wenn die Kamera keine aktive VMD4 hat). Die `.cfg`
+  erhält denselben `<Vmd4>`-Block wie ein AXIS-Device-Manager-Export und lässt sich
+  1:1 wieder importieren. Round-trip gegen eine echte P3265-V verifiziert.
+
 ## 26.07.05b2 — 2026-07-05
 
 - **VMD4-Import: gestoppte VMD-Anwendung wird automatisch gestartet.** Eine

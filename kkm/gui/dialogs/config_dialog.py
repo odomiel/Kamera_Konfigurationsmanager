@@ -237,7 +237,10 @@ class ConfigDialog(ActionDialog):
             if kind == "err":
                 self._log_line(f"✗ Auslesen fehlgeschlagen: {payload}")
             else:
-                self._log_line(f"✓ Ausgelesen: {len(payload.get('parameters', {}))} Parameter")
+                vmd_note = " + Bewegungserkennung (VMD4)" if payload.get("vmd4") else ""
+                self._log_line(
+                    f"✓ Ausgelesen: {len(payload.get('parameters', {}))} Parameter"
+                    f"{vmd_note}")
                 self._open_param_select(payload)
         except queue.Empty:
             pass
@@ -248,7 +251,7 @@ class ConfigDialog(ActionDialog):
         self.wait_window(dlg)
         if dlg.result is None:
             return
-        selected, with_profiles = dlg.result
+        selected, with_profiles, with_vmd4 = dlg.result
         path = filedialog.asksaveasfilename(
             parent=self, title="Als ADM-Konfiguration speichern",
             defaultextension=".cfg",
@@ -257,8 +260,10 @@ class ConfigDialog(ActionDialog):
             return
         try:
             vapix.write_adm_config(path, config, selected_params=selected,
-                                   with_profiles=with_profiles)
-            self._log_line(f"✓ Gespeichert: {path} ({len(selected)} Parameter)")
+                                   with_profiles=with_profiles, with_vmd4=with_vmd4)
+            extra = " + Bewegungserkennung" if with_vmd4 and config.get("vmd4") else ""
+            self._log_line(
+                f"✓ Gespeichert: {path} ({len(selected)} Parameter{extra})")
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror(self.title_text, f"Speichern fehlgeschlagen: {exc}")
 
@@ -311,6 +316,16 @@ class ParameterSelectDialog(tk.Toplevel):
         self._with_profiles = tk.BooleanVar(value=bool(config.get("profiles")))
         ttk.Checkbutton(outer, text="Stream-Profile mit exportieren",
                         variable=self._with_profiles).pack(anchor=tk.W)
+
+        # Bewegungserkennung (VMD4) — nur anbietbar, wenn die Kamera eine hat.
+        has_vmd4 = config.get("vmd4") is not None
+        self._with_vmd4 = tk.BooleanVar(value=has_vmd4)
+        vmd4_chk = ttk.Checkbutton(
+            outer, text="Bewegungserkennung (VMD4) mit exportieren",
+            variable=self._with_vmd4)
+        vmd4_chk.pack(anchor=tk.W)
+        if not has_vmd4:
+            vmd4_chk.state(["disabled"])
 
         self._count_lbl = ttk.Label(outer)
         self._count_lbl.pack(anchor=tk.W, pady=(6, 0))
@@ -367,5 +382,6 @@ class ParameterSelectDialog(tk.Toplevel):
         self._refresh()
 
     def _ok(self):
-        self.result = (sorted(self._selected), self._with_profiles.get())
+        self.result = (sorted(self._selected), self._with_profiles.get(),
+                       self._with_vmd4.get())
         self.destroy()

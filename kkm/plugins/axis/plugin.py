@@ -176,8 +176,9 @@ class AxisPlugin(VendorPlugin):
                                      keep_ip=keep_ip, **self._conn(creds))
 
     def export_config(self, camera, creds: Credentials, out_path,
-                      selected_params=None, with_profiles=True):
+                      selected_params=None, with_profiles=True, with_vmd4=True):
         config = self.read_config(camera, creds)
         return vapix.write_adm_config(out_path, config,
                                       selected_params=selected_params,
-                                      with_profiles=with_profiles)
+                                      with_profiles=with_profiles,
+                                      with_vmd4=with_vmd4)

@@ -1193,14 +1193,37 @@ def _stream_profiles_from_params(full_params):
     return profiles
 
 
+def read_vmd4_config(ip, username, password, scheme="auto", port=None, timeout=30):
+    """Liest die aktuelle VMD4-(Bewegungserkennung)-Konfiguration (getConfiguration).
+
+    Liefert das Konfigurationsobjekt (cameras/profiles/…) oder ``None``, wenn die
+    VMD-Anwendung nicht vorhanden/aktiv ist. **Ohne Seiteneffekt** — anders als der
+    Import wird die App hier nicht gestartet (ein gestopptes ACAP liefert 500, das
+    wird als „nicht verfuegbar" behandelt).
+    """
+    try:
+        api_version = _vmd4_api_version(ip, username, password, scheme, port, timeout)
+        data = _post_json_auto(
+            ip, username, password, VMD4_CONTROL_PATH,
+            {"apiVersion": api_version, "context": "kkm", "method": "getConfiguration"},
+            scheme, port, timeout)
+    except VapixError:
+        return None
+    if not isinstance(data, dict) or data.get("error"):
+        return None
+    cfg = data.get("data")
+    return cfg if isinstance(cfg, dict) else None
+
+
 def read_device_config(ip, username, password, scheme="auto", port=None, timeout=30):
-    """Liest die komplette Geraetekonfiguration (param.cgi?action=list).
+    """Liest die komplette Geraetekonfiguration (param.cgi?action=list + VMD4).
 
     Liefert ein Dict im selben Format wie parse_adm_config() (model, firmware,
-    parameters, profiles). Die Parameternamen sind ohne 'root.'-Praefix
+    parameters, profiles, vmd4). Die Parameternamen sind ohne 'root.'-Praefix
     gespeichert -- genau so, wie param.cgi?action=update sie erwartet und die
     .cfg-Datei sie ablegt, sodass write_adm_config()/parse_adm_config()/
-    apply_adm_config() einen sauberen Round-Trip ergeben.
+    apply_adm_config() einen sauberen Round-Trip ergeben. ``vmd4`` ist ``None``,
+    wenn keine (aktive) VMD-Anwendung vorhanden ist.
     """
     text = _request_auto(ip, username, password,
                          "/axis-cgi/param.cgi?action=list", scheme, port, timeout)
@@ -1216,16 +1239,19 @@ def read_device_config(ip, username, password, scheme="auto", port=None, timeout
         "firmware": _param_value(full, "Properties.Firmware.Version"),
         "parameters": params,
         "profiles": _stream_profiles_from_params(full),
+        "vmd4": read_vmd4_config(ip, username, password, scheme, port, timeout),
     }
 
 
-def write_adm_config(path, config, selected_params=None, with_profiles=True):
+def write_adm_config(path, config, selected_params=None, with_profiles=True,
+                     with_vmd4=True):
     """Schreibt eine ADM-.cfg (AcmDeviceParameterExport) aus einer Konfiguration.
 
     'config' ist das Dict aus read_device_config()/parse_adm_config(). Ist
     'selected_params' (eine Menge von Namen) gesetzt, werden nur diese
-    Parameter exportiert, sonst alle. 'with_profiles' steuert die
-    Stream-Profile. Liefert die Anzahl geschriebener Parameter.
+    Parameter exportiert, sonst alle. 'with_profiles' steuert die Stream-Profile,
+    'with_vmd4' die Bewegungserkennung (nur geschrieben, wenn ``config['vmd4']``
+    vorhanden ist). Liefert die Anzahl geschriebener Parameter.
     """
     params = config.get("parameters", {})
     names = [n for n in sorted(params)
@@ -1245,6 +1271,12 @@ def write_adm_config(path, config, selected_params=None, with_profiles=True):
             ET.SubElement(sp, "Name").text = prof.get("name", "")
             ET.SubElement(sp, "Description").text = prof.get("description", "")
             ET.SubElement(sp, "Parameters").text = prof.get("parameters", "")
+    # Bewegungserkennung (VMD4) als eigener Block, kompaktes JSON wie im ADM-Export.
+    if with_vmd4 and config.get("vmd4") is not None:
+        ET.SubElement(root, "Vmd2")
+        vmd4 = ET.SubElement(root, "Vmd4")
+        ET.SubElement(vmd4, "Vmd4Configuration").text = json.dumps(
+            config["vmd4"], separators=(",", ":"))
     tree = ET.ElementTree(root)
     ET.indent(tree, space="  ")
     try:

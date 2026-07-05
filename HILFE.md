@@ -181,9 +181,11 @@ Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
     Detection" installiert (sonst meldet der Import einen Fehler).
 - **Exportieren** — Konfiguration der ersten markierten Kamera auslesen, in einer
   durchsuchbaren Liste die gewünschten Parameter auswählen und als `.cfg` speichern
-  (optional mit Stream-Profilen). Buttons **„Alle"/„Keine"**, ein Umschalter
-  **„Nur Ausgewählte anzeigen"** und unten die Anzahl der ausgewählten Parameter
-  helfen bei der Auswahl.
+  (optional mit **Stream-Profilen** und mit **Bewegungserkennung (VMD4)**). Buttons
+  **„Alle"/„Keine"**, ein Umschalter **„Nur Ausgewählte anzeigen"** und unten die
+  Anzahl der ausgewählten Parameter helfen bei der Auswahl. Die VMD4-Option ist nur
+  wählbar, wenn die Kamera eine aktive Bewegungserkennung hat (sonst ausgegraut);
+  das Auslesen startet die VMD-App **nicht** von selbst.
 - **Auf Werkseinstellungen zurücksetzen** — setzt die markierten Kameras zurück
   (sie starten danach neu). Zur Auswahl stehen:
   - **Werksreset mit Erhalt der IP-Adresse** — alle Einstellungen zurück, aber die
