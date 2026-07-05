@@ -401,7 +401,7 @@ class MainWindow(tk.Tk):
         gid = self._current_gid
         g = self.store.groups.get(gid)
         if not g or not g.deletable:
-            messagebox.showinfo(APP_NAME, "Diese Gruppe kann nicht umbenannt werden.")
+            messagebox.showinfo(APP_NAME, "Diese Gruppe kann nicht umbenannt werden.", parent=self)
             return
         name = simpledialog.askstring("Umbenennen", "Neuer Name:", initialvalue=g.name,
                                       parent=self)
@@ -412,7 +412,7 @@ class MainWindow(tk.Tk):
     def _delete_group(self):
         gid = self._current_gid
         if not self.store.delete_group(gid):
-            messagebox.showinfo(APP_NAME, "Diese Gruppe kann nicht gelöscht werden.")
+            messagebox.showinfo(APP_NAME, "Diese Gruppe kann nicht gelöscht werden.", parent=self)
             return
         self._current_gid = ALL_CAMERAS_ID
         self._refresh_groups()
@@ -555,14 +555,14 @@ class MainWindow(tk.Tk):
     def _open_camera_web_cam(self, cam):
         ip = get_first_ip(cam)
         if not ip:
-            messagebox.showinfo(APP_NAME, "Für diese Kamera ist keine IP-Adresse bekannt.")
+            messagebox.showinfo(APP_NAME, "Für diese Kamera ist keine IP-Adresse bekannt.", parent=self)
             return
         url = ip if "://" in ip else f"http://{ip}"
         try:
             webbrowser.open(url)
             self.status.config(text=f"Kamera im Browser geöffnet: {url}")
         except Exception as exc:
-            messagebox.showerror(APP_NAME, f"Konnte den Browser nicht öffnen:\n{exc}")
+            messagebox.showerror(APP_NAME, f"Konnte den Browser nicht öffnen:\n{exc}", parent=self)
 
     # ------------------------------------------------- camera -> group (Rechtsklick)
     def _show_table_menu(self, event):
@@ -906,7 +906,7 @@ class MainWindow(tk.Tk):
                     self.after(0, self._prompt_next_credentials)   # nächste/erneute Abfrage
                 elif kind == "error":
                     self.progress.stop()
-                    messagebox.showerror(APP_NAME, payload)
+                    messagebox.showerror(APP_NAME, payload, parent=self)
         except queue.Empty:
             pass
         self._update_lock_button()   # Schloss-Symbol mit Tresor-Status synchron halten
@@ -916,14 +916,14 @@ class MainWindow(tk.Tk):
     def _open_action(self, capability: str, label: str):
         cams = self._selected_cameras()
         if not cams:
-            messagebox.showinfo(APP_NAME, "Bitte zuerst Kameras in der Tabelle auswählen.")
+            messagebox.showinfo(APP_NAME, "Bitte zuerst Kameras in der Tabelle auswählen.", parent=self)
             return
         dialog_cls = ACTION_DIALOGS.get(capability)
         if dialog_cls is None:
             messagebox.showinfo(
                 APP_NAME,
                 f"Aktion „{label}“ folgt — die Plugin-Logik (VAPIX) ist vorhanden, "
-                "der Dialog ist noch nicht gebaut.")
+                "der Dialog ist noch nicht gebaut.", parent=self)
             return
         dialog_cls(self, cams, self.registry, vault=getattr(self, "vault", None))
 

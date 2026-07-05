@@ -221,7 +221,7 @@ class ActionDialog(tk.Toplevel):
                 messagebox.showinfo(
                     self.title_text,
                     "Ohne Tresor werden die Passwörter nur für die laufende "
-                    "Sitzung gemerkt (beim Schließen verworfen).")
+                    "Sitzung gemerkt (beim Schließen verworfen).", parent=self)
         self._busy = True
         self.progress.start(12)
         self._log_clear()

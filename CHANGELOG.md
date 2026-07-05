@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.05b7 — 2026-07-05
+
+- **Meldungsfenster erscheinen jetzt zuverlässig im Vordergrund.** Hinweis- und
+  Fehlerdialoge (z. B. „Bitte zuerst eine .cfg-Datei wählen" beim Klick auf
+  *Importieren* ohne Dateiauswahl) konnten hinter dem gerade offenen Dialog bzw.
+  dem Hauptfenster landen — unsichtbar, aber blockierend (modal). Ursache: den
+  `messagebox`-Aufrufen fehlte das Elternfenster, sodass Tk sie ans Wurzelfenster
+  statt an den aktiven Dialog hängte. Allen 24 betroffenen Aufrufen (in den
+  Aktions-Dialogen und im Hauptfenster) wird nun `parent=` mitgegeben; die Meldung
+  erscheint dadurch immer über dem auslösenden Fenster.
+
 ## 26.07.05b6 — 2026-07-05
 
 - **Korrektur: Die Windows-`.exe` hat weiterhin Tcl/Tk 8.6, nicht Tk 9.** Die in

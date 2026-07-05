@@ -124,7 +124,7 @@ class IpDialog(ActionDialog):
         mask = self.mask.get().strip()
         gateway = self.gateway.get().strip()
         if not mask:
-            messagebox.showinfo(self.title_text, "Bitte eine Subnetzmaske angeben.")
+            messagebox.showinfo(self.title_text, "Bitte eine Subnetzmaske angeben.", parent=self)
             return
 
         targets: dict[str, str] = {}
@@ -132,7 +132,7 @@ class IpDialog(ActionDialog):
             if mode == "range":
                 start = self.start_ip.get().strip()
                 if not start:
-                    messagebox.showinfo(self.title_text, "Bitte eine Start-IP angeben.")
+                    messagebox.showinfo(self.title_text, "Bitte eine Start-IP angeben.", parent=self)
                     return
                 for idx, cam in enumerate(self.cameras):
                     targets[camera_key(cam)] = AxisPlugin.next_ip(start, idx)
@@ -145,7 +145,7 @@ class IpDialog(ActionDialog):
                     AxisPlugin.next_ip(ip, 0)   # validate format (raises on bad input)
                     targets[key] = ip
         except ValueError as exc:
-            messagebox.showerror(self.title_text, f"Ungültige Eingabe: {exc}")
+            messagebox.showerror(self.title_text, f"Ungültige Eingabe: {exc}", parent=self)
             return
 
         # Confirm, since changing IPs may drop the current connection.

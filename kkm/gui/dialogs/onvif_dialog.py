@@ -126,7 +126,7 @@ class OnvifDialog(ActionDialog):
         name = self.user_name.get().strip()
         pw = self.user_pw.get()
         if not name or not pw:
-            messagebox.showinfo(self.title_text, "Bitte Benutzername und Passwort angeben.")
+            messagebox.showinfo(self.title_text, "Bitte Benutzername und Passwort angeben.", parent=self)
             return
         level = self.level.get()
 
@@ -146,12 +146,12 @@ class OnvifDialog(ActionDialog):
     def _apply_import(self):
         path = self.import_path.get().strip()
         if not path:
-            messagebox.showinfo(self.title_text, "Bitte zuerst eine Benutzerliste wählen.")
+            messagebox.showinfo(self.title_text, "Bitte zuerst eine Benutzerliste wählen.", parent=self)
             return
         try:
             users = AxisPlugin.parse_user_list(path, onvif=True)  # validate once
         except Exception as exc:  # noqa: BLE001
-            messagebox.showerror(self.title_text, str(exc))
+            messagebox.showerror(self.title_text, str(exc), parent=self)
             return
 
         def op(plugin, camera, creds):

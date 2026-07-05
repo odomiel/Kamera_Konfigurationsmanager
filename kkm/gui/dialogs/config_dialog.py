@@ -183,12 +183,12 @@ class ConfigDialog(ActionDialog):
     def _do_import(self):
         path = self._cfg_path.get().strip()
         if not path:
-            messagebox.showinfo(self.title_text, "Bitte zuerst eine .cfg-Datei wählen.")
+            messagebox.showinfo(self.title_text, "Bitte zuerst eine .cfg-Datei wählen.", parent=self)
             return
         try:
             vapix.parse_adm_config(path)   # validate once before touching cameras
         except vapix.VapixError as exc:
-            messagebox.showerror(self.title_text, str(exc))
+            messagebox.showerror(self.title_text, str(exc), parent=self)
             return
 
         def op(plugin, camera, creds):
@@ -206,7 +206,7 @@ class ConfigDialog(ActionDialog):
         camera = self.cameras[0]
         plugin = self.plugin_for(camera)
         if plugin is None:
-            messagebox.showerror(self.title_text, "Kein Plugin für diese Kamera.")
+            messagebox.showerror(self.title_text, "Kein Plugin für diese Kamera.", parent=self)
             return
         # Zugangsdaten aus dem Tresor gewünscht, aber gesperrt -> anbieten zu
         # entsperren, damit das Passwort fürs Auslesen zur Verfügung steht.
@@ -265,7 +265,7 @@ class ConfigDialog(ActionDialog):
             self._log_line(
                 f"✓ Gespeichert: {path} ({len(selected)} Parameter{extra})")
         except Exception as exc:  # noqa: BLE001
-            messagebox.showerror(self.title_text, f"Speichern fehlgeschlagen: {exc}")
+            messagebox.showerror(self.title_text, f"Speichern fehlgeschlagen: {exc}", parent=self)
 
 
 class ParameterSelectDialog(tk.Toplevel):

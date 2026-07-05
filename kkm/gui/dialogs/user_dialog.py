@@ -151,7 +151,7 @@ class UserDialog(ActionDialog):
         name = self.user_name.get().strip()
         pw = self.user_pw.get()
         if not name or not pw:
-            messagebox.showinfo(self.title_text, "Bitte Benutzername und Passwort angeben.")
+            messagebox.showinfo(self.title_text, "Bitte Benutzername und Passwort angeben.", parent=self)
             return
         role = self.role.get()
         factory = self.factory.get()
@@ -167,7 +167,7 @@ class UserDialog(ActionDialog):
         name = self.user_name.get().strip()
         pw = self.user_pw.get()
         if not name or not pw:
-            messagebox.showinfo(self.title_text, "Bitte Benutzername und neues Passwort angeben.")
+            messagebox.showinfo(self.title_text, "Bitte Benutzername und neues Passwort angeben.", parent=self)
             return
 
         def op(plugin, camera, creds):
@@ -180,12 +180,12 @@ class UserDialog(ActionDialog):
     def _apply_import(self):
         path = self.import_path.get().strip()
         if not path:
-            messagebox.showinfo(self.title_text, "Bitte zuerst eine Benutzerliste wählen.")
+            messagebox.showinfo(self.title_text, "Bitte zuerst eine Benutzerliste wählen.", parent=self)
             return
         try:
             users = AxisPlugin.parse_user_list(path, onvif=False)  # validate once
         except Exception as exc:  # noqa: BLE001
-            messagebox.showerror(self.title_text, str(exc))
+            messagebox.showerror(self.title_text, str(exc), parent=self)
             return
         factory = self.factory.get()
 

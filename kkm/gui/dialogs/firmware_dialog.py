@@ -150,7 +150,7 @@ class FirmwareDialog(ActionDialog):
     def _choose_for_model(self):
         model = self._selected_model()
         if not model:
-            messagebox.showinfo(self.title_text, "Bitte zuerst ein Modell auswählen.")
+            messagebox.showinfo(self.title_text, "Bitte zuerst ein Modell auswählen.", parent=self)
             return
         path = filedialog.askopenfilename(
             parent=self, title=f"Firmware für {model}",
@@ -170,7 +170,7 @@ class FirmwareDialog(ActionDialog):
     def _do_upgrade(self):
         if not self._fw_by_model:
             messagebox.showinfo(self.title_text,
-                                "Bitte mindestens einem Modell eine Firmware zuweisen.")
+                                "Bitte mindestens einem Modell eine Firmware zuweisen.", parent=self)
             return
         assigned = sum(len(self._by_model[m]) for m in self._fw_by_model)
         skipped = len(self.cameras) - assigned
