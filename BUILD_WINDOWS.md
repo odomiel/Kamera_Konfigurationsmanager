@@ -15,11 +15,15 @@ py -3.14 -m pip install --upgrade pip pyinstaller
 py -3.14 -m pip install -r requirements.txt
 ```
 
-**Warum Python 3.14?** Dessen Windows-Installer buendelt **Tcl/Tk 9.0** — Python
-3.13 liefert noch Tk 8.6. PyInstaller uebernimmt die Tcl/Tk-Version des bauenden
-Interpreters, sodass die `.exe` dieselbe **Tk-9**-Oberflaeche wie die
-Linux-AppImage bekommt (dort wird Python gegen Tk 9 selbst kompiliert). `--upgrade
-pyinstaller` stellt eine Tk-9-faehige PyInstaller-Version (>= 6.10) sicher.
+**Warum Python 3.14?** Es haelt die Python-Version zur Linux-AppImage konsistent
+und ist die aktuelle Reihe. **Hinweis zur Tk-Version:** Der python.org-**Windows**-
+Installer von 3.14 buendelt weiterhin **Tcl/Tk 8.6.15** — nur der *macOS*-Installer
+wurde ab 3.14.5 auf Tk 9.0 umgestellt (CPythons `PCbuild/get_externals.bat` pinnt
+fuer Windows `tk-8.6.15.0`). Da PyInstaller die Tk-Version des bauenden
+Interpreters uebernimmt, hat die `.exe` folglich **Tk 8.6, nicht Tk 9**. Tk 9 gibt
+es nur in der Linux-AppImage, weil diese Tcl/Tk 9 selbst aus dem Quelltext baut.
+Das ist unkritisch: der Dunkelmodus (`sv-ttk`) laeuft auf Tk 8.6 unveraendert.
+`--upgrade pyinstaller` haelt PyInstaller aktuell.
 
 `tkinter` ist im offiziellen Windows-Python bereits enthalten. `cryptography`
 liefert ein fertiges Wheel inkl. Krypto-Backend (fuer den Passwort-Tresor).

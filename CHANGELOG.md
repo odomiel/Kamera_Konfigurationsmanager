@@ -4,6 +4,20 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.05b6 — 2026-07-05
+
+- **Korrektur: Die Windows-`.exe` hat weiterhin Tcl/Tk 8.6, nicht Tk 9.** Die in
+  26.07.05b4 getroffene Annahme war falsch — der python.org-**Windows**-Installer
+  von Python 3.14 bündelt weiterhin **Tcl/Tk 8.6.15** (CPythons
+  `PCbuild/get_externals.bat` pinnt für Windows `tk-8.6.15.0`); nur der *macOS*-
+  Installer wurde ab 3.14.5 auf Tk 9.0 umgestellt. Da PyInstaller die Tk-Version
+  des bauenden Interpreters übernimmt, bleibt die `.exe` bei Tk 8.6. Tk 9 gibt es
+  daher **nur** in der Linux-AppImage (die Tcl/Tk 9 selbst kompiliert). Python 3.14
+  bleibt auf Windows — zur Konsistenz der Python-Version mit der AppImage; der
+  Dunkelmodus (`sv-ttk`) läuft auf Tk 8.6 unverändert. Die irreführenden Angaben in
+  `build_windows.ps1`, `BUILD_WINDOWS.md`, `README.md` und `CLAUDE.md` wurden
+  berichtigt. Keine Funktions- oder Code-Änderung.
+
 ## 26.07.05b5 — 2026-07-05
 
 - **Linux-AppImage jetzt ebenfalls auf Python 3.14** (vorher 3.13) — zur
@@ -13,6 +27,10 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   `cp314` (regulär, nicht free-threaded `cp314t`) angepasst. Funktion unverändert.
 
 ## 26.07.05b4 — 2026-07-05
+
+> **⚠ Berichtigung (26.07.05b6):** Dieser Eintrag ist falsch. Der Windows-
+> Installer von Python 3.14 bringt **kein** Tk 9 mit — die `.exe` blieb bei Tk 8.6.
+> Nur der macOS-Installer wurde auf Tk 9 umgestellt. Siehe 26.07.05b6.
 
 - **Windows-`.exe` wird jetzt mit Tcl/Tk 9 gebaut** (bisher Tk 8.6). Der Build läuft
   dafür auf **Python 3.14**, dessen Windows-Installer Tcl/Tk 9.0 mitbringt —

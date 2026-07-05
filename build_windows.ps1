@@ -1,17 +1,19 @@
 # Baut die portable Windows-.exe des Kamera_Konfigurationsmanagers.
 # Muss AUF Windows mit Python 3.14 laufen (PyInstaller cross-kompiliert nicht).
 #
-# Python 3.14 wird bewusst genutzt: sein Windows-Installer bringt Tcl/Tk 9.0 mit
-# (Python 3.13 buendelt noch Tk 8.6). PyInstaller nimmt die Tk-Version des
-# bauenden Interpreters -> so entspricht die .exe der Linux-AppImage (ebenfalls Tk 9).
-# Eine aktuelle PyInstaller-Version (>= 6.10, unterstuetzt Tk 9) wird per --upgrade
-# sichergestellt.
+# Python 3.14 haelt die Python-Version zur Linux-AppImage konsistent.
+# ACHTUNG: Der python.org-WINDOWS-Installer von 3.14 buendelt weiterhin Tcl/Tk
+# 8.6.15 (nur der macOS-Installer wurde auf Tk 9.0 umgestellt; CPythons
+# PCbuild/get_externals.bat pinnt fuer Windows tk-8.6.15.0). PyInstaller nimmt
+# die Tk-Version des bauenden Interpreters -> die .exe hat daher Tk 8.6, NICHT
+# Tk 9. Tk 9 gibt es nur in der AppImage, die Tcl/Tk 9 selbst kompiliert. Der
+# Dunkelmodus (sv_ttk) laeuft auf Tk 8.6 unveraendert.
 #
 #   powershell -ExecutionPolicy Bypass -File build_windows.ps1
 #
 $ErrorActionPreference = "Stop"
 
-Write-Host "==== Abhaengigkeiten sicherstellen (Python 3.14, Tcl/Tk 9) ===="
+Write-Host "==== Abhaengigkeiten sicherstellen (Python 3.14, Tcl/Tk 8.6) ===="
 py -3.14 -m pip install --upgrade pip pyinstaller
 # Laufzeit-Abhaengigkeiten aus requirements.txt: zeroconf, cryptography UND sv-ttk
 # (das Sun-Valley-Theme fuer Hell/Dunkel). Fehlte sv-ttk hier, buendelte PyInstaller
