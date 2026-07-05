@@ -9,9 +9,9 @@ eigene Programmcode (Paket `kkm/`, `main.py`, `bump_version.py`,
 
 | Komponente | Version | Lizenz | Im Bundle |
 |---|---|---|---|
-| CPython | 3.13.x | PSF License Agreement | AppImage + .exe |
-| Tcl | 9.0.4 | Tcl/Tk License (BSD-artig) | AppImage (Windows: System-Tcl/Tk) |
-| Tk | 9.0.4 | Tcl/Tk License (BSD-artig) | AppImage (Windows: System-Tcl/Tk) |
+| CPython | AppImage 3.13.x · .exe 3.14.x | PSF License Agreement | AppImage + .exe |
+| Tcl | 9.0.x | Tcl/Tk License (BSD-artig) | AppImage (Quelltext) + .exe (aus Python 3.14) |
+| Tk | 9.0.x | Tcl/Tk License (BSD-artig) | AppImage (Quelltext) + .exe (aus Python 3.14) |
 | libffi | 3.6.0 | libffi License (MIT-artig) | AppImage |
 | OpenSSL | 3.5.x | Apache License 2.0 | AppImage (ssl-Modul) |
 | zeroconf | aktuell | **LGPL-2.1-or-later** | AppImage + .exe |

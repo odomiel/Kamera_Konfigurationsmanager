@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.05b4 — 2026-07-05
+
+- **Windows-`.exe` wird jetzt mit Tcl/Tk 9 gebaut** (bisher Tk 8.6). Der Build läuft
+  dafür auf **Python 3.14**, dessen Windows-Installer Tcl/Tk 9.0 mitbringt —
+  PyInstaller übernimmt die Tk-Version des bauenden Interpreters. Damit hat die
+  `.exe` dieselbe Tk-9-Oberfläche wie die Linux-AppImage (im „Über"-Tab sichtbar).
+  `build_windows.ps1`/`BUILD_WINDOWS.md` auf `py -3.14` umgestellt; benötigt eine
+  aktuelle PyInstaller-Version (≥ 6.10, Tk-9-fähig). Linux-AppImage unverändert.
+
 ## 26.07.05b3 — 2026-07-05
 
 - **Konfigurations-Export kann jetzt auch die Bewegungserkennung (VMD4)

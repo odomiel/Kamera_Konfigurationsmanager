@@ -7,13 +7,19 @@ muss **auf Windows** laufen.
 ## Voraussetzungen
 
 - Windows 10/11 (x64)
-- Python 3.13 (von python.org; bringt Tkinter/Tcl-Tk mit)
+- **Python 3.14** (von python.org; bringt Tkinter/Tcl-Tk mit)
 - Paketabhaengigkeiten:
 
 ```powershell
-py -3.13 -m pip install --upgrade pip pyinstaller
-py -3.13 -m pip install -r requirements.txt
+py -3.14 -m pip install --upgrade pip pyinstaller
+py -3.14 -m pip install -r requirements.txt
 ```
+
+**Warum Python 3.14?** Dessen Windows-Installer buendelt **Tcl/Tk 9.0** — Python
+3.13 liefert noch Tk 8.6. PyInstaller uebernimmt die Tcl/Tk-Version des bauenden
+Interpreters, sodass die `.exe` dieselbe **Tk-9**-Oberflaeche wie die
+Linux-AppImage bekommt (dort wird Python gegen Tk 9 selbst kompiliert). `--upgrade
+pyinstaller` stellt eine Tk-9-faehige PyInstaller-Version (>= 6.10) sicher.
 
 `tkinter` ist im offiziellen Windows-Python bereits enthalten. `cryptography`
 liefert ein fertiges Wheel inkl. Krypto-Backend (fuer den Passwort-Tresor).
@@ -24,7 +30,7 @@ der `.exe` das Sun-Valley-Theme und der **Dunkelmodus funktioniert nicht**
 ## Bauen
 
 ```powershell
-py -3.13 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
+py -3.14 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
 ```
 
 Ergebnis: `dist\Kamerakonfigurationsmanager.exe` — eine eigenstaendige,

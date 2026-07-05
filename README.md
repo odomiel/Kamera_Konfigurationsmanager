@@ -89,14 +89,15 @@ und vendort `zeroconf` + `cryptography` als Wheels (kein pip im Ergebnis nötig)
 ./build_appimage.sh --bump     # Version vorher hochzählen, dann bauen
 ```
 
-**Windows (portable .exe)** — muss auf Windows mit Python 3.13 laufen
-(PyInstaller cross-kompiliert nicht), Details in `BUILD_WINDOWS.md`. Die `.exe`
-legt ihre Konfiguration (Gruppen, Einstellungen, Passwort-Tresor) **neben sich
-selbst** im Ordner `kamera_konfigurationsmanager` ab (mitnehmbar); die Linux-
-AppImage nutzt weiterhin `~/.config`:
+**Windows (portable .exe)** — muss auf Windows mit **Python 3.14** laufen
+(PyInstaller cross-kompiliert nicht; 3.14 bringt Tcl/Tk 9 mit — wie die AppImage),
+Details in `BUILD_WINDOWS.md`. Die `.exe` legt ihre Konfiguration (Gruppen,
+Einstellungen, Passwort-Tresor) **neben sich selbst** im Ordner
+`kamera_konfigurationsmanager` ab (mitnehmbar); die Linux-AppImage nutzt weiterhin
+`~/.config`:
 
 ```powershell
-py -3.13 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
+py -3.14 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
 # oder: powershell -ExecutionPolicy Bypass -File build_windows.ps1
 ```
 

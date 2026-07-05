@@ -1,4 +1,4 @@
-# Runtime dependencies (vendored as cp313 wheels in the AppImage/Windows build).
+# Runtime dependencies (vendored as wheels: AppImage cp313, Windows-.exe cp314).
 zeroconf            # Axis mDNS discovery (_axis-video._tcp.local.)
 cryptography        # AES-256-GCM for the password vault (PBKDF2 KDF is stdlib)
 sv-ttk              # modernes Sun-Valley-ttk-Theme (Hell/Dunkel)
