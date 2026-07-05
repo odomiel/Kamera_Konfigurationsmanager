@@ -48,8 +48,9 @@ unverändert.
 Gerüst. Funktionsfähig: Paketstruktur, Plugin-Interface, Gruppen-Store,
 Passwort-Tresor, Axis-Plugin (Discovery + VAPIX gewrappt), GUI-Schale mit Suche,
 Gruppen, Tabelle und Online-Prüfung. **Erster Aktions-Dialog fertig:**
-*Konfiguration* (Axis `.cfg` Import auf alle ausgewählten Kameras + Export der
-ersten Kamera mit durchsuchbarer Parameter-Auswahl, v1+v2) — auf gemeinsamer
+*Konfiguration* (Axis `.cfg` Import auf alle ausgewählten Kameras — inkl.
+Bewegungserkennung/VMD4 — + Export der ersten Kamera mit durchsuchbarer
+Parameter-Auswahl, v1+v2) — auf gemeinsamer
 Dialog-Basis (`kkm/gui/dialogs/base.py`: Zugangsdaten, Hintergrund-Threads,
 Ergebnis-Log, Tresor-Vorbefüllung). **Firmware-Dialog fertig:** aktualisiert
 mehrere Kameras *verschiedener Modelle gleichzeitig* — pro Modell eine eigene

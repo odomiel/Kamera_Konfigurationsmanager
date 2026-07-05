@@ -19,8 +19,9 @@
 Two operations, both on the cameras selected in the main table:
 
 - **Import**: pick a ``.cfg`` and apply it to *all* selected cameras (parameters
-  via ``param.cgi`` + stream profiles), each outcome logged. The file is parsed
-  once up front to validate it and show its model/firmware before applying.
+  via ``param.cgi`` + stream profiles + optional VMD4 motion-detection config via
+  the VMD4 app API), each outcome logged. The file is parsed once up front to
+  validate it and show its model/firmware before applying.
 - **Export**: read the configuration of the *first* selected camera, let the user
   pick which parameters to keep (searchable checkbox list), and save a ``.cfg``.
 
@@ -168,11 +169,13 @@ class ConfigDialog(ActionDialog):
         self._cfg_path.set(path)
         try:
             cfg = vapix.parse_adm_config(path)
-            self._cfg_info.config(
-                text=f"Modell: {cfg.get('model') or '?'} · "
-                     f"Firmware: {cfg.get('firmware') or '?'} · "
-                     f"{len(cfg.get('parameters', {}))} Parameter · "
-                     f"{len(cfg.get('profiles', []))} Stream-Profile")
+            info = (f"Modell: {cfg.get('model') or '?'} · "
+                    f"Firmware: {cfg.get('firmware') or '?'} · "
+                    f"{len(cfg.get('parameters', {}))} Parameter · "
+                    f"{len(cfg.get('profiles', []))} Stream-Profile")
+            if cfg.get("vmd4") is not None:
+                info += " · Bewegungserkennung (VMD4)"
+            self._cfg_info.config(text=info)
         except vapix.VapixError as exc:
             self._cfg_info.config(text=f"Ungültig: {exc}")
             self._cfg_path.set("")
@@ -189,8 +192,10 @@ class ConfigDialog(ActionDialog):
             return
 
         def op(plugin, camera, creds):
-            n = plugin.import_config(camera, creds, path)
-            return f"angewendet ({n} Parameter)" if isinstance(n, int) else "angewendet"
+            res = plugin.import_config(camera, creds, path)
+            if isinstance(res, int):
+                return f"angewendet ({res} Parameter)"
+            return str(res) if res else "angewendet"
 
         self.run_per_camera(op, done_msg="Import abgeschlossen.")
 

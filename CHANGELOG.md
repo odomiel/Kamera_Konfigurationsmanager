@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.05b1 — 2026-07-05
+
+- **Konfigurations-Import versteht jetzt Bewegungserkennung (VMD4).** ADM-`.cfg`-
+  Dateien mit einem `<Vmd4>`-Block (Motion Detection, kein `param.cgi`-Parameter,
+  sondern JSON) werden erkannt und über die VMD4-App-Schnittstelle
+  (`POST /local/vmd/control.cgi`, `setConfiguration`) mitangewendet. Die API-Version
+  wird pro Kamera ausgehandelt (`getSupportedVersions`), damit ältere und neuere
+  Firmware funktionieren. In der Dateiinfo wird „Bewegungserkennung (VMD4)"
+  angezeigt; der Import-Log meldet Erfolg/Fehlschlag separat. Bestehende `.cfg`
+  (nur Parameter/Stream-Profile) verhalten sich unverändert.
+
 ## 26.07.05 — 2026-07-05
 
 - **Windows (portable `.exe`): Konfiguration liegt jetzt neben der ausführbaren

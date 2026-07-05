@@ -130,6 +130,49 @@ def _post_form_auto(ip, username, password, path, fields, scheme="auto", port=No
         return _post_form(ip, username, password, path, fields, "http", port, timeout)
 
 
+def _post_json(ip, username, password, path, obj, scheme, port, timeout):
+    """POSTet einen JSON-Body und liefert die geparste JSON-Antwort (Dict).
+
+    Fuer die JSON-Steuer-APIs neuerer AXIS-Funktionen (z. B. VMD4). Leere Antworten
+    ergeben ``{}``; nicht-JSON-Antworten werfen VapixError.
+    """
+    if port is None:
+        port = DEFAULT_PORTS[scheme]
+    host_port = f"{ip}:{port}"
+    url = f"{scheme}://{host_port}{path}"
+    body = json.dumps(obj).encode("utf-8")
+    opener = _build_opener(host_port, username, password)
+    req = urllib.request.Request(
+        url, data=body, headers={"Content-Type": "application/json"})
+    try:
+        with opener.open(req, timeout=timeout) as resp:
+            text = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        if exc.code == 401:
+            raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
+        raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}")
+    except urllib.error.URLError as exc:
+        raise VapixError(f"Nicht erreichbar: {exc.reason}")
+    except (TimeoutError, OSError) as exc:
+        raise VapixError(f"Verbindungsfehler: {exc}")
+    if not text.strip():
+        return {}
+    try:
+        return json.loads(text)
+    except ValueError:
+        raise VapixError(f"Unerwartete Antwort: {text.strip()[:200]}")
+
+
+def _post_json_auto(ip, username, password, path, obj, scheme="auto", port=None, timeout=30):
+    """Wie _post_json, aber 'auto' probiert erst HTTPS, dann HTTP."""
+    if scheme != "auto":
+        return _post_json(ip, username, password, path, obj, scheme, port, timeout)
+    try:
+        return _post_json(ip, username, password, path, obj, "https", port, timeout)
+    except VapixError:
+        return _post_json(ip, username, password, path, obj, "http", port, timeout)
+
+
 def _is_setup_response(exc) -> bool:
     """Erkennt an einer 401-Antwort von ``pwdgrp.cgi``, ob das Geraet noch die
     Ersteinrichtung verlangt (AXIS-OS-Werkszustand).
@@ -851,11 +894,21 @@ def parse_adm_config(path):
                 "description": sp.findtext("Description") or "",
                 "parameters": sp.findtext("Parameters") or "",
             })
+    # Bewegungserkennung (VMD4): ADM legt die Konfiguration als JSON-Blob unter
+    # <Vmd4><Vmd4Configuration> ab (kein param.cgi -> eigene Steuer-API).
+    vmd4 = None
+    vmd4_text = (root.findtext("./Vmd4/Vmd4Configuration") or "").strip()
+    if vmd4_text:
+        try:
+            vmd4 = json.loads(vmd4_text)
+        except ValueError as exc:
+            raise VapixError(f"Vmd4-Konfiguration ist kein gueltiges JSON: {exc}")
     return {
         "model": root.findtext("Model") or "",
         "firmware": root.findtext("FirmwareVersion") or "",
         "parameters": params,
         "profiles": profiles,
+        "vmd4": vmd4,
     }
 
 
@@ -960,11 +1013,60 @@ def apply_stream_profiles(ip, username, password, profiles, scheme, port, timeou
     return (created, updated, failed)
 
 
+# VMD4 (Video Motion Detection 4) — die ACAP-Anwendung hat eine eigene JSON-
+# Steuer-API (nicht param.cgi). ADM exportiert/importiert die Konfiguration darueber.
+VMD4_CONTROL_PATH = "/local/vmd/control.cgi"
+VMD4_API_VERSION = "1.4"
+
+
+def _vmd4_api_version(ip, username, password, scheme, port, timeout):
+    """Ermittelt die hoechste von der Kamera unterstuetzte VMD4-API-Version.
+
+    Verschiedene Firmware unterstuetzt verschiedene Versionen (AXIS OS 9 z. B. eine
+    aeltere als OS 11/12). Faellt bei nicht verfuegbarer Auskunft auf
+    ``VMD4_API_VERSION`` zurueck.
+    """
+    try:
+        data = _post_json_auto(ip, username, password, VMD4_CONTROL_PATH,
+                               {"method": "getSupportedVersions"}, scheme, port, timeout)
+        versions = (data.get("data") or {}).get("apiVersions") or []
+    except VapixError:
+        versions = []
+    valid = [v for v in versions if isinstance(v, str)
+             and all(p.isdigit() for p in v.split("."))]
+    if valid:
+        return max(valid, key=lambda v: tuple(int(p) for p in v.split(".")))
+    return VMD4_API_VERSION
+
+
+def apply_vmd4_config(ip, username, password, vmd4, scheme="auto", port=None, timeout=30):
+    """Wendet eine VMD4-(Bewegungserkennung)-Konfiguration an.
+
+    'vmd4' ist das geparste Konfigurationsobjekt (parse_adm_config()['vmd4'] —
+    cameras/profiles/…). Nutzt die JSON-Steuer-API der VMD4-ACAP-Anwendung
+    (POST /local/vmd/control.cgi, method 'setConfiguration'). Wirft VapixError,
+    wenn die Anwendung fehlt (HTTP 404) oder die Konfiguration ablehnt.
+    """
+    api_version = _vmd4_api_version(ip, username, password, scheme, port, timeout)
+    body = {"apiVersion": api_version, "context": "kkm",
+            "method": "setConfiguration", "params": vmd4}
+    data = _post_json_auto(ip, username, password, VMD4_CONTROL_PATH, body,
+                           scheme, port, timeout)
+    err = data.get("error") if isinstance(data, dict) else None
+    if err:
+        detail = err.get("message") if isinstance(err, dict) else err
+        raise VapixError(f"VMD4 lehnte die Konfiguration ab: {detail}")
+    return True
+
+
 def apply_adm_config(ip, username, password, config, scheme="auto", port=None,
                      timeout=30, with_profiles=True):
-    """Wendet eine geparste ADM-Konfiguration an (Parameter + optional Profile).
+    """Wendet eine geparste ADM-Konfiguration an (Parameter, optional Profile,
+    optional Bewegungserkennung/VMD4).
 
     'config' ist das Dict aus parse_adm_config(). Liefert eine Ergebnis-Meldung.
+    Schlaegt die VMD4-Uebernahme fehl, wird VapixError geworfen (die Meldung nennt
+    zusaetzlich, was zuvor bereits erfolgreich angewendet wurde).
     """
     sc = _resolve_scheme(ip, username, password, scheme, port, timeout=15) or scheme
     count = apply_parameters(ip, username, password, config.get("parameters", {}),
@@ -975,6 +1077,12 @@ def apply_adm_config(ip, username, password, config, scheme="auto", port=None,
             ip, username, password, config["profiles"], sc, port, timeout)
         msg += (f"; Profile: {created} angelegt, {updated} ueberschrieben, "
                 f"{failed} fehlgeschlagen")
+    if config.get("vmd4") is not None:
+        try:
+            apply_vmd4_config(ip, username, password, config["vmd4"], sc, port, timeout)
+            msg += "; Bewegungserkennung (VMD4) angewendet"
+        except VapixError as exc:
+            raise VapixError(f"{msg}; Bewegungserkennung (VMD4) fehlgeschlagen: {exc}")
     return msg
 
 
