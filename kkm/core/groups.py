@@ -17,7 +17,8 @@
 """Group management without a database.
 
 Cameras are organised in groups persisted as a single JSON file in the user's
-config dir (Windows ``%APPDATA%``, else ``$XDG_CONFIG_HOME``/``~/.config``). There
+config dir (portable Windows-``.exe``: neben der ausfuehrbaren Datei, sonst
+Windows ``%APPDATA%``, unter Linux ``$XDG_CONFIG_HOME``/``~/.config``). There
 is one non-deletable, non-renamable group "Alle Kameras" that implicitly contains
 every known camera; user-created groups are explicit membership lists keyed by a
 stable camera key (MAC/serial).
@@ -30,6 +31,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import uuid
 from dataclasses import dataclass, field, asdict
 
@@ -45,7 +47,11 @@ VIRTUAL_GROUP_IDS = (ALL_CAMERAS_ID, UNGROUPED_ID)
 
 
 def config_dir() -> str:
-    if os.name == "nt":
+    if os.name == "nt" and getattr(sys, "frozen", False):
+        # Portable Windows-.exe: Konfiguration im Verzeichnis der ausfuehrbaren
+        # Datei ablegen (mitnehmbar), nicht in %APPDATA%. Linux bleibt unberuehrt.
+        base = os.path.dirname(sys.executable)
+    elif os.name == "nt":
         base = os.environ.get("APPDATA") or os.path.expanduser("~")
     else:
         base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(

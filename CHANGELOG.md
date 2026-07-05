@@ -4,7 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
-## 26.07.04b6 — 2026-07-04
+## 26.07.05 — 2026-07-05
+
+- **Windows (portable `.exe`): Konfiguration liegt jetzt neben der ausführbaren
+  Datei** im Ordner `kamera_konfigurationsmanager` statt in `%APPDATA%`. Damit ist
+  die Konfiguration (Gruppen, Einstellungen, Passwort-Tresor) mitnehmbar (z. B. auf
+  einem USB-Stick). Gilt nur für die gebündelte `.exe`; aus dem Quellcode gestartet
+  bleibt `%APPDATA%`. Die Linux-AppImage ist unverändert (weiterhin `~/.config`).
 
 - **Parameter-Auswahl: Umschalter „Nur Ausgewählte anzeigen"** (neben „Alle"/„Keine")
   blendet die Liste auf die aktuell ausgewählten Parameter ein — praktisch, um vor

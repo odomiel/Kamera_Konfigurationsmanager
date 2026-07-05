@@ -257,7 +257,12 @@ Mehrere Bereiche:
 ---
 
 ## Speicherort der Daten
-Alle Einstellungen liegen im Benutzerprofil
-(Windows: `%APPDATA%\kamera_konfigurationsmanager`, Linux:
-`~/.config/kamera_konfigurationsmanager`): Gruppen (`groups.json`), Einstellungen
-(`settings.json`) und der verschlüsselte Passwort-Tresor (`vault.enc`).
+Gespeichert werden Gruppen (`groups.json`), Einstellungen (`settings.json`) und der
+verschlüsselte Passwort-Tresor (`vault.enc`) im Unterordner
+`kamera_konfigurationsmanager`:
+
+- **Windows (portable `.exe`):** **neben der ausführbaren Datei** — die Konfiguration
+  ist damit mitnehmbar (z. B. auf einem USB-Stick) und bleibt beim Programm.
+- **Windows (aus dem Quellcode gestartet):** im Benutzerprofil unter
+  `%APPDATA%\kamera_konfigurationsmanager`.
+- **Linux:** im Benutzerprofil unter `~/.config/kamera_konfigurationsmanager`.
