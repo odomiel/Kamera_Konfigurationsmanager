@@ -34,11 +34,18 @@ der `.exe` das Sun-Valley-Theme und der **Dunkelmodus funktioniert nicht**
 ## Bauen
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File build_windows.ps1
+powershell -ExecutionPolicy Bypass -File build_windows.ps1 -Bump   # Version vorher erhoehen
+
+# oder direkt, ohne das Skript:
 py -3.14 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
 ```
 
-Ergebnis: `dist\Kamerakonfigurationsmanager.exe` — eine eigenstaendige,
-portable Datei, die ohne Installation gestartet werden kann.
+Ergebnis: `dist\Kamerakonfigurationsmanager-<Version>.exe` (z. B.
+`Kamerakonfigurationsmanager-26.07.11b2.exe`) — eine eigenstaendige, portable Datei,
+die ohne Installation gestartet werden kann. Die Version im Dateinamen kommt wie beim
+AppImage aus `kkm/version.py`; die Spec liest sie selbst, ein direkter
+PyInstaller-Aufruf benennt die Datei also genauso.
 
 ## Hinweise
 

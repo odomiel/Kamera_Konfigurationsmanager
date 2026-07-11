@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b3 — 2026-07-11
+
+- **Windows-`.exe` trägt jetzt die Versionsnummer im Namen** — wie die AppImage:
+  `dist\Kamerakonfigurationsmanager-26.07.11b3.exe` statt bisher
+  `Kamerakonfigurationsmanager.exe`. Die Version liest die PyInstaller-Spec selbst aus
+  `kkm/version.py` (einzige Quelle der Wahrheit), ein direkter PyInstaller-Aufruf
+  benennt die Datei also genauso wie der Aufruf über `build_windows.ps1`. Das Skript
+  kennt zudem — analog zu `build_appimage.sh --bump` — den Schalter `-Bump`, der die
+  Version vor dem Bauen erhöht, und prüft am Ende, dass die erwartete Datei entstanden ist.
+
 ## 26.07.11b2 — 2026-07-11
 
 - **Fehlermeldung beim Programmstart behoben.** Beim Aufbau des Hauptfensters warf Tk

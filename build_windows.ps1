@@ -10,8 +10,21 @@
 # Dunkelmodus (sv_ttk) laeuft auf Tk 8.6 unveraendert.
 #
 #   powershell -ExecutionPolicy Bypass -File build_windows.ps1
+#   powershell -ExecutionPolicy Bypass -File build_windows.ps1 -Bump   # Version vorher erhoehen
 #
+# Die fertige .exe traegt die Versionsnummer im Namen (wie die AppImage):
+#   dist\Kamerakonfigurationsmanager-<Version>.exe
+#
+param([switch]$Bump)
+
 $ErrorActionPreference = "Stop"
+
+if ($Bump) {
+    Write-Host "==== Version erhoehen ===="
+    py -3.14 bump_version.py
+}
+# Einzige Quelle der Wahrheit: kkm/version.py (dieselbe, die auch die Spec liest).
+$Version = (py -3.14 bump_version.py --print).Trim()
 
 Write-Host "==== Abhaengigkeiten sicherstellen (Python 3.14, Tcl/Tk 8.6) ===="
 py -3.14 -m pip install --upgrade pip pyinstaller
@@ -20,7 +33,9 @@ py -3.14 -m pip install --upgrade pip pyinstaller
 # es nicht -> die .exe blieb ohne Dark-Mode beim hellen Windows-Standard-Theme.
 py -3.14 -m pip install -r requirements.txt
 
-Write-Host "==== PyInstaller-Build ===="
+Write-Host "==== PyInstaller-Build ($Version) ===="
 py -3.14 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
 
-Write-Host ">> Fertig: dist\Kamerakonfigurationsmanager.exe"
+$Exe = "dist\Kamerakonfigurationsmanager-$Version.exe"
+if (-not (Test-Path $Exe)) { throw "Erwartete Datei fehlt: $Exe" }
+Write-Host ">> Fertig: $Exe"
