@@ -4,6 +4,22 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b6 — 2026-07-11
+
+- **Auch beim Import lässt sich jetzt auswählen, was übernommen wird.** Bisher wurde eine
+  `.cfg` immer vollständig auf alle gewählten Kameras geschrieben — inklusive der Dinge,
+  die man selten mitschleppen will (die Netzwerk-/Zeitserver-Einstellungen der Quellkamera
+  stehen genauso in der Datei wie die Bildeinstellungen). Der *Importieren*-Knopf öffnet
+  nun denselben Auswahldialog wie das Auslesen: durchsuchbare Parameterliste zum An- und
+  Abwählen, **Stream-Profile einzeln** und die **Bewegungserkennung (VMD4)**. Voreingestellt
+  ist alles, was die Datei enthält; vor dem Schreiben fasst eine Rückfrage zusammen, was auf
+  wie viele Kameras geht.
+- **Stream-Profile sind auch beim Export einzeln wählbar** (vorher nur „alle oder keine") —
+  beide Richtungen teilen sich denselben Dialog (`ConfigSelectDialog`).
+- Dafür nehmen `apply_adm_config()` (VAPIX) sowie `import_config()` / `write_config_file()`
+  (Plugin-Seam) nun `selected_params`, `selected_profiles` und `with_vmd4` entgegen; ohne
+  Angabe bleibt das Verhalten unverändert (alles).
+
 ## 26.07.11b5 — 2026-07-11
 
 - **Neues Plugin: ONVIF (generisch).** Ein zweites Plugin neben Axis — es spricht nur den

@@ -1138,24 +1138,33 @@ def apply_vmd4_config(ip, username, password, vmd4, scheme="auto", port=None, ti
 
 
 def apply_adm_config(ip, username, password, config, scheme="auto", port=None,
-                     timeout=30, with_profiles=True):
+                     timeout=30, with_profiles=True, selected_params=None,
+                     selected_profiles=None, with_vmd4=True):
     """Wendet eine geparste ADM-Konfiguration an (Parameter, optional Profile,
     optional Bewegungserkennung/VMD4).
 
-    'config' ist das Dict aus parse_adm_config(). Liefert eine Ergebnis-Meldung.
-    Schlaegt die VMD4-Uebernahme fehl, wird VapixError geworfen (die Meldung nennt
-    zusaetzlich, was zuvor bereits erfolgreich angewendet wurde).
+    'config' ist das Dict aus parse_adm_config(). Die Auswahl-Argumente spiegeln
+    write_adm_config(), damit sich beim Import genauso filtern laesst wie beim
+    Export: 'selected_params' (Menge von Namen; None = alle), 'selected_profiles'
+    (Menge von Profilnamen; None = alle), 'with_vmd4' fuer die Bewegungserkennung.
+
+    Liefert eine Ergebnis-Meldung. Schlaegt die VMD4-Uebernahme fehl, wird
+    VapixError geworfen (die Meldung nennt zusaetzlich, was zuvor bereits
+    erfolgreich angewendet wurde).
     """
     sc = _resolve_scheme(ip, username, password, scheme, port, timeout=15) or scheme
-    count = apply_parameters(ip, username, password, config.get("parameters", {}),
-                             sc, port, timeout)
+    params = {name: value for name, value in config.get("parameters", {}).items()
+              if selected_params is None or name in selected_params}
+    count = apply_parameters(ip, username, password, params, sc, port, timeout)
     msg = f"{count} Parameter angewendet"
-    if with_profiles and config.get("profiles"):
+    profiles = [p for p in config.get("profiles", [])
+                if selected_profiles is None or p.get("name") in selected_profiles]
+    if with_profiles and profiles:
         created, updated, failed = apply_stream_profiles(
-            ip, username, password, config["profiles"], sc, port, timeout)
+            ip, username, password, profiles, sc, port, timeout)
         msg += (f"; Profile: {created} angelegt, {updated} ueberschrieben, "
                 f"{failed} fehlgeschlagen")
-    if config.get("vmd4") is not None:
+    if with_vmd4 and config.get("vmd4") is not None:
         try:
             apply_vmd4_config(ip, username, password, config["vmd4"], sc, port, timeout)
             msg += "; Bewegungserkennung (VMD4) angewendet"
@@ -1244,14 +1253,15 @@ def read_device_config(ip, username, password, scheme="auto", port=None, timeout
 
 
 def write_adm_config(path, config, selected_params=None, with_profiles=True,
-                     with_vmd4=True):
+                     with_vmd4=True, selected_profiles=None):
     """Schreibt eine ADM-.cfg (AcmDeviceParameterExport) aus einer Konfiguration.
 
     'config' ist das Dict aus read_device_config()/parse_adm_config(). Ist
     'selected_params' (eine Menge von Namen) gesetzt, werden nur diese
-    Parameter exportiert, sonst alle. 'with_profiles' steuert die Stream-Profile,
-    'with_vmd4' die Bewegungserkennung (nur geschrieben, wenn ``config['vmd4']``
-    vorhanden ist). Liefert die Anzahl geschriebener Parameter.
+    Parameter exportiert, sonst alle. 'with_profiles' steuert die Stream-Profile
+    (und 'selected_profiles' -- eine Menge von Profilnamen -- welche davon; None =
+    alle), 'with_vmd4' die Bewegungserkennung (nur geschrieben, wenn
+    ``config['vmd4']`` vorhanden ist). Liefert die Anzahl geschriebener Parameter.
     """
     params = config.get("parameters", {})
     names = [n for n in sorted(params)
@@ -1267,6 +1277,8 @@ def write_adm_config(path, config, selected_params=None, with_profiles=True,
     splist = ET.SubElement(root, "StreamProfileList")
     if with_profiles:
         for prof in config.get("profiles", []):
+            if selected_profiles is not None and prof.get("name") not in selected_profiles:
+                continue
             sp = ET.SubElement(splist, "StreamProfile")
             ET.SubElement(sp, "Name").text = prof.get("name", "")
             ET.SubElement(sp, "Description").text = prof.get("description", "")

@@ -197,15 +197,19 @@ class AxisPlugin(VendorPlugin):
         return vapix.parse_adm_config(path)
 
     def write_config_file(self, path, config, selected_params=None,
-                          with_profiles=True, with_vmd4=True):
+                          with_profiles=True, with_vmd4=True, selected_profiles=None):
         return vapix.write_adm_config(path, config, selected_params=selected_params,
-                                      with_profiles=with_profiles, with_vmd4=with_vmd4)
+                                      with_profiles=with_profiles, with_vmd4=with_vmd4,
+                                      selected_profiles=selected_profiles)
 
-    def import_config(self, camera, creds: Credentials, cfg_path):
+    def import_config(self, camera, creds: Credentials, cfg_path,
+                      selected_params=None, selected_profiles=None, with_vmd4=True):
         ip = self.ip_of(camera)
         config = vapix.parse_adm_config(cfg_path)
-        return vapix.apply_adm_config(ip, creds.username, creds.password,
-                                      config, **self._conn(creds))
+        return vapix.apply_adm_config(ip, creds.username, creds.password, config,
+                                      selected_params=selected_params,
+                                      selected_profiles=selected_profiles,
+                                      with_vmd4=with_vmd4, **self._conn(creds))
 
     def read_config(self, camera, creds: Credentials) -> dict:
         ip = self.ip_of(camera)

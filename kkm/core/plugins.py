@@ -124,8 +124,17 @@ class VendorPlugin(abc.ABC):
         raise NotImplementedError
 
     def write_config_file(self, path, config: dict, selected_params=None,
-                          with_profiles: bool = True, with_vmd4: bool = True):
+                          with_profiles: bool = True, with_vmd4: bool = True,
+                          selected_profiles=None):
         """Gelesene Konfiguration als Datei schreiben (Auswahl der Parameter)."""
+        raise NotImplementedError
+
+    def import_config(self, camera: dict, creds: Credentials, cfg_path,
+                      selected_params=None, selected_profiles=None,
+                      with_vmd4: bool = True):
+        """Konfigurationsdatei auf eine Kamera anwenden. Die Auswahl-Argumente
+        spiegeln :meth:`write_config_file` — was sich exportieren laesst, laesst sich
+        auch gezielt importieren (``None`` = alles)."""
         raise NotImplementedError
 
     # --- discovery & status -------------------------------------------------

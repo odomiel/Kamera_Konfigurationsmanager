@@ -18,12 +18,17 @@
 
 Two operations, both on the cameras selected in the main table:
 
-- **Import**: pick a ``.cfg`` and apply it to *all* selected cameras (parameters
-  via ``param.cgi`` + stream profiles + optional VMD4 motion-detection config via
-  the VMD4 app API), each outcome logged. The file is parsed once up front to
-  validate it and show its model/firmware before applying.
-- **Export**: read the configuration of the *first* selected camera, let the user
-  pick which parameters to keep (searchable checkbox list), and save a ``.cfg``.
+- **Import**: pick a ``.cfg``, choose what of it to take over, and apply that to *all*
+  selected cameras (parameters via ``param.cgi`` + stream profiles + VMD4
+  motion-detection config via the VMD4 app API), each outcome logged.
+- **Export**: read the configuration of the *first* selected camera, choose what to
+  keep, and save a ``.cfg``.
+
+Both directions share :class:`ConfigSelectDialog` — the same list of parameters, stream
+profiles and motion detection, defaulted to everything the configuration contains. A
+``.cfg`` is rarely wanted wholesale: it carries the source camera's IP, hostname and
+users along with the picture settings, so importing all of it onto a fleet is usually
+not what one means.
 
 All vendor work goes through the camera's :class:`~kkm.core.VendorPlugin`
 (``import_config`` / ``read_config`` / ``export_config``), which wraps the copied
@@ -185,13 +190,36 @@ class ConfigDialog(ActionDialog):
             messagebox.showinfo(self.title_text, "Bitte zuerst eine .cfg-Datei wählen.", parent=self)
             return
         try:
-            self.plugin0().parse_config_file(path)   # validate once before touching cameras
+            # Einmal vorab lesen: validiert die Datei und liefert zugleich, was
+            # drinsteht — daraus baut sich die Auswahl unten auf.
+            config = self.plugin0().parse_config_file(path)
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror(self.title_text, str(exc), parent=self)
             return
 
+        dlg = ConfigSelectDialog(
+            self, config, title="Einstellungen für den Import auswählen",
+            ok_text="Importieren", verb="importieren")
+        self.wait_window(dlg)
+        if dlg.result is None:
+            return
+        params, profiles, with_vmd4 = dlg.result
+        if not params and not profiles and not with_vmd4:
+            messagebox.showinfo(self.title_text,
+                                "Nichts ausgewählt — es gibt nichts zu importieren.",
+                                parent=self)
+            return
+
+        vmd_note = " + Bewegungserkennung" if with_vmd4 and config.get("vmd4") else ""
+        if not messagebox.askyesno(
+                self.title_text,
+                f"{len(params)} Parameter, {len(profiles)} Stream-Profil(e){vmd_note} "
+                f"auf {len(self.cameras)} Kamera(s) anwenden?", parent=self):
+            return
+
         def op(plugin, camera, creds):
-            res = plugin.import_config(camera, creds, path)
+            res = plugin.import_config(camera, creds, path, selected_params=params,
+                                       selected_profiles=profiles, with_vmd4=with_vmd4)
             if isinstance(res, int):
                 return f"angewendet ({res} Parameter)"
             return str(res) if res else "angewendet"
@@ -246,11 +274,13 @@ class ConfigDialog(ActionDialog):
         self.after(120, self._check_read)
 
     def _open_param_select(self, config: dict):
-        dlg = ParameterSelectDialog(self, config)
+        dlg = ConfigSelectDialog(self, config,
+                                 title="Einstellungen für den Export auswählen",
+                                 ok_text="Speichern…", verb="exportieren")
         self.wait_window(dlg)
         if dlg.result is None:
             return
-        selected, with_profiles, with_vmd4 = dlg.result
+        selected, profiles, with_vmd4 = dlg.result
         path = filedialog.asksaveasfilename(
             parent=self, title="Als ADM-Konfiguration speichern",
             defaultextension=".cfg",
@@ -259,39 +289,62 @@ class ConfigDialog(ActionDialog):
             return
         try:
             self.plugin0().write_config_file(path, config, selected_params=selected,
-                                             with_profiles=with_profiles,
+                                             with_profiles=bool(profiles),
+                                             selected_profiles=profiles,
                                              with_vmd4=with_vmd4)
             extra = " + Bewegungserkennung" if with_vmd4 and config.get("vmd4") else ""
             self._log_line(
-                f"✓ Gespeichert: {path} ({len(selected)} Parameter{extra})")
+                f"✓ Gespeichert: {path} ({len(selected)} Parameter, "
+                f"{len(profiles)} Profil(e){extra})")
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror(self.title_text, f"Speichern fehlgeschlagen: {exc}", parent=self)
 
 
-class ParameterSelectDialog(tk.Toplevel):
-    """Searchable checkbox list of parameters to include in an export.
+class ConfigSelectDialog(tk.Toplevel):
+    """Auswahl dessen, was aus einer Konfiguration übernommen wird — für **beide**
+    Richtungen: beim Export (was in die ``.cfg`` geschrieben wird) und beim Import
+    (was aus der ``.cfg`` auf die Kameras geht).
 
-    Selection state is kept in ``self._selected`` (a set) independently of the
-    visible rows, so filtering never loses checked items — same approach as the
-    Discovery tool.
+    Angeboten wird dasselbe, was eine ``.cfg`` enthält: die einzelnen Parameter
+    (durchsuchbare Liste), die Stream-Profile (einzeln) und die Bewegungserkennung
+    (VMD4). Voreingestellt ist alles, was vorhanden ist — abwählen ist der bewusste
+    Schritt.
+
+    Die Auswahl liegt in Mengen (``_selected`` / ``_sel_profiles``) unabhängig von den
+    sichtbaren Zeilen, damit das Filtern kein Häkchen verliert.
+
+    ``result`` ist ``(parameter, profile, vmd4)`` oder ``None`` bei Abbruch.
     """
 
-    def __init__(self, parent, config: dict):
+    def __init__(self, parent, config: dict, *, title="Einstellungen auswählen",
+                 ok_text="Übernehmen", verb="übernehmen"):
         super().__init__(parent)
-        self.title("Parameter auswählen")
+        self.title(title)
         self.transient(parent)
         self.grab_set()
         self.result = None
 
         params = config.get("parameters", {})
+        self._values = params
         self._all = sorted(params.keys())
-        self._selected: set[str] = set(self._all)   # default: everything
+        self._selected: set[str] = set(self._all)          # Voreinstellung: alles
+
+        profiles = config.get("profiles", []) or []
+        self._profiles = [p.get("name", "") for p in profiles if p.get("name")]
+        self._prof_desc = {p.get("name", ""): (p.get("description") or "")
+                           for p in profiles}
+        self._sel_profiles: set[str] = set(self._profiles)
 
         outer = ttk.Frame(self, padding=10)
         outer.pack(fill=tk.BOTH, expand=True)
 
+        model = config.get("model") or "?"
+        firmware = config.get("firmware") or "?"
+        ttk.Label(outer, text=f"Quelle: {model} · Firmware {firmware}").pack(anchor=tk.W)
+
+        # --- Parameter ---
         top = ttk.Frame(outer)
-        top.pack(fill=tk.X)
+        top.pack(fill=tk.X, pady=(6, 0))
         ttk.Label(top, text="Filter:").pack(side=tk.LEFT)
         self._filter = tk.StringVar()
         self._filter.trace_add("write", lambda *_: self._refresh())
@@ -304,45 +357,63 @@ class ParameterSelectDialog(tk.Toplevel):
                         command=self._refresh).pack(side=tk.RIGHT, padx=4)
 
         self.tree = ttk.Treeview(outer, columns=("value",), show="tree headings",
-                                 selectmode="none", height=16)
+                                 selectmode="none", height=14)
         self.tree.heading("#0", text="Parameter")
         self.tree.heading("value", text="Wert")
         self.tree.column("#0", width=380)
         self.tree.column("value", width=240)
         self.tree.pack(fill=tk.BOTH, expand=True, pady=6)
         self.tree.bind("<Button-1>", self._toggle)
-        self._values = params
 
-        self._with_profiles = tk.BooleanVar(value=bool(config.get("profiles")))
-        ttk.Checkbutton(outer, text="Stream-Profile mit exportieren",
-                        variable=self._with_profiles).pack(anchor=tk.W)
+        # --- Stream-Profile (einzeln an-/abwählbar) ---
+        prof_frame = ttk.LabelFrame(outer, text=f"Stream-Profile ({verb})", padding=6)
+        prof_frame.pack(fill=tk.X)
+        if self._profiles:
+            self.prof_tree = ttk.Treeview(prof_frame, columns=("desc",),
+                                          show="tree headings", selectmode="none",
+                                          height=min(4, len(self._profiles)))
+            self.prof_tree.heading("#0", text="Profil")
+            self.prof_tree.heading("desc", text="Beschreibung")
+            self.prof_tree.column("#0", width=200)
+            self.prof_tree.column("desc", width=380)
+            self.prof_tree.pack(fill=tk.X)
+            self.prof_tree.bind("<Button-1>", self._toggle_profile)
+            self._refresh_profiles()
+        else:
+            self.prof_tree = None
+            ttk.Label(prof_frame, text="Keine Stream-Profile enthalten.").pack(anchor=tk.W)
 
-        # Bewegungserkennung (VMD4) — nur anbietbar, wenn die Kamera eine hat.
+        # --- Bewegungserkennung (VMD4) — nur, wenn die Konfiguration eine enthält ---
         has_vmd4 = config.get("vmd4") is not None
         self._with_vmd4 = tk.BooleanVar(value=has_vmd4)
         vmd4_chk = ttk.Checkbutton(
-            outer, text="Bewegungserkennung (VMD4) mit exportieren",
-            variable=self._with_vmd4)
-        vmd4_chk.pack(anchor=tk.W)
+            outer, text=f"Bewegungserkennung (VMD4) {verb}", variable=self._with_vmd4)
+        vmd4_chk.pack(anchor=tk.W, pady=(6, 0))
         if not has_vmd4:
             vmd4_chk.state(["disabled"])
+            ttk.Label(outer, text="(keine Bewegungserkennung enthalten)").pack(anchor=tk.W)
 
         self._count_lbl = ttk.Label(outer)
         self._count_lbl.pack(anchor=tk.W, pady=(6, 0))
 
         btns = ttk.Frame(outer)
         btns.pack(fill=tk.X, pady=(8, 0))
-        ttk.Button(btns, text="Speichern…", command=self._ok).pack(side=tk.RIGHT)
+        ttk.Button(btns, text=ok_text, command=self._ok).pack(side=tk.RIGHT)
         ttk.Button(btns, text="Abbrechen", command=self.destroy).pack(side=tk.RIGHT, padx=6)
 
         self._refresh()
 
+    # ------------------------------------------------------------------ Parameter
     def _update_count(self):
-        self._count_lbl.config(
-            text=f"Ausgewählt: {len(self._selected)} von {len(self._all)} Parametern")
+        text = f"Ausgewählt: {len(self._selected)} von {len(self._all)} Parametern"
+        if self._profiles:
+            text += (f" · {len(self._sel_profiles)} von {len(self._profiles)} "
+                     "Stream-Profilen")
+        self._count_lbl.config(text=text)
 
-    def _checkbox(self, name: str) -> str:
-        return "☑" if name in self._selected else "☐"
+    @staticmethod
+    def _box(selected: bool) -> str:
+        return "☑" if selected else "☐"
 
     def _refresh(self):
         flt = self._filter.get().lower()
@@ -354,7 +425,7 @@ class ParameterSelectDialog(tk.Toplevel):
             if only_sel and name not in self._selected:
                 continue
             self.tree.insert("", "end", iid=name,
-                             text=f"{self._checkbox(name)}  {name}",
+                             text=f"{self._box(name in self._selected)}  {name}",
                              values=(self._values.get(name, ""),))
         self._update_count()
 
@@ -370,7 +441,7 @@ class ParameterSelectDialog(tk.Toplevel):
             # In der Ansicht "Nur Ausgewählte" abgewählte Zeilen sofort ausblenden.
             self._refresh()
         else:
-            self.tree.item(row, text=f"{self._checkbox(row)}  {row}")
+            self.tree.item(row, text=f"{self._box(row in self._selected)}  {row}")
             self._update_count()
 
     def _select_all(self):
@@ -381,7 +452,28 @@ class ParameterSelectDialog(tk.Toplevel):
         self._selected.clear()
         self._refresh()
 
+    # -------------------------------------------------------------------- Profile
+    def _refresh_profiles(self):
+        self.prof_tree.delete(*self.prof_tree.get_children())
+        for name in self._profiles:
+            self.prof_tree.insert(
+                "", "end", iid=name,
+                text=f"{self._box(name in self._sel_profiles)}  {name}",
+                values=(self._prof_desc.get(name, ""),))
+
+    def _toggle_profile(self, event):
+        row = self.prof_tree.identify_row(event.y)
+        if not row:
+            return
+        if row in self._sel_profiles:
+            self._sel_profiles.discard(row)
+        else:
+            self._sel_profiles.add(row)
+        self.prof_tree.item(
+            row, text=f"{self._box(row in self._sel_profiles)}  {row}")
+        self._update_count()
+
     def _ok(self):
-        self.result = (sorted(self._selected), self._with_profiles.get(),
+        self.result = (sorted(self._selected), sorted(self._sel_profiles),
                        self._with_vmd4.get())
         self.destroy()
