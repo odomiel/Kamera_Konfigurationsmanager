@@ -3,9 +3,13 @@
 Diese Hilfe beschreibt alle Funktionen des Programms. Sie ist auch im Programm
 über den Button **„Hilfe"** (oben rechts) erreichbar.
 
-Das Programm verwaltet und konfiguriert Netzwerkkameras (derzeit **Axis**) —
-**ohne** Live-Bild. Aktionen wirken immer auf die in der Geräteliste **markierten**
-Kameras und laufen im Hintergrund; das Ergebnis je Kamera wird protokolliert.
+Das Programm verwaltet und konfiguriert Netzwerkkameras — **ohne** Live-Bild.
+Aktionen wirken immer auf die in der Geräteliste **markierten** Kameras und laufen im
+Hintergrund; das Ergebnis je Kamera wird protokolliert.
+
+Unterstützt werden **Axis** (voller Funktionsumfang) und über ein generisches
+**ONVIF**-Plugin auch Kameras anderer Hersteller (siehe Abschnitt „Plugins: Axis und
+ONVIF"). Ein ausführliches **Benutzerhandbuch** liegt als `Benutzerhandbuch.pdf` bei.
 
 ---
 
@@ -46,9 +50,12 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
 
 ## Suchen & Status
 
-- **Suchen/aktualisieren** — durchsucht das lokale Netzwerk nach Kameras (mDNS) und
-  nimmt sie in „Alle Kameras" auf. Bereits bekannte Kameras bleiben erhalten, auch
-  wenn sie gerade offline sind.
+- **Suchen/aktualisieren** — durchsucht das lokale Netzwerk nach Kameras (Axis: mDNS;
+  bei aktivem ONVIF-Plugin zusätzlich WS-Discovery) und nimmt sie in „Alle Kameras"
+  auf. Bereits bekannte Kameras bleiben erhalten, auch wenn sie gerade offline sind.
+  - Findet das **ONVIF-Plugin** eine Kamera, die ein Hersteller-Plugin (Axis) schon
+    gemeldet hat, wird der ONVIF-Treffer verworfen — sonst stünde dieselbe Kamera
+    zweimal in der Liste. Das spezialisierte Plugin gewinnt, weil es mehr kann.
   - **Firmware/Modell** stehen nicht im Suchergebnis und werden nach der Suche per
     Kamera-Login nachgelesen: Kameras mit bekannten Zugangsdaten (Tresor oder
     bereits in dieser Sitzung eingegeben) werden automatisch ausgelesen.
@@ -155,6 +162,28 @@ In der Tabelle zeigt die Spalte **„Aktuelle Firmware"** die derzeit installier
 Version. Eine **Modellzeile lässt sich aufklappen**, um die einzelnen Kameras (mit
 Name, IP und aktueller Firmware) zu sehen.
 
+**Update-Suche (nur Axis).** Der Knopf **„Nach Updates suchen"** gleicht die Modelle
+mit dem öffentlichen Firmware-Verzeichnis des Herstellers ab. In der Spalte
+**„Verfügbar (online)"** steht dann je Modell:
+
+- `11.11.212 ↑` — ein Update ist verfügbar,
+- `5.20.5 (aktuell)` — die Kamera ist auf dem neuesten Stand,
+- `?` — das Modell wurde nicht gefunden (dann die Datei von Hand zuweisen).
+
+**„Update herunterladen und zuweisen"** lädt die passende `.bin` mit Fortschrittsanzeige
+herunter und trägt sie als Firmware-Datei des Modells ein — der Rest des Ablaufs bleibt
+gleich. Der Download landet in einem Cache (in den Einstellungen löschbar); ein
+abgebrochener Download wird beim nächsten Versuch fortgesetzt.
+
+Der Vorschlag bleibt bewusst in der **Hauptversion der Kamera**: Eine Kamera auf 10.12.x
+bekommt die neueste 10.12er vorgeschlagen und springt nicht ungefragt auf einen neuen
+Hauptversions-Zweig. Über **„Version wählen…"** lässt sich jede andere Version des
+Modells wählen (auch die neueste überhaupt). Abschaltbar in den Einstellungen.
+
+Sind Kameras eines Modells auf **unterschiedlichen** Ständen, ist der **neueste** davon
+die Vergleichsbasis — sonst wäre der Vorschlag für die aktuellere Kamera ein Downgrade
+(eine Modellzeile bekommt genau eine Datei für alle ihre Kameras).
+
 Nach dem Aufspielen **wartet** das Programm, bis die Kamera neu gestartet und wieder
 erreichbar ist, meldet erst dann den Erfolg und **liest die neue Firmware-Version
 aus** und aktualisiert sie in der Geräteliste. Die zugehörige Zeile im Dialog wird
@@ -167,10 +196,19 @@ Achtung: Die Firmware muss zum Modell passen; die Kameras starten danach neu.
 ### Konfiguration (Axis `.cfg`)
 Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
 - **Importieren** — eine `.cfg` auf alle markierten Kameras anwenden.
-  Schreibgeschützte `Properties.*`-Parameter (Geräte-Eigenschaften, die ein
-  AXIS-Device-Manager-Export mitschreibt) werden dabei automatisch übersprungen —
-  sonst würde die Kamera den kompletten Import mit „Authentifizierung
-  fehlgeschlagen" (HTTP 401) ablehnen.
+  - Nach der Dateiwahl öffnet sich die **Auswahl, was übernommen werden soll**: die
+    einzelnen Parameter (durchsuchbare Liste mit **„Alle"/„Keine"** und dem Umschalter
+    **„Nur Ausgewählte anzeigen"**), die **Stream-Profile einzeln** und die
+    **Bewegungserkennung (VMD4)**. Vorausgewählt ist alles, was die Datei enthält; eine
+    Rückfrage fasst vor dem Schreiben zusammen, was auf wie viele Kameras geht.
+  - Das ist selten Zierde: Eine `.cfg` enthält neben den Bildeinstellungen auch die
+    **Netzwerk-, Namensserver- und Zeitserver-Parameter der Quellkamera**. Wer nur eine
+    Bildeinstellung ausrollen will, filtert die Liste z. B. nach `Image.` und wählt nur
+    diese Parameter aus.
+  - Schreibgeschützte `Properties.*`-Parameter (Geräte-Eigenschaften, die ein
+    AXIS-Device-Manager-Export mitschreibt) werden automatisch übersprungen —
+    sonst würde die Kamera den kompletten Import mit „Authentifizierung
+    fehlgeschlagen" (HTTP 401) ablehnen.
   - Enthält die `.cfg` eine **Bewegungserkennung (VMD4)** — der AXIS Device Manager
     legt sie als eigenen Block ab, nicht als `param.cgi`-Parameter —, wird sie über
     die VMD4-App-Schnittstelle (`/local/vmd/control.cgi`) mitangewendet. In der
@@ -179,11 +217,9 @@ Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
     **automatisch gestartet** (eine gestoppte App würde sonst mit „HTTP-Fehler 500"
     antworten). Voraussetzung: Die Ziel-Kamera hat die Anwendung „AXIS Video Motion
     Detection" installiert (sonst meldet der Import einen Fehler).
-- **Exportieren** — Konfiguration der ersten markierten Kamera auslesen, in einer
-  durchsuchbaren Liste die gewünschten Parameter auswählen und als `.cfg` speichern
-  (optional mit **Stream-Profilen** und mit **Bewegungserkennung (VMD4)**). Buttons
-  **„Alle"/„Keine"**, ein Umschalter **„Nur Ausgewählte anzeigen"** und unten die
-  Anzahl der ausgewählten Parameter helfen bei der Auswahl. Die VMD4-Option ist nur
+- **Exportieren** — Konfiguration der ersten markierten Kamera auslesen und in
+  **derselben Auswahl** wie beim Import festlegen, was in die `.cfg` kommt: Parameter,
+  **Stream-Profile einzeln** und **Bewegungserkennung (VMD4)**. Die VMD4-Option ist nur
   wählbar, wenn die Kamera eine aktive Bewegungserkennung hat (sonst ausgegraut);
   das Auslesen startet die VMD-App **nicht** von selbst.
 - **Auf Werkseinstellungen zurücksetzen** — setzt die markierten Kameras zurück
@@ -210,6 +246,34 @@ Speichert die Geräteliste der aktuellen Gruppe als **CSV** oder **Textdatei**.
 
 ---
 
+## Plugins: Axis und ONVIF
+
+Der herstellerspezifische Teil steckt in Plugins. Welche Aktionen möglich sind, meldet
+das jeweilige Plugin — nicht unterstützte Buttons bleiben **ausgegraut**.
+
+**Beide Plugins können:** Gerätesuche (Axis per mDNS, ONVIF per WS-Discovery),
+Online-Prüfung (bei ONVIF sogar ohne Zugangsdaten), Modell/Firmware auslesen,
+IP-Adresse (fest/DHCP), ONVIF-Benutzer und Werksreset.
+
+**Nur das Axis-Plugin kann:** reguläre **Benutzer** (der ONVIF-Standard kennt nur *eine*
+Benutzerliste — die ONVIF-Liste), **Firmware aufspielen**, die **Update-Suche** und den
+**Konfigurations-Import/-Export** (`.cfg`). Für ONVIF-Geräte bleiben diese Buttons
+ausgegraut.
+
+Das **ONVIF-Plugin ist ab Werk ausgeschaltet** (Einstellungen → *Plugins*). Es ist für
+Kameras gedacht, für die es kein eigenes Hersteller-Plugin gibt; bei Axis-Geräten kann es
+schlicht weniger. Der ONVIF-Standard normiert keine Konfigurationsvorlage, das
+Firmware-Update ist dort optional und je Hersteller unterschiedlich umgesetzt, und ein
+Verzeichnis verfügbarer Firmware-Stände gibt es nicht — daher die Lücken oben.
+
+**Voraussetzungen:** Auf der Kamera muss ONVIF aktiviert sein und ein **ONVIF-Benutzer**
+existieren (bei Axis ist das eine **eigene** Benutzerliste — die regulären Zugangsdaten
+funktionieren für ONVIF nicht). Außerdem sollte die **Uhr der Kamera** stimmen: Die
+ONVIF-Anmeldung ist zeitabhängig. Das Programm gleicht den Zeitversatz selbst aus, ein
+grob falsch gestelltes Datum kann die Anmeldung aber trotzdem scheitern lassen.
+
+---
+
 ## Einstellungen
 Mehrere Bereiche:
 - **Darstellung** — modernes Design **Dunkel** oder **Hell** (Sun Valley); die
@@ -226,16 +290,22 @@ Mehrere Bereiche:
     Komfort auf Kosten der Sicherheit — wer als dieser Benutzer Zugriff auf den
     Rechner hat, kann den Tresor öffnen. Das Token funktioniert nicht auf einem
     anderen Rechner/Konto. Häkchen entfernen löscht das Token wieder.
-- **Plugins** — Hersteller-Plugins aktivieren/deaktivieren (derzeit nur Axis).
+- **Plugins** — Plugins aktivieren/deaktivieren: **Axis** (an) und **ONVIF (generisch)**
+  (ab Werk aus). Die Auswahl wird gespeichert.
 - **Online-Prüfung** — pro Gruppe die automatische Online-Prüfung ein-/ausschalten
   und das Intervall festlegen.
 - **Spalten** — einzelne Spalten der Geräteliste ein-/ausblenden (die Spalte
   „Name" bleibt immer sichtbar).
-- **Firmwareupdates** — Schalter **„Firmware-Updates parallel ausführen"**: Sind
-  mehrere Kameras markiert, werden sie gleichzeitig aktualisiert (bis zur
-  einstellbaren Anzahl **Maximal gleichzeitig**) statt nacheinander. Das verkürzt
-  Sammel-Updates deutlich, da bei jeder Kamera auf den Neustart gewartet wird. Ist
-  der Schalter aus, laufen die Updates wie bisher der Reihe nach.
+- **Firmwareupdates** — zwei Bereiche:
+  - Schalter **„Firmware-Updates parallel ausführen"**: Sind mehrere Kameras markiert,
+    werden sie gleichzeitig aktualisiert (bis zur einstellbaren Anzahl **Maximal
+    gleichzeitig**) statt nacheinander. Das verkürzt Sammel-Updates deutlich, da bei
+    jeder Kamera auf den Neustart gewartet wird. Ist der Schalter aus, laufen die
+    Updates der Reihe nach.
+  - **Update-Suche:** online nach Updates suchen (an/aus); **„Vorschlag in der
+    Hauptversion der Kamera belassen"** (LTS-treu, siehe Abschnitt *Firmware*); ein
+    eigenes **Firmware-Verzeichnis**, falls ein interner Spiegel genutzt wird (leer =
+    Vorgabe des Plugins); **„Firmware-Cache leeren"** mit Anzeige des belegten Platzes.
 - **Import und Sicherung** — Geräte und Gruppen aus einer
   **AXIS-Device-Manager**-Export-Datei (JSON) übernehmen sowie eigene Sicherungen
   erstellen/einspielen. Unterstützt werden die Datei-Formate **1.x** und **2.x**.

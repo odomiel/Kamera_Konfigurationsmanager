@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b9 — 2026-07-11
+
+- **Eingebaute Hilfe (`HILFE.md`) auf den aktuellen Stand gebracht.** Sie kannte die
+  neueren Funktionen noch nicht und behauptete weiterhin „derzeit nur Axis". Ergänzt:
+  **Update-Suche** im Firmware-Abschnitt (Spalte *Verfügbar (online)*, Download mit
+  Zuweisung, LTS-treuer Vorschlag, Vergleichsbasis bei gemischten Ständen), die
+  **Auswahl beim Konfigurations-Import** (Parameter, Stream-Profile einzeln, VMD4 — samt
+  Begründung, warum man eine `.cfg` selten komplett übernimmt), ein neuer Abschnitt
+  **„Plugins: Axis und ONVIF"** (wer was kann, ONVIF ab Werk aus, Voraussetzungen:
+  ONVIF-Benutzer und Kamera-Uhr), die Entdopplung doppelter Suchtreffer sowie die neuen
+  Einstellungen der Update-Suche. Die Hilfe wird als Rohtext angezeigt — der Abschnitt
+  kommt daher ohne Markdown-Tabelle aus.
+
 ## 26.07.11b8 — 2026-07-11
 
 - **Benutzerhandbuch als PDF** (`Benutzerhandbuch.pdf`, 11 Seiten): Titelseite mit
