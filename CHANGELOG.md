@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b12 — 2026-07-11
+
+- **Spalten lassen sich jetzt auch über die Fensterbreite hinaus ziehen** — dann erscheint
+  der waagerechte Scrollbalken. Bisher standen die Spalten auf `stretch`, wodurch Tk die
+  Spaltensumme stets auf die Fensterbreite zurückrechnete: Breiterziehen nahm dem Nachbarn
+  nur Platz weg, breiter als das Fenster konnte die Tabelle nie werden. Ohne `stretch`
+  wächst die Summe, der Balken erscheint (und verschwindet wieder, sobald es passt).
+- Damit die Spalten beim ersten Start trotzdem das Fenster ausfüllen, werden sie einmalig
+  auf die verfügbare Breite eingepasst. Gespeicherte Breiten kommen dadurch außerdem
+  **exakt** zurück (vorher skalierte `stretch` sie beim Start wieder um).
+
 ## 26.07.11b11 — 2026-07-11
 
 - **Spaltenbreiten der Geräteliste lassen sich wieder ziehen.** Die Spalten hatten

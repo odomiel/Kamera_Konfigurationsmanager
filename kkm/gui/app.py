@@ -252,12 +252,16 @@ class MainWindow(tk.Tk):
         for col in TABLE_COLUMNS:
             self.table.heading(col, text=col,
                                command=lambda c=col: self._sort_by(c))
-            # minwidth deutlich unter der Vorgabebreite: Sonst stehen alle Spalten
-            # auf ihrem Minimum und lassen sich per Ziehen an der Spaltengrenze
-            # weder schmaler (Minimum erreicht) noch breiter machen (die Nachbarn
-            # können nicht nachgeben). Unterschreitet das Fenster die Summe der
-            # Mindestbreiten, erscheint weiterhin der waagerechte Scrollbalken.
-            self.table.column(col, width=160, minwidth=COL_MIN_WIDTH, stretch=True)
+            # Zwei Dinge, die zusammen das Ziehen an der Spaltengrenze erst möglich
+            # machen:
+            # - minwidth deutlich unter der Vorgabebreite (sonst steht jede Spalte auf
+            #   ihrem Minimum und kann weder schrumpfen noch die Nachbarn schrumpfen
+            #   lassen),
+            # - stretch=False: Mit stretch rechnet Tk die Spaltensumme stets auf die
+            #   Fensterbreite zurück — Breiterziehen nähme dem Nachbarn nur Platz weg
+            #   und die Tabelle könnte nie breiter als das Fenster werden. Ohne stretch
+            #   wächst die Summe, und der waagerechte Scrollbalken erscheint.
+            self.table.column(col, width=160, minwidth=COL_MIN_WIDTH, stretch=False)
         self.table.column(ONLINE_COL, width=90, minwidth=70, stretch=False,
                           anchor=tk.CENTER)
         self._restore_column_widths()
@@ -1047,14 +1051,44 @@ class MainWindow(tk.Tk):
 
     # ------------------------------------------------------- Spaltenbreiten
     def _restore_column_widths(self):
-        """Zuletzt eingestellte Spaltenbreiten wiederherstellen."""
+        """Zuletzt eingestellte Spaltenbreiten wiederherstellen — oder, wenn es noch
+        keine gibt, die Spalten einmalig auf die Fensterbreite einpassen."""
         saved = self.settings.get("column_widths") or {}
+        if not saved:
+            self.after_idle(self._autofit_columns)
+            return
         for col, width in saved.items():
             if col in TABLE_COLUMNS:
                 try:
                     self.table.column(col, width=max(COL_MIN_WIDTH, int(width)))
                 except (ValueError, tk.TclError):
                     pass
+
+    def _autofit_columns(self):
+        """Verteilt die freie Breite einmalig auf die sichtbaren Spalten.
+
+        Nötig, weil die Spalten nicht mehr ``stretch`` sind (nur so lässt sich eine
+        Spalte über die Fensterbreite hinaus ziehen). Ohne dieses Einpassen bliebe
+        beim ersten Start rechts eine Lücke.
+        """
+        avail = self.table.winfo_width()
+        if avail <= 1:                       # Fenster noch nicht gezeichnet
+            self.after(120, self._autofit_columns)
+            return
+        cols = [c for c in self.table.cget("displaycolumns") if c in TABLE_COLUMNS]
+        cols = cols or list(TABLE_COLUMNS)
+        flexible = [c for c in cols if c != ONLINE_COL]
+        if not flexible:
+            return
+        used = sum(self.table.column(c, "width") for c in cols)
+        # Reserve: Passt die Summe exakt (oder auf ein paar Pixel genau), meldet Tk
+        # trotzdem knappe Überlänge und blendet den waagerechten Balken ein.
+        extra = avail - used - 24
+        if extra <= 0:
+            return
+        add = extra // len(flexible)
+        for col in flexible:
+            self.table.column(col, width=self.table.column(col, "width") + add)
 
     def _save_column_widths(self, _event=None):
         """Breiten nach dem Ziehen an einer Spaltengrenze sichern (nur bei Änderung —
