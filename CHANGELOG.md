@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b13 — 2026-07-11
+
+- **Abhängigkeiten geprüft; libffi auf 3.7.1 angehoben** (vorher 3.6.0 — zwei Versionen
+  im Rückstand). Alles andere ist bereits auf dem neuesten unterstützten Stand: Python
+  3.14.6, Tcl/Tk 9.0.4, OpenSSL 3.5.7 (neuester Patch des **LTS**-Zweigs; 3.6/4.0 gibt es,
+  sind aber nicht die langfristig gepflegten Zweige) sowie — da `requirements.txt` bewusst
+  ungepinnt ist — zeroconf 0.150.0, cryptography 49.0.0, sv-ttk 2.6.1, cffi 2.1.0.
+  Geprüft wurde nicht das Skript, sondern die gebaute Umgebung: echter FFI-Aufruf über
+  `ctypes`, `ifaddr` und `zeroconf` laufen mit der neuen libffi (`libffi.so.8.4.1`).
+
 ## 26.07.11b12 — 2026-07-11
 
 - **Spalten lassen sich jetzt auch über die Fensterbreite hinaus ziehen** — dann erscheint

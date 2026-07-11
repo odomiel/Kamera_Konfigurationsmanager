@@ -22,7 +22,7 @@ TCL_VER=9.0.4
 TK_VER=9.0.4
 PY_VER=3.14.6
 PY_XY=3.14
-FFI_VER=3.6.0
+FFI_VER=3.7.1
 SSL_VER=3.5.7
 
 APP=Kamerakonfigurationsmanager
