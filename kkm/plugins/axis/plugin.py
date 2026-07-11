@@ -30,9 +30,11 @@ nothing in :mod:`kkm.core` or :mod:`kkm.gui` changes.
 
 from __future__ import annotations
 
-from kkm.core.plugins import VendorPlugin, Credentials, Capability
+from kkm.core.plugins import (VendorPlugin, Credentials, Capability,
+                              FirmwareInfo, FirmwareRelease)
 from . import vapix
 from . import discovery
+from . import firmware_repo
 
 
 class AxisPlugin(VendorPlugin):
@@ -46,9 +48,14 @@ class AxisPlugin(VendorPlugin):
         Capability.USERS,
         Capability.ONVIF_USERS,
         Capability.FIRMWARE,
+        Capability.FIRMWARE_CHECK,
         Capability.CONFIG,
         Capability.FACTORY_RESET,
     }
+
+    #: Basis-URL des Firmware-Verzeichnisses (aus den Einstellungen ueberschreibbar,
+    #: z. B. auf einen internen Spiegel).
+    repo_url: str = firmware_repo.BASE_URL
 
     # --- helpers ------------------------------------------------------------
     @staticmethod
@@ -158,6 +165,34 @@ class AxisPlugin(VendorPlugin):
         return vapix.upgrade_firmware(ip, creds.username, creds.password,
                                       firmware_path, factory_default=factory_default,
                                       **self._conn(creds))
+
+    # --- firmware lookup (Capability.FIRMWARE_CHECK) ------------------------
+    def firmware_updates(self, model, current="", prefer_track=True) -> FirmwareInfo:
+        model_dir = firmware_repo.resolve_model(model, self.repo_url)
+        vers = firmware_repo.versions(model_dir, self.repo_url)
+        latest = firmware_repo.latest_version(model_dir, self.repo_url) or (
+            vers[0] if vers else "")
+        # latest/ enthaelt gelegentlich eine Version ohne eigenen Versionsordner.
+        if latest and latest not in vers:
+            vers = firmware_repo.sort_versions(vers + [latest])
+        return FirmwareInfo(
+            model=model_dir, current=current, versions=vers, latest=latest,
+            recommended=firmware_repo.pick_recommended(vers, current, prefer_track) or "",
+        )
+
+    def firmware_release(self, model, version="") -> FirmwareRelease:
+        model_dir = firmware_repo.resolve_model(model, self.repo_url)
+        rel = firmware_repo.release(model_dir, version or None, self.repo_url)
+        return FirmwareRelease(model=rel.model, version=rel.version, url=rel.url,
+                               filename=rel.filename, size=rel.size,
+                               notes_url=rel.notes_url)
+
+    def download_firmware(self, release: FirmwareRelease, progress=None,
+                          cancelled=None) -> str:
+        rel = firmware_repo.Release(
+            model=release.model, version=release.version, url=release.url,
+            filename=release.filename, size=release.size, notes_url=release.notes_url)
+        return firmware_repo.download(rel, progress=progress, cancelled=cancelled)
 
     def import_config(self, camera, creds: Credentials, cfg_path):
         ip = self.ip_of(camera)

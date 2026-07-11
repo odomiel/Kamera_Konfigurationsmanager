@@ -52,8 +52,30 @@ class Capability:
     USERS = "users"
     ONVIF_USERS = "onvif_users"
     FIRMWARE = "firmware"
+    FIRMWARE_CHECK = "firmware_check"   # sucht online nach neuerer Firmware
     CONFIG = "config"
     FACTORY_RESET = "factory_reset"
+
+
+@dataclass
+class FirmwareRelease:
+    """Eine herunterladbare Firmware-Version eines Modells."""
+    model: str
+    version: str
+    url: str = ""
+    filename: str = ""
+    size: int = 0
+    notes_url: str = ""
+
+
+@dataclass
+class FirmwareInfo:
+    """Ergebnis einer Update-Suche fuer *ein* Modell."""
+    model: str
+    current: str = ""
+    versions: list[str] = field(default_factory=list)  # neueste zuerst
+    latest: str = ""                                   # neueste ueberhaupt
+    recommended: str = ""                              # Vorschlag ("" = kein Update)
 
 
 # A progress callback receives (ip, ok, message) per camera for live result logs.
@@ -95,6 +117,25 @@ class VendorPlugin(abc.ABC):
         """Setzt die Kamera auf Werkseinstellungen zurück. ``keep_ip`` erhält die
         Netzwerk-/IP-Einstellungen. Nur verfügbar, wenn das Plugin
         ``Capability.FACTORY_RESET`` meldet."""
+        raise NotImplementedError
+
+    # --- firmware lookup (Capability.FIRMWARE_CHECK) ------------------------
+    # Der Hersteller-Download ist Plugin-Sache: welche Versionen es fuer ein Modell
+    # gibt, wo sie liegen und wie eine Version verglichen wird, weiss nur das Plugin.
+    # Die GUI reicht das Ergebnis nur an den bestehenden Firmware-Upload weiter.
+    def firmware_updates(self, model: str, current: str = "",
+                         prefer_track: bool = True) -> FirmwareInfo:
+        """Sucht online nach Firmware fuer *model* und vergleicht mit *current*."""
+        raise NotImplementedError
+
+    def firmware_release(self, model: str, version: str = "") -> FirmwareRelease:
+        """Download-Daten einer Version (leer = neueste)."""
+        raise NotImplementedError
+
+    def download_firmware(self, release: FirmwareRelease, progress=None,
+                          cancelled=None) -> str:
+        """Laedt die Firmware herunter (Cache) und liefert den lokalen Pfad.
+        ``progress(done, total)`` laeuft im Worker-Thread."""
         raise NotImplementedError
 
     # --- configuration actions ---------------------------------------------

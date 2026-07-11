@@ -362,8 +362,66 @@ class SettingsDialog(tk.Toplevel):
                  "nach der anderen. Das verkürzt Sammel-Updates deutlich, da bei "
                  "jeder Kamera auf den Neustart gewartet wird.").pack(
             anchor=tk.W, pady=(8, 0))
+
+        # --- Online-Update-Suche ---
+        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=10)
+        ttk.Label(tab, text="Update-Suche",
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 6))
+
+        self._fw_online = tk.BooleanVar(
+            value=bool(self.settings.get("firmware_check_online", True)))
+        ttk.Checkbutton(
+            tab, text="Im Firmware-Dialog online nach Updates suchen",
+            variable=self._fw_online, command=self._save_firmware).pack(anchor=tk.W)
+
+        self._fw_track = tk.BooleanVar(
+            value=bool(self.settings.get("firmware_prefer_track", True)))
+        ttk.Checkbutton(
+            tab, text="Vorschlag in der Hauptversion der Kamera belassen (LTS-treu)",
+            variable=self._fw_track, command=self._save_firmware).pack(anchor=tk.W)
+
+        row2 = ttk.Frame(tab)
+        row2.pack(fill=tk.X, pady=(6, 0))
+        ttk.Label(row2, text="Firmware-Verzeichnis:").pack(side=tk.LEFT)
+        self._fw_url = tk.StringVar(value=self.settings.get("firmware_repo_url", "") or "")
+        entry = ttk.Entry(row2, textvariable=self._fw_url, width=42)
+        entry.pack(side=tk.LEFT, padx=6)
+        entry.bind("<FocusOut>", lambda _e: self._save_firmware())
+
+        row3 = ttk.Frame(tab)
+        row3.pack(fill=tk.X, pady=(6, 0))
+        self._fw_cache_btn = ttk.Button(row3, text="Firmware-Cache leeren",
+                                        command=self._clear_fw_cache)
+        self._fw_cache_btn.pack(side=tk.LEFT)
+        self._fw_cache_lbl = ttk.Label(row3, text="")
+        self._fw_cache_lbl.pack(side=tk.LEFT, padx=8)
+        self._update_cache_label()
+
+        ttk.Label(
+            tab, justify=tk.LEFT, wraplength=460,
+            text="Die Suche liest das öffentliche Firmware-Verzeichnis des Herstellers "
+                 "(Axis: ftp.axis.com) und vergleicht die dort liegenden Versionen mit "
+                 "der Firmware der Kameras. Heruntergeladene Dateien landen in einem "
+                 "Cache und werden dem Modell wie eine selbst gewählte Datei zugewiesen. "
+                 "Leeres Verzeichnisfeld = Vorgabe des Plugins; hier lässt sich ein "
+                 "interner Spiegel eintragen.").pack(anchor=tk.W, pady=(8, 0))
+
         self._update_fw_state()
         return tab
+
+    def _update_cache_label(self):
+        from kkm.plugins.axis import firmware_repo
+        try:
+            size = firmware_repo.cache_size()
+        except OSError:
+            size = 0
+        self._fw_cache_lbl.config(
+            text="leer" if not size else f"{size / (1024 * 1024):.0f} MB belegt")
+
+    def _clear_fw_cache(self):
+        from kkm.plugins.axis import firmware_repo
+        firmware_repo.clear_cache()
+        self._update_cache_label()
 
     def _update_fw_state(self):
         state = "normal" if self._fw_parallel.get() else "disabled"
@@ -376,6 +434,9 @@ class SettingsDialog(tk.Toplevel):
         except (tk.TclError, ValueError):
             n = 4
         self.settings.set("firmware_max_parallel", n)
+        self.settings.set("firmware_check_online", bool(self._fw_online.get()))
+        self.settings.set("firmware_prefer_track", bool(self._fw_track.get()))
+        self.settings.set("firmware_repo_url", self._fw_url.get().strip())
         self._update_fw_state()
 
     # ------------------------------------------------------------------ import

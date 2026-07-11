@@ -37,6 +37,9 @@ DEFAULTS = {
     "theme": "dark",             # "dark" | "light" (Sun-Valley-Theme)
     "firmware_parallel": True,   # Firmware-Updates nebenläufig statt nacheinander
     "firmware_max_parallel": 4,  # max. gleichzeitige Firmware-Updates
+    "firmware_check_online": True,   # Update-Suche im Firmware-Dialog anbieten
+    "firmware_prefer_track": True,   # Vorschlag in der Hauptversion der Kamera bleiben
+    "firmware_repo_url": "",     # leer -> Vorgabe des Plugins (interner Spiegel möglich)
     "start_maximized": False,    # Hauptfenster beim Start maximiert öffnen
 }
 

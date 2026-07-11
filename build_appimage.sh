@@ -187,6 +187,19 @@ export APPDIR="\$HERE"
 export PYTHONHOME="\$HERE/usr"
 export PYTHONDONTWRITEBYTECODE=1
 export LD_LIBRARY_PATH="\$HERE/usr/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+# Das selbst gebaute OpenSSL bringt keinen CA-Speicher mit (ssl: cafile=None).
+# Fuer die Kameras ist das egal (ungeprueftes SSL, selbstsignierte Zertifikate),
+# aber HTTPS ins Internet — die Firmware-Update-Suche — scheitert daran. Daher
+# den CA-Speicher des Systems suchen, falls der Nutzer nichts vorgibt.
+if [ -z "\$SSL_CERT_FILE" ]; then
+    for ca in /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt \\
+              /etc/ssl/ca-bundle.pem /etc/ssl/cert.pem; do
+        if [ -r "\$ca" ]; then export SSL_CERT_FILE="\$ca"; break; fi
+    done
+fi
+if [ -z "\$SSL_CERT_DIR" ] && [ -d /etc/ssl/certs ]; then
+    export SSL_CERT_DIR=/etc/ssl/certs
+fi
 # Tcl/Tk 9 betten ihre Script-Library per zipfs in die .so ein -> kein
 # TCL_LIBRARY/TK_LIBRARY noetig.
 exec "\$HERE/usr/bin/python$PY_XY" "\$HERE/app/main.py" "\$@"

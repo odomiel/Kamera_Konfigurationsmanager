@@ -4,6 +4,39 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b1 — 2026-07-11
+
+- **Update-Suche im Firmware-Dialog.** Der Dialog kann die ausgewählten Modelle jetzt
+  online abgleichen: Knopf *Nach Updates suchen* zeigt je Modellzeile die verfügbare
+  Version (Spalte „Verfügbar (online)"), *Update herunterladen und zuweisen* lädt die
+  passende `.bin` mit Fortschrittsanzeige herunter und trägt sie als Firmware-Datei des
+  Modells ein — der bisherige Upload-Weg (parallel, Reboot-Erkennung, factory default)
+  bleibt unverändert, die manuelle Dateiauswahl ebenso.
+  - Quelle ist das öffentliche Firmware-Verzeichnis von Axis. Genutzt wird **`ftp.axis.com`**:
+    über `www.axis.com` beantwortet Axis den `.bin`-Abruf mit einer Weiterleitung auf das
+    My-Axis-Login, über `ftp.axis.com` liegt dieselbe Datei anonym per HTTPS (mit
+    Range-Unterstützung, daher Fortschritt und Wiederaufnahme abgebrochener Downloads).
+  - **Vorschlag bleibt in der Hauptversion der Kamera** (LTS-treu): eine Kamera auf
+    10.12.x bekommt 10.12.338 vorgeschlagen, nicht den Sprung auf 12.11.72. Über
+    *Version wählen…* lässt sich jede andere Version des Modells wählen (inkl. der
+    neuesten). Abschaltbar in den Einstellungen.
+  - Bei gemischten Ständen innerhalb einer Modellzeile ist die **neueste** Firmware der
+    Zeile die Vergleichsbasis — sonst wäre der Vorschlag für die aktuellere Kamera ein
+    Downgrade (eine Modellzeile bekommt genau eine Datei für alle ihre Kameras).
+  - Neu in den Einstellungen (Reiter *Firmwareupdates*): Suche an/abschaltbar, LTS-Treue,
+    eigenes Firmware-Verzeichnis (interner Spiegel) und *Firmware-Cache leeren*.
+  - Neu im Plugin-Seam: `Capability.FIRMWARE_CHECK` mit `firmware_updates()`,
+    `firmware_release()` und `download_firmware()`; die Axis-Umsetzung liegt in
+    `kkm/plugins/axis/firmware_repo.py` (stdlib-only, keine neue Abhängigkeit). Ein
+    Hersteller ohne diese Capability zeigt die Knöpfe schlicht nicht.
+- **AppImage: HTTPS ins Internet funktioniert wieder.** Das selbst gebaute OpenSSL bringt
+  keinen Zertifikatsspeicher mit (`cafile = None`) — für die Kameras egal (ungeprüftes SSL
+  wegen selbstsignierter Zertifikate), aber jede Verbindung ins Internet scheiterte daran.
+  Das `AppRun` setzt nun `SSL_CERT_FILE`/`SSL_CERT_DIR` auf den CA-Speicher des Systems;
+  zusätzlich sucht die Update-Suche selbst die üblichen Pfade. Ohne CA-Speicher bricht sie
+  mit klarer Meldung ab, statt die Zertifikatsprüfung stillschweigend abzuschalten — die
+  heruntergeladene Datei wird schließlich auf die Kamera geschrieben.
+
 ## 26.07.11 — 2026-07-11
 
 - **Neues Programm-Icon.** Statt der Bullet-Kamera mit gelbem Zahnrad nun ein weißes,

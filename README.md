@@ -16,8 +16,8 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
 - **Online-Status** als eigene Spalte, manueller Prüf-Button + konfigurierbare
   Online-Prüfung je Gruppe.
 - **Kamera-Aktionen** als eigene Buttons in der Vorderansicht (wie ADM):
-  IP-Adresse, Benutzer, ONVIF-Benutzer, Firmware (mehrere Typen gleichzeitig),
-  Konfiguration (Axis `.cfg` Im-/Export v1+v2).
+  IP-Adresse, Benutzer, ONVIF-Benutzer, Firmware (mehrere Typen gleichzeitig,
+  mit Online-Update-Suche), Konfiguration (Axis `.cfg` Im-/Export v1+v2).
 - **Passwort-Tresor**: Master-Passwort → PBKDF2 → AES-256-GCM (eine Datei,
   portabel, kein OS-Keyring, keine DB).
 - **Plugin-System** je Hersteller, an-/abschaltbar — derzeit nur **Axis**.
@@ -57,6 +57,9 @@ Ergebnis-Log, Tresor-Vorbefüllung). **Firmware-Dialog fertig:** aktualisiert
 mehrere Kameras *verschiedener Modelle gleichzeitig* — pro Modell eine eigene
 `.bin` zuweisen, Update parallel mit Ergebnis-Log; nicht zugewiesene Modelle
 werden übersprungen; factory-default-Option; langer Upload-Timeout.
+**Update-Suche fertig:** sucht die Modelle im öffentlichen Firmware-Verzeichnis des
+Herstellers (Axis: `ftp.axis.com`), zeigt die verfügbare Version je Modell, lädt sie
+mit Fortschritt/Wiederaufnahme in einen Cache und weist sie dem Modell zu.
 **Benutzer-Dialog fertig:** anlegen (mit Rolle + factory) / Passwort ändern /
 Stapel-Import aus `Name,Passwort[,Rolle]`-Datei (einmal validiert, je Kamera ×
 Benutzer); optional Speichern ins Tresor. **ONVIF-Benutzer-Dialog fertig:**

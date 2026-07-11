@@ -16,7 +16,8 @@
 
 """Vendor-agnostic core: plugin API, group store, password vault."""
 
-from .plugins import VendorPlugin, PluginRegistry, Credentials, Capability
+from .plugins import (VendorPlugin, PluginRegistry, Credentials, Capability,
+                      FirmwareInfo, FirmwareRelease)
 from .groups import (GroupStore, Group, ALL_CAMERAS_ID, UNGROUPED_ID,
                      VIRTUAL_GROUP_IDS, camera_key)
 from .vault import PasswordVault, VaultLocked, VaultError
@@ -24,6 +25,7 @@ from .settings import AppSettings
 
 __all__ = [
     "VendorPlugin", "PluginRegistry", "Credentials", "Capability",
+    "FirmwareInfo", "FirmwareRelease",
     "GroupStore", "Group", "ALL_CAMERAS_ID", "UNGROUPED_ID",
     "VIRTUAL_GROUP_IDS", "camera_key",
     "PasswordVault", "VaultLocked", "VaultError",
