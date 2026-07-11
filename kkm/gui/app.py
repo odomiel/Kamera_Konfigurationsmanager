@@ -204,7 +204,6 @@ class MainWindow(tk.Tk):
         ttk.Label(ghead, text="Gerätegruppen",
                   font=("TkDefaultFont", 11, "bold")).pack(side=tk.LEFT)
         self._group_filter = tk.StringVar()
-        self._group_filter.trace_add("write", lambda *_: self._refresh_groups())
         gsearch = ttk.Entry(ghead, textvariable=self._group_filter, width=12)
         gsearch.pack(side=tk.RIGHT)
         self._group_search = gsearch
@@ -219,6 +218,9 @@ class MainWindow(tk.Tk):
         self.group_tree = ttk.Treeview(gt_frame, show="tree", selectmode="browse")
         self._add_scrollbars(gt_frame, self.group_tree)
         self.group_tree.bind("<<TreeviewSelect>>", self._on_group_select)
+        # Erst jetzt auf das Suchfeld lauschen: _refresh_groups() braucht group_tree,
+        # das Setzen des Platzhaltertexts oben würde den Trace sonst zu früh auslösen.
+        self._group_filter.trace_add("write", lambda *_: self._refresh_groups())
 
         gbtns = ttk.Frame(left)
         gbtns.pack(fill=tk.X, pady=4)

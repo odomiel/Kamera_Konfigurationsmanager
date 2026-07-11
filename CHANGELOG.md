@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b2 — 2026-07-11
+
+- **Fehlermeldung beim Programmstart behoben.** Beim Aufbau des Hauptfensters warf Tk
+  jedes Mal `AttributeError: … has no attribute 'group_tree'` auf die Konsole: Der
+  `trace_add`-Beobachter des Gruppen-Suchfelds war schon registriert, als der
+  Platzhaltertext gesetzt wurde — er rief `_refresh_groups()` auf, obwohl der
+  Gruppen-Baum erst danach entstand. Der Beobachter wird nun erst hinter dem
+  Gruppen-Baum registriert. Sichtbar war der Fehler nur auf der Konsole (Tk fängt ihn
+  ab), das Suchfeld selbst funktionierte.
+
 ## 26.07.11b1 — 2026-07-11
 
 - **Update-Suche im Firmware-Dialog.** Der Dialog kann die ausgewählten Modelle jetzt
