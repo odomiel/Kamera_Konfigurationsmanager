@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b8 — 2026-07-11
+
+- **Benutzerhandbuch als PDF** (`Benutzerhandbuch.pdf`, 11 Seiten): Titelseite mit
+  Programm-Icon, verlinktes Inhaltsverzeichnis, alle Funktionen ausführlich beschrieben —
+  inklusive der neuen (Firmware-Update-Suche, ONVIF-Plugin mit Fähigkeiten-Tabelle,
+  Auswahl beim Konfigurations-Import), dazu Installation, erste Schritte, Fehlersuche und
+  Glossar. Quelle ist `BENUTZERHANDBUCH.md`; `tools/make_manual.py` erzeugt daraus das PDF
+  (benötigt `reportlab`, nur zum Bauen der Doku, keine Laufzeit-Abhängigkeit).
+
 ## 26.07.11b7 — 2026-07-11
 
 - **Windows-`.exe`: Unterstrich statt Bindestrich vor der Version** —
