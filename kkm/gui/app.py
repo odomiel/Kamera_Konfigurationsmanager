@@ -46,10 +46,10 @@ NET_WORKERS = 12
 from kkm.version import APP_NAME, __version__
 from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
                       UNGROUPED_ID, VIRTUAL_GROUP_IDS, camera_key, PasswordVault,
-                      AppSettings, VaultError)
+                      AppSettings, VaultError, FIELD_NAMES, get_first_ip,
+                      export_results)
 from kkm.core.groups import config_dir
 from kkm.plugins import build_registry
-from kkm.plugins.axis.discovery import FIELD_NAMES, get_first_ip, export_results
 from kkm.gui import theme
 from kkm.gui.dialogs import ACTION_DIALOGS
 from kkm.gui.dialogs.settings_dialog import SettingsDialog

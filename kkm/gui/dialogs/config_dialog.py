@@ -25,7 +25,7 @@ Two operations, both on the cameras selected in the main table:
 - **Export**: read the configuration of the *first* selected camera, let the user
   pick which parameters to keep (searchable checkbox list), and save a ``.cfg``.
 
-All vendor work goes through :class:`kkm.plugins.axis.plugin.AxisPlugin`
+All vendor work goes through the camera's :class:`~kkm.core.VendorPlugin`
 (``import_config`` / ``read_config`` / ``export_config``), which wraps the copied
 VAPIX functions ``parse_adm_config`` / ``apply_adm_config`` / ``read_device_config``
 / ``write_adm_config``.
@@ -40,8 +40,7 @@ from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import Capability, camera_key
-from kkm.plugins.axis.discovery import get_first_ip
-from kkm.plugins.axis import vapix
+from kkm.core import get_first_ip
 from .base import ActionDialog
 from .vault_access import ensure_vault_unlocked
 
@@ -168,7 +167,7 @@ class ConfigDialog(ActionDialog):
             return
         self._cfg_path.set(path)
         try:
-            cfg = vapix.parse_adm_config(path)
+            cfg = self.plugin0().parse_config_file(path)
             info = (f"Modell: {cfg.get('model') or '?'} · "
                     f"Firmware: {cfg.get('firmware') or '?'} · "
                     f"{len(cfg.get('parameters', {}))} Parameter · "
@@ -176,7 +175,7 @@ class ConfigDialog(ActionDialog):
             if cfg.get("vmd4") is not None:
                 info += " · Bewegungserkennung (VMD4)"
             self._cfg_info.config(text=info)
-        except vapix.VapixError as exc:
+        except Exception as exc:  # noqa: BLE001 - Dateifehler des Plugins anzeigen
             self._cfg_info.config(text=f"Ungültig: {exc}")
             self._cfg_path.set("")
 
@@ -186,8 +185,8 @@ class ConfigDialog(ActionDialog):
             messagebox.showinfo(self.title_text, "Bitte zuerst eine .cfg-Datei wählen.", parent=self)
             return
         try:
-            vapix.parse_adm_config(path)   # validate once before touching cameras
-        except vapix.VapixError as exc:
+            self.plugin0().parse_config_file(path)   # validate once before touching cameras
+        except Exception as exc:  # noqa: BLE001
             messagebox.showerror(self.title_text, str(exc), parent=self)
             return
 
@@ -259,8 +258,9 @@ class ConfigDialog(ActionDialog):
         if not path:
             return
         try:
-            vapix.write_adm_config(path, config, selected_params=selected,
-                                   with_profiles=with_profiles, with_vmd4=with_vmd4)
+            self.plugin0().write_config_file(path, config, selected_params=selected,
+                                             with_profiles=with_profiles,
+                                             with_vmd4=with_vmd4)
             extra = " + Bewegungserkennung" if with_vmd4 and config.get("vmd4") else ""
             self._log_line(
                 f"✓ Gespeichert: {path} ({len(selected)} Parameter{extra})")

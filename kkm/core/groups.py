@@ -67,7 +67,7 @@ def camera_key(camera: dict) -> str:
     mac = str(camera.get("MAC-Adresse/Seriennummer", "")).strip()
     if mac:
         return mac
-    from kkm.plugins.axis.discovery import get_first_ip  # local import: avoid cycle
+    from .camera import get_first_ip
     return f"{camera.get('Name', '?')}@{get_first_ip(camera)}"
 
 

@@ -32,6 +32,8 @@ import abc
 from dataclasses import dataclass, field
 from typing import Callable
 
+from . import camera
+
 
 @dataclass
 class Credentials:
@@ -92,8 +94,34 @@ class VendorPlugin(abc.ABC):
     #: set of Capability.* this plugin implements
     capabilities: set[str] = set()
 
+    #: Rollen des Benutzer-Dialogs bzw. Stufen des ONVIF-Dialogs, hoechstes Recht
+    #: zuerst. Die Dialoge lesen sie vom Plugin — sie sind herstellerabhaengig.
+    USER_ROLES: tuple[str, ...] = ()
+    ONVIF_LEVELS: tuple[str, ...] = ()
+
     def supports(self, capability: str) -> bool:
         return capability in self.capabilities
+
+    # --- neutrale Helfer (Plugins duerfen ueberschreiben) --------------------
+    def parse_user_list(self, path, onvif: bool = False):
+        """Benutzerliste ``Name,Passwort[,Rolle]`` fuer den Stapel-Import lesen.
+        Validiert gegen die Rollen/Stufen *dieses* Plugins."""
+        roles = self.ONVIF_LEVELS if onvif else self.USER_ROLES
+        if not roles:
+            raise NotImplementedError
+        return camera.parse_user_list(path, roles, roles[-1])   # niedrigster Rang
+
+    # --- configuration files (Capability.CONFIG) ----------------------------
+    # Format und Aufbau der Konfigurationsdatei sind herstellerspezifisch; die GUI
+    # kennt sie nicht und ruft nur diese drei Methoden auf.
+    def parse_config_file(self, path) -> dict:
+        """Konfigurationsdatei einlesen/pruefen (wirft bei ungueltiger Datei)."""
+        raise NotImplementedError
+
+    def write_config_file(self, path, config: dict, selected_params=None,
+                          with_profiles: bool = True, with_vmd4: bool = True):
+        """Gelesene Konfiguration als Datei schreiben (Auswahl der Parameter)."""
+        raise NotImplementedError
 
     # --- discovery & status -------------------------------------------------
     @abc.abstractmethod
@@ -137,6 +165,13 @@ class VendorPlugin(abc.ABC):
         """Laedt die Firmware herunter (Cache) und liefert den lokalen Pfad.
         ``progress(done, total)`` laeuft im Worker-Thread."""
         raise NotImplementedError
+
+    def firmware_cache_size(self) -> int:
+        """Belegter Platz der heruntergeladenen Firmware (Bytes)."""
+        return 0
+
+    def clear_firmware_cache(self) -> None:
+        """Heruntergeladene Firmware verwerfen."""
 
     # --- configuration actions ---------------------------------------------
     # These mirror the Discovery tool's "Kameraeinstellungen" tabs, which become

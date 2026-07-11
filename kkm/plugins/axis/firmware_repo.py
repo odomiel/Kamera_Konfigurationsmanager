@@ -48,6 +48,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
+from kkm.core.camera import version_tuple
 from kkm.core.groups import config_dir
 
 BASE_URL = "https://ftp.axis.com/pub_soft/MPQT/"
@@ -133,17 +134,6 @@ def _base(base_url: str | None = None) -> str:
 
 
 # ------------------------------------------------------------- Versionen
-def version_tuple(version: str) -> tuple[int, ...]:
-    """„12.11.72" -> (12, 11, 72). Nicht-numerische Teile werden zu 0 (alte
-    Firmware-Strings wie „5.51.7.3" bleiben damit vergleichbar)."""
-    parts = re.split(r"[._-]", (version or "").strip())
-    out = []
-    for p in parts:
-        m = re.match(r"\d+", p)
-        out.append(int(m.group()) if m else 0)
-    return tuple(out) or (0,)
-
-
 def is_newer(candidate: str, current: str) -> bool:
     if not candidate:
         return False

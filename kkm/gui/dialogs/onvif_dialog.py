@@ -22,8 +22,9 @@ over the VAPIX SOAP endpoint ``/vapix/services`` with an authenticated admin, so
 working admin login is always required.
 
 Three modes: anlegen / Passwort ändern / Stapel-Import
-(``Name,Passwort[,Stufe]``). All vendor work goes through :class:`AxisPlugin`
-(``add_onvif_user`` / ``set_onvif_user_password`` / ``parse_user_list(onvif=True)``).
+(``Name,Passwort[,Stufe]``). All vendor work goes through the camera's
+:class:`~kkm.core.VendorPlugin` (``add_onvif_user``, ``set_onvif_user_password``,
+``parse_user_list(onvif=True)``); the levels come from its ``ONVIF_LEVELS``.
 """
 
 from __future__ import annotations
@@ -33,7 +34,6 @@ from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import Capability
-from kkm.plugins.axis.plugin import AxisPlugin
 from .base import ActionDialog
 
 
@@ -71,7 +71,7 @@ class OnvifDialog(ActionDialog):
             row=1, column=1, sticky=tk.W, padx=4, pady=2)
         ttk.Label(self._single, text="Stufe:").grid(row=2, column=0, sticky=tk.W, pady=2)
         self._level_box = ttk.Combobox(self._single, textvariable=self.level, width=19,
-                                       state="readonly", values=AxisPlugin.ONVIF_LEVELS)
+                                       state="readonly", values=self.plugin0().ONVIF_LEVELS)
         self._level_box.grid(row=2, column=1, sticky=tk.W, padx=4, pady=2)
 
         # --- import ---
@@ -109,7 +109,7 @@ class OnvifDialog(ActionDialog):
             return
         self.import_path.set(path)
         try:
-            users = AxisPlugin.parse_user_list(path, onvif=True)
+            users = self.plugin0().parse_user_list(path, onvif=True)
             self._import_info.config(text=f"{len(users)} Benutzer in der Datei: "
                                           + ", ".join(u["name"] for u in users[:6])
                                           + (" …" if len(users) > 6 else ""))
@@ -149,7 +149,7 @@ class OnvifDialog(ActionDialog):
             messagebox.showinfo(self.title_text, "Bitte zuerst eine Benutzerliste wählen.", parent=self)
             return
         try:
-            users = AxisPlugin.parse_user_list(path, onvif=True)  # validate once
+            users = self.plugin0().parse_user_list(path, onvif=True)  # validate once
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror(self.title_text, str(exc), parent=self)
             return

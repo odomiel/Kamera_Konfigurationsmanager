@@ -4,6 +4,24 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b4 — 2026-07-11
+
+- **Herstellergrenze wieder hergestellt (Vorarbeit für ein zweites Plugin).** CLAUDE.md
+  behauptete, die GUI rede nur über `VendorPlugin` mit den Herstellern — tatsächlich
+  importierten `kkm/gui/` und sogar `kkm/core/groups.py` an neun Stellen direkt aus dem
+  Axis-Plugin. Solange es nur Axis gab, fiel das nicht auf; ein zweites Plugin wäre daran
+  gescheitert. Aufgeräumt:
+  - Neu: `kkm/core/camera.py` — die Form des Kamera-Dicts (`FIELD_NAMES`) und die Helfer
+    darauf (`get_first_ip`, `next_ip`, `version_tuple`, `parse_user_list`,
+    `export_results`). Nichts davon war je Axis-spezifisch, es lag nur im Axis-Plugin.
+  - Die Dialoge holen Rollen (`USER_ROLES`), ONVIF-Stufen (`ONVIF_LEVELS`) und die
+    Dateiparser jetzt von der **Plugin-Instanz** (neu: `ActionDialog.plugin0()`) statt von
+    der Klasse `AxisPlugin`. Neu im Seam: `parse_config_file()` / `write_config_file()`
+    (Konfigurationsdatei) und `firmware_cache_size()` / `clear_firmware_cache()`.
+  - Der ADM-Import im Einstellungs-Dialog erscheint nur noch, wenn das Axis-Plugin
+    vorhanden ist; die Sicherung darunter ist herstellerneutral und bleibt.
+  - Keine Funktionsänderung — dieselben Dialoge, dieselben Rollen, dieselben Meldungen.
+
 ## 26.07.11b3 — 2026-07-11
 
 - **Windows-`.exe` trägt jetzt die Versionsnummer im Namen** — wie die AppImage:

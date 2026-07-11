@@ -20,26 +20,16 @@ This is the vendor-specific *find cameras on the LAN* logic. It is kept separate
 from :mod:`kkm.plugins.axis.vapix` (which only changes settings on a known IP) so
 the plugin can expose discovery and configuration independently.
 
-``FIELD_NAMES`` is the single source of truth for the base device columns; the GUI
-table and exports derive from it, and the manager adds its own columns (group,
-online status) on top.
+The camera dict itself is *not* Axis-specific: its shape (``FIELD_NAMES``) and the
+helpers on it live in :mod:`kkm.core.camera` and are re-exported here, because that
+is where a plugin's discovery reaches for them.
 """
 
-import csv
 import time
 
 from zeroconf import ServiceBrowser, Zeroconf
 
-# Base device fields as reported by mDNS. The manager augments each camera dict
-# with extra keys (``_group``, ``_online``, ``_vendor``) — those are NOT in here.
-FIELD_NAMES = [
-    "Name",
-    "IP Adresse: Zeroconfig",
-    "IP Adresse: Konfiguriert",
-    "Port",
-    "Hostname",
-    "MAC-Adresse/Seriennummer",
-]
+from kkm.core.camera import FIELD_NAMES, get_first_ip, export_results  # noqa: F401
 
 
 def convert_bytearray_to_ipv4(bytearray_address):
@@ -108,35 +98,3 @@ def discover_axis_cameras(timeout=10):
     return discovery.services
 
 
-def get_first_ip(camera):
-    """First reachable IP of a camera: prefer configured, else zeroconf."""
-    for field in ("IP Adresse: Konfiguriert", "IP Adresse: Zeroconfig"):
-        ip = str(camera.get(field, "")).split(",")[0].strip()
-        if ip:
-            return ip
-    return ""
-
-
-def export_results(cameras, output_file, fmt=None, columns=None):
-    """Export the camera list as CSV or a plain text table."""
-    if columns is None:
-        columns = FIELD_NAMES
-    if fmt is None:
-        fmt = "csv" if output_file.lower().endswith(".csv") else "txt"
-
-    if fmt == "csv":
-        with open(output_file, "w", newline="", encoding="utf-8") as fh:
-            writer = csv.DictWriter(fh, fieldnames=columns)
-            writer.writeheader()
-            for cam in cameras:
-                writer.writerow({c: cam.get(c, "") for c in columns})
-    else:
-        # Minimal aligned text table (no prettytable dependency).
-        widths = {c: max(len(c), *(len(str(cam.get(c, ""))) for cam in cameras)) if cameras
-                  else len(c) for c in columns}
-        line = "  ".join(c.ljust(widths[c]) for c in columns)
-        rows = [line, "  ".join("-" * widths[c] for c in columns)]
-        for cam in cameras:
-            rows.append("  ".join(str(cam.get(c, "")).ljust(widths[c]) for c in columns))
-        with open(output_file, "w", encoding="utf-8") as fh:
-            fh.write("\n".join(rows) + "\n")

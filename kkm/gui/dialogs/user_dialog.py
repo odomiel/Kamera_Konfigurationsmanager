@@ -28,8 +28,9 @@ front-view action:
 
 Optionally the entered/created password is written to the encrypted vault per
 camera (only when the vault is unlocked), so later actions can auto-fill it.
-All vendor work goes through :class:`AxisPlugin` (``add_user`` / wrapping
-``add_or_set_user``, ``set_user_password``, ``parse_user_list``).
+All vendor work goes through the camera's :class:`~kkm.core.VendorPlugin`
+(``add_user``, ``set_user_password``, ``parse_user_list``); the roles offered come
+from the plugin's ``USER_ROLES``.
 """
 
 from __future__ import annotations
@@ -39,7 +40,6 @@ from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import Capability
-from kkm.plugins.axis.plugin import AxisPlugin
 from .base import ActionDialog
 
 
@@ -82,7 +82,7 @@ class UserDialog(ActionDialog):
         self._role_label = ttk.Label(self._single, text="Rolle:")
         self._role_label.grid(row=2, column=0, sticky=tk.W, pady=2)
         self._role_box = ttk.Combobox(self._single, textvariable=self.role, width=19,
-                                      state="readonly", values=AxisPlugin.USER_ROLES)
+                                      state="readonly", values=self.plugin0().USER_ROLES)
         self._role_box.grid(row=2, column=1, sticky=tk.W, padx=4, pady=2)
         self._factory_cb = ttk.Checkbutton(
             self._single, text="Auslieferungszustand (factory)", variable=self.factory)
@@ -129,7 +129,7 @@ class UserDialog(ActionDialog):
             return
         self.import_path.set(path)
         try:
-            users = AxisPlugin.parse_user_list(path, onvif=False)
+            users = self.plugin0().parse_user_list(path, onvif=False)
             self._import_info.config(text=f"{len(users)} Benutzer in der Datei: "
                                           + ", ".join(u["name"] for u in users[:6])
                                           + (" …" if len(users) > 6 else ""))
@@ -183,7 +183,7 @@ class UserDialog(ActionDialog):
             messagebox.showinfo(self.title_text, "Bitte zuerst eine Benutzerliste wählen.", parent=self)
             return
         try:
-            users = AxisPlugin.parse_user_list(path, onvif=False)  # validate once
+            users = self.plugin0().parse_user_list(path, onvif=False)  # validate once
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror(self.title_text, str(exc), parent=self)
             return

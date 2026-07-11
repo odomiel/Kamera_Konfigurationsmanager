@@ -53,6 +53,11 @@ class AxisPlugin(VendorPlugin):
         Capability.FACTORY_RESET,
     }
 
+    # Rollen (VAPIX-Benutzer) und ONVIF-Stufen, jeweils hoechstes Recht zuerst —
+    # die Dialoge lesen sie von der Plugin-Instanz.
+    USER_ROLES = ("administrator", "operator", "viewer")
+    ONVIF_LEVELS = ("Administrator", "Operator", "User")
+
     #: Basis-URL des Firmware-Verzeichnisses (aus den Einstellungen ueberschreibbar,
     #: z. B. auf einen internen Spiegel).
     repo_url: str = firmware_repo.BASE_URL
@@ -114,14 +119,6 @@ class AxisPlugin(VendorPlugin):
         ip = self.ip_of(camera)
         return vapix.set_dhcp(ip, creds.username, creds.password, **self._conn(creds))
 
-    @staticmethod
-    def next_ip(ip_str, step=1):
-        """IPv4 helper for the sequential-assignment mode. Raises on invalid input."""
-        return vapix.next_ip(ip_str, step)
-
-    # Roles offered in the user dialog (highest to lowest privilege).
-    USER_ROLES = ("administrator", "operator", "viewer")
-
     def add_user(self, camera, creds: Credentials, new_user, new_password,
                  role="viewer", factory=False):
         ip = self.ip_of(camera)
@@ -134,16 +131,12 @@ class AxisPlugin(VendorPlugin):
         return vapix.set_user_password(ip, creds.username, creds.password,
                                        target_user, new_password, **self._conn(creds))
 
-    @staticmethod
-    def parse_user_list(path, onvif=False):
+    def parse_user_list(self, path, onvif=False):
         """Parse a CSV/text user list (Name,Password[,Role]) -> list of dicts.
 
         Raises on format errors (with line numbers) so nothing partial is applied.
         """
         return vapix.parse_user_list(path, onvif=onvif)
-
-    # ONVIF user levels (highest to lowest privilege).
-    ONVIF_LEVELS = ("Administrator", "Operator", "User")
 
     def add_onvif_user(self, camera, creds: Credentials, new_user, new_password,
                        level="Administrator"):
@@ -194,6 +187,20 @@ class AxisPlugin(VendorPlugin):
             filename=release.filename, size=release.size, notes_url=release.notes_url)
         return firmware_repo.download(rel, progress=progress, cancelled=cancelled)
 
+    def firmware_cache_size(self) -> int:
+        return firmware_repo.cache_size()
+
+    def clear_firmware_cache(self) -> None:
+        firmware_repo.clear_cache()
+
+    def parse_config_file(self, path) -> dict:
+        return vapix.parse_adm_config(path)
+
+    def write_config_file(self, path, config, selected_params=None,
+                          with_profiles=True, with_vmd4=True):
+        return vapix.write_adm_config(path, config, selected_params=selected_params,
+                                      with_profiles=with_profiles, with_vmd4=with_vmd4)
+
     def import_config(self, camera, creds: Credentials, cfg_path):
         ip = self.ip_of(camera)
         config = vapix.parse_adm_config(cfg_path)
@@ -213,7 +220,7 @@ class AxisPlugin(VendorPlugin):
     def export_config(self, camera, creds: Credentials, out_path,
                       selected_params=None, with_profiles=True, with_vmd4=True):
         config = self.read_config(camera, creds)
-        return vapix.write_adm_config(out_path, config,
+        return self.write_config_file(out_path, config,
                                       selected_params=selected_params,
                                       with_profiles=with_profiles,
                                       with_vmd4=with_vmd4)

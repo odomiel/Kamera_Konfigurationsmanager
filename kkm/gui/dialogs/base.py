@@ -38,8 +38,7 @@ import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox
 
-from kkm.core import Credentials, camera_key
-from kkm.plugins.axis.discovery import get_first_ip
+from kkm.core import Credentials, camera_key, get_first_ip
 from .vault_access import ensure_vault_unlocked
 
 
@@ -146,6 +145,12 @@ class ActionDialog(tk.Toplevel):
 
     def plugin_for(self, camera: dict):
         return self.registry.get(camera.get("_vendor", "axis"))
+
+    def plugin0(self):
+        """Plugin der ersten ausgewählten Kamera — für alles, was der Dialog *vor*
+        dem eigentlichen Durchlauf vom Hersteller braucht (Rollen, ONVIF-Stufen,
+        Dateiformate). Die Aktion ist ohnehin nur wählbar, wenn das Plugin sie meldet."""
+        return self.plugin_for(self.cameras[0]) if self.cameras else None
 
     # ----------------------------------------------------------------- to override
     def build_body(self, parent):  # pragma: no cover - overridden

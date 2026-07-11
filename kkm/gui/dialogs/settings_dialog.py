@@ -38,7 +38,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import ALL_CAMERAS_ID, VIRTUAL_GROUP_IDS, VaultError, camera_key
+from kkm.core import (ALL_CAMERAS_ID, VIRTUAL_GROUP_IDS, VaultError, Capability,
+                      camera_key)
 from kkm.core.backup import create_backup, restore_backup, BackupError
 from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 from kkm.version import __version__, APP_NAME
@@ -409,18 +410,22 @@ class SettingsDialog(tk.Toplevel):
         self._update_fw_state()
         return tab
 
+    def _repo_plugins(self):
+        """Plugins mit eigener Update-Suche — nur die haben einen Firmware-Cache."""
+        return [p for p in self.registry.all()
+                if p.supports(Capability.FIRMWARE_CHECK)]
+
     def _update_cache_label(self):
-        from kkm.plugins.axis import firmware_repo
         try:
-            size = firmware_repo.cache_size()
+            size = sum(p.firmware_cache_size() for p in self._repo_plugins())
         except OSError:
             size = 0
         self._fw_cache_lbl.config(
             text="leer" if not size else f"{size / (1024 * 1024):.0f} MB belegt")
 
     def _clear_fw_cache(self):
-        from kkm.plugins.axis import firmware_repo
-        firmware_repo.clear_cache()
+        for plugin in self._repo_plugins():
+            plugin.clear_firmware_cache()
         self._update_cache_label()
 
     def _update_fw_state(self):
@@ -442,22 +447,26 @@ class SettingsDialog(tk.Toplevel):
     # ------------------------------------------------------------------ import
     def _build_import_tab(self, parent):
         tab = ttk.Frame(parent, padding=10)
-        ttk.Label(tab, text="Import aus AXIS Device Manager",
-                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
-        ttk.Label(tab, justify=tk.LEFT, text=(
-            "Übernimmt Geräte und Gruppen aus einer AXIS-Device-Manager-Export-"
-            "datei (JSON, Format 1.x und 2.x). Vorhandene Gruppen gleichen Namens "
-            "werden ergänzt, Geräte anhand ihrer MAC/Seriennummer zusammengeführt.\n"
-            "Enthaltene Zugangsdaten werden — sofern vorhanden — in den Tresor "
-            "übernommen (dazu muss er entsperrt sein).")
-        ).pack(anchor=tk.W, pady=(2, 8), fill=tk.X)
-
+        # Der ADM-Import ist eine reine Axis-Sache (Exportformat des AXIS Device
+        # Manager) — ohne Axis-Plugin gibt es den Abschnitt schlicht nicht. Die
+        # Sicherung darunter ist herstellerneutral und immer da.
         self._import_creds_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(tab, text="Zugangsdaten in den Tresor übernehmen",
-                        variable=self._import_creds_var).pack(anchor=tk.W)
+        if self.registry.get("axis") is not None:
+            ttk.Label(tab, text="Import aus AXIS Device Manager",
+                      font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
+            ttk.Label(tab, justify=tk.LEFT, text=(
+                "Übernimmt Geräte und Gruppen aus einer AXIS-Device-Manager-Export-"
+                "datei (JSON, Format 1.x und 2.x). Vorhandene Gruppen gleichen Namens "
+                "werden ergänzt, Geräte anhand ihrer MAC/Seriennummer zusammengeführt.\n"
+                "Enthaltene Zugangsdaten werden — sofern vorhanden — in den Tresor "
+                "übernommen (dazu muss er entsperrt sein).")
+            ).pack(anchor=tk.W, pady=(2, 8), fill=tk.X)
 
-        ttk.Button(tab, text="Export-Datei wählen und importieren…",
-                   command=self._run_import).pack(anchor=tk.W, pady=(8, 6))
+            ttk.Checkbutton(tab, text="Zugangsdaten in den Tresor übernehmen",
+                            variable=self._import_creds_var).pack(anchor=tk.W)
+
+            ttk.Button(tab, text="Export-Datei wählen und importieren…",
+                       command=self._run_import).pack(anchor=tk.W, pady=(8, 6))
 
         # --- Sicherung (Daten + Tresor) als eine verschlüsselte Datei ---------
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))

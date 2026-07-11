@@ -37,7 +37,7 @@ class CredentialPromptDialog(tk.Toplevel):
         self.grab_set()
         self.result = None
 
-        from kkm.plugins.axis.discovery import get_first_ip
+        from kkm.core import get_first_ip
         name = camera.get("Name", "?")
         ip = get_first_ip(camera) or "—"
 

@@ -25,8 +25,7 @@ cameras whose model has no file assigned are skipped and reported.
 
 Firmware uploads are slow and the device reboots afterwards, so a long per-camera
 timeout is forced regardless of the credentials timeout. The vendor work goes
-through :meth:`AxisPlugin.upgrade_firmware` (modern vs. legacy endpoint handled in
-VAPIX).
+through the plugin's ``upgrade_firmware``.
 
 Beyond assigning local files, the dialog can look the models up **online**
 (``Capability.FIRMWARE_CHECK``): the plugin reports which versions exist and which
@@ -48,8 +47,7 @@ from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Capability, camera_key
-from kkm.plugins.axis.discovery import get_first_ip
+from kkm.core import Capability, camera_key, get_first_ip, version_tuple
 from .base import ActionDialog
 
 FIRMWARE_TIMEOUT = 600   # seconds; upload + flash takes far longer than a probe
@@ -219,7 +217,6 @@ class FirmwareDialog(ActionDialog):
         (eine Kamera auf 10.12, eine auf 11.11) ein Vorschlag herauskommen, der für
         die neuere Kamera ein **Downgrade** ist. Vom neuesten Stand aus ist der
         Vorschlag für jede Kamera der Zeile ein Schritt nach vorn."""
-        from kkm.plugins.axis.firmware_repo import version_tuple
         vers = [(c.get("_firmware") or "").strip()
                 for c in self._by_model.get(model, [])]
         vers = [v for v in vers if v]

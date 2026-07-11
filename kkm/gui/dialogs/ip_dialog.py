@@ -26,7 +26,7 @@ Three modes (radio), mirroring the Discovery tool's IP tab:
 
 For the static modes the per-camera target IP is computed and validated *before*
 any camera is touched (so a bad address aborts the whole run early), then applied
-via :meth:`AxisPlugin.set_static_ip`; DHCP via :meth:`AxisPlugin.set_dhcp`.
+via :meth:`~kkm.core.VendorPlugin.set_static_ip`; DHCP via ``set_dhcp``.
 """
 
 from __future__ import annotations
@@ -35,8 +35,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from kkm.core import Capability, camera_key
-from kkm.plugins.axis.plugin import AxisPlugin
-from kkm.plugins.axis.discovery import get_first_ip
+from kkm.core import next_ip, get_first_ip
 from .base import ActionDialog
 
 
@@ -135,14 +134,14 @@ class IpDialog(ActionDialog):
                     messagebox.showinfo(self.title_text, "Bitte eine Start-IP angeben.", parent=self)
                     return
                 for idx, cam in enumerate(self.cameras):
-                    targets[camera_key(cam)] = AxisPlugin.next_ip(start, idx)
+                    targets[camera_key(cam)] = next_ip(start, idx)
             else:  # each
                 for cam in self.cameras:
                     key = camera_key(cam)
                     ip = self._ip_vars[key].get().strip()
                     if not ip:
                         raise ValueError(f"{cam.get('Name', '?')}: keine IP angegeben")
-                    AxisPlugin.next_ip(ip, 0)   # validate format (raises on bad input)
+                    next_ip(ip, 0)   # validate format (raises on bad input)
                     targets[key] = ip
         except ValueError as exc:
             messagebox.showerror(self.title_text, f"Ungültige Eingabe: {exc}", parent=self)
