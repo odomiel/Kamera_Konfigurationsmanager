@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b7 — 2026-07-11
+
+- **Windows-`.exe`: Unterstrich statt Bindestrich vor der Version** —
+  `dist\Kamerakonfigurationsmanager_26.07.11b7.exe` statt
+  `Kamerakonfigurationsmanager-26.07.11b7.exe`. Betrifft nur den Dateinamen (PyInstaller-Spec
+  und `build_windows.ps1`); die AppImage behält ihr bisheriges Schema.
+
 ## 26.07.11b6 — 2026-07-11
 
 - **Auch beim Import lässt sich jetzt auswählen, was übernommen wird.** Bisher wurde eine

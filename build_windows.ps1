@@ -12,8 +12,8 @@
 #   powershell -ExecutionPolicy Bypass -File build_windows.ps1
 #   powershell -ExecutionPolicy Bypass -File build_windows.ps1 -Bump   # Version vorher erhoehen
 #
-# Die fertige .exe traegt die Versionsnummer im Namen (wie die AppImage):
-#   dist\Kamerakonfigurationsmanager-<Version>.exe
+# Die fertige .exe traegt die Versionsnummer im Namen:
+#   dist\Kamerakonfigurationsmanager_<Version>.exe
 #
 param([switch]$Bump)
 
@@ -36,6 +36,6 @@ py -3.14 -m pip install -r requirements.txt
 Write-Host "==== PyInstaller-Build ($Version) ===="
 py -3.14 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
 
-$Exe = "dist\Kamerakonfigurationsmanager-$Version.exe"
+$Exe = "dist\Kamerakonfigurationsmanager_$Version.exe"
 if (-not (Test-Path $Exe)) { throw "Erwartete Datei fehlt: $Exe" }
 Write-Host ">> Fertig: $Exe"

@@ -41,8 +41,8 @@ powershell -ExecutionPolicy Bypass -File build_windows.ps1 -Bump   # Version vor
 py -3.14 -m PyInstaller --noconfirm Kamerakonfigurationsmanager.spec
 ```
 
-Ergebnis: `dist\Kamerakonfigurationsmanager-<Version>.exe` (z. B.
-`Kamerakonfigurationsmanager-26.07.11b2.exe`) — eine eigenstaendige, portable Datei,
+Ergebnis: `dist\Kamerakonfigurationsmanager_<Version>.exe` (z. B.
+`Kamerakonfigurationsmanager_26.07.11b6.exe`) — eine eigenstaendige, portable Datei,
 die ohne Installation gestartet werden kann. Die Version im Dateinamen kommt wie beim
 AppImage aus `kkm/version.py`; die Spec liest sie selbst, ein direkter
 PyInstaller-Aufruf benennt die Datei also genauso.

@@ -2,7 +2,7 @@
 #
 # PyInstaller-Spec fuer den Kamera_Konfigurationsmanager (Windows-.exe).
 # Erzeugt ein eigenstaendiges One-File-Programm in dist\:
-#   Kamerakonfigurationsmanager-<Version>.exe   - GUI (ohne Konsolenfenster)
+#   Kamerakonfigurationsmanager_<Version>.exe   - GUI (ohne Konsolenfenster)
 #
 # Bauen (auf Windows):  pyinstaller --noconfirm Kamerakonfigurationsmanager.spec
 #
@@ -63,7 +63,7 @@ a = Analysis(
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz, a.scripts, a.binaries, a.datas, [],
-    name=f"Kamerakonfigurationsmanager-{VERSION}",
+    name=f"Kamerakonfigurationsmanager_{VERSION}",
     console=False,
     icon=icon,
     upx=False,
