@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b11 — 2026-07-11
+
+- **Spaltenbreiten der Geräteliste lassen sich wieder ziehen.** Die Spalten hatten
+  `minwidth` **gleich** ihrer Vorgabebreite (160 px) — damit standen alle Spalten auf ihrem
+  Minimum und ließen sich weder schmaler ziehen (Minimum erreicht) noch breiter (die
+  Nachbarspalten konnten nicht nachgeben). Die Mindestbreite liegt jetzt bei 70 px; das
+  Ziehen an der Spaltengrenze funktioniert in beide Richtungen, und bei zu schmalem Fenster
+  erscheint weiterhin der waagerechte Scrollbalken.
+- **Die eingestellten Breiten bleiben erhalten** (neu in `settings.json`:
+  `column_widths`) — sie werden nach dem Ziehen gespeichert und beim nächsten Start
+  wiederhergestellt.
+- Hilfe und Benutzerhandbuch entsprechend ergänzt.
+
 ## 26.07.11b10 — 2026-07-11
 
 - **Firmware-Dialog passt jetzt auf kleine Bildschirme.** Die Modell-/Kameraliste war fest

@@ -34,6 +34,7 @@ from .groups import config_dir
 DEFAULTS = {
     "enabled_plugins": None,     # None -> all on
     "hidden_columns": [],
+    "column_widths": {},         # Spaltenbreiten der Geräteliste (vom Nutzer gezogen)
     "theme": "dark",             # "dark" | "light" (Sun-Valley-Theme)
     "firmware_parallel": True,   # Firmware-Updates nebenläufig statt nacheinander
     "firmware_max_parallel": 4,  # max. gleichzeitige Firmware-Updates

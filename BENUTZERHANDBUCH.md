@@ -81,7 +81,10 @@ frisch gefundene), darunter Ihre eigenen Gruppen alphabetisch. Das **Suchfeld** 
 IP-Adresse, MAC/Seriennummer, Firmware, Gruppe(n)* und *Status*. Ein Klick auf einen
 Spaltenkopf sortiert danach, ein erneuter Klick kehrt die Richtung um (▲/▼ zeigt die
 aktive Spalte). Sortiert wird „natürlich", das heißt IP-Adressen und Firmware-Versionen
-ordnen sich zahlenrichtig und nicht alphabetisch.
+ordnen sich zahlenrichtig und nicht alphabetisch. Die **Spaltenbreiten** ändern Sie durch
+Ziehen an der Spaltengrenze in der Kopfzeile; die Einstellung bleibt über Programmstarts
+hinweg erhalten. Welche Spalten überhaupt sichtbar sind, legen Sie in den Einstellungen
+fest (Kapitel 12).
 
 **Oben** liegt die Aktionsleiste. Rechts neben *Einstellungen* zeigt ein Schloss-Schalter
 den Zustand des Passwort-Tresors: geschlossenes Schloss = gesperrt, offenes Schloss =

@@ -62,6 +62,7 @@ GROUP_COL = "Gruppe(n)"
 TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "MAC/Seriennummer", "Firmware",
                  GROUP_COL, ONLINE_COL]
 FIXED_COLUMNS = {"Name"}   # always visible, cannot be hidden
+COL_MIN_WIDTH = 70         # Mindestbreite einer Tabellenspalte beim Ziehen
 GROUP_SEARCH_PLACEHOLDER = "Suche"   # Platzhalter im Gruppen-Suchfeld
 # Firmware-Spalten-Text für werksneue Kameras (statt Passwortabfrage).
 FACTORY_LABEL = "Ersteinrichtung erforderlich"
@@ -251,17 +252,23 @@ class MainWindow(tk.Tk):
         for col in TABLE_COLUMNS:
             self.table.heading(col, text=col,
                                command=lambda c=col: self._sort_by(c))
-            # minwidth = Vorgabebreite: Spalten quetschen sich nicht beliebig
-            # zusammen -> ab zu schmalem Fenster erscheint der H-Scrollbalken.
-            self.table.column(col, width=160, minwidth=160, stretch=True)
-        self.table.column(ONLINE_COL, width=90, minwidth=90, stretch=False,
+            # minwidth deutlich unter der Vorgabebreite: Sonst stehen alle Spalten
+            # auf ihrem Minimum und lassen sich per Ziehen an der Spaltengrenze
+            # weder schmaler (Minimum erreicht) noch breiter machen (die Nachbarn
+            # können nicht nachgeben). Unterschreitet das Fenster die Summe der
+            # Mindestbreiten, erscheint weiterhin der waagerechte Scrollbalken.
+            self.table.column(col, width=160, minwidth=COL_MIN_WIDTH, stretch=True)
+        self.table.column(ONLINE_COL, width=90, minwidth=70, stretch=False,
                           anchor=tk.CENTER)
+        self._restore_column_widths()
         self._apply_status_tags()      # Statusfarben (themen-passend): online/offline
         self._add_scrollbars(tbl_frame, self.table)
         # Rechtsklick -> Kameras Gruppen zuweisen (additiv) / entfernen.
         self.table.bind("<Button-3>", self._show_table_menu)
         # Doppelklick -> Kamera-Weboberfläche im Browser öffnen.
         self.table.bind("<Double-Button-1>", self._open_camera_web)
+        # Nach dem Ziehen an einer Spaltengrenze die Breiten merken.
+        self.table.bind("<ButtonRelease-1>", self._save_column_widths, add="+")
 
     def _init_left_min(self):
         """Mindestbreite der linken Spalte aus der Button-Zeile ableiten und die
@@ -1037,6 +1044,24 @@ class MainWindow(tk.Tk):
     def apply_columns(self, hidden):
         visible = [c for c in TABLE_COLUMNS if c not in hidden or c in FIXED_COLUMNS]
         self.table.config(displaycolumns=visible)
+
+    # ------------------------------------------------------- Spaltenbreiten
+    def _restore_column_widths(self):
+        """Zuletzt eingestellte Spaltenbreiten wiederherstellen."""
+        saved = self.settings.get("column_widths") or {}
+        for col, width in saved.items():
+            if col in TABLE_COLUMNS:
+                try:
+                    self.table.column(col, width=max(COL_MIN_WIDTH, int(width)))
+                except (ValueError, tk.TclError):
+                    pass
+
+    def _save_column_widths(self, _event=None):
+        """Breiten nach dem Ziehen an einer Spaltengrenze sichern (nur bei Änderung —
+        der Handler hängt an jedem Klick in die Tabelle)."""
+        widths = {col: self.table.column(col, "width") for col in TABLE_COLUMNS}
+        if widths != (self.settings.get("column_widths") or {}):
+            self.settings.set("column_widths", widths)
 
     # --------------------------------------------------------------- theme
     def _apply_status_tags(self):
