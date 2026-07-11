@@ -44,6 +44,9 @@ from .vault_access import ensure_vault_unlocked
 
 class ActionDialog(tk.Toplevel):
     title_text = "Aktion"
+    #: Zeilen des Ergebnis-Logs. Dialoge mit viel eigenem Inhalt (Firmware) setzen
+    #: das kleiner, damit sie auf kleine Bildschirme passen.
+    log_height = 8
 
     def __init__(self, parent, cameras: list[dict], registry, vault=None):
         super().__init__(parent)
@@ -70,11 +73,20 @@ class ActionDialog(tk.Toplevel):
         # --- result log ---
         logframe = ttk.LabelFrame(outer, text="Ergebnis", padding=6)
         logframe.pack(fill=tk.BOTH, expand=True, pady=(6, 0))
-        self.log = tk.Text(logframe, height=8, state=tk.DISABLED, wrap=tk.WORD)
+        self.log = tk.Text(logframe, height=self.log_height, state=tk.DISABLED,
+                           wrap=tk.WORD)
         self.log.pack(fill=tk.BOTH, expand=True)
 
         self.progress = ttk.Progressbar(outer, mode="indeterminate", length=200)
         self.progress.pack(fill=tk.X, pady=(6, 0))
+
+        # Auf kleinen Bildschirmen nicht höher werden als der Bildschirm: Der Dialog
+        # bleibt scrollbar dort, wo Inhalt anfällt (Kameraliste, Ergebnis-Log).
+        self.update_idletasks()
+        max_h = self.winfo_screenheight() - 80
+        if self.winfo_reqheight() > max_h:
+            self.geometry(f"{self.winfo_reqwidth()}x{max_h}+40+20")
+        self.maxsize(self.winfo_screenwidth(), max_h)
 
         self.after(120, self._poll)
 

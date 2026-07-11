@@ -48,6 +48,7 @@ from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import Capability, camera_key, get_first_ip, version_tuple
+from kkm.gui.widgets import add_scrollbars
 from .base import ActionDialog
 
 FIRMWARE_TIMEOUT = 600   # seconds; upload + flash takes far longer than a probe
@@ -56,6 +57,13 @@ REBOOT_TIMEOUT = 600
 REBOOT_INTERVAL = 8
 PROBE_TIMEOUT = 15       # kurzes Timeout je Erreichbarkeits-Versuch
 CHECK_WORKERS = 4        # parallele Modell-Abfragen bei der Update-Suche
+# Sichtbare Zeilen der Modell-/Kameraliste — darueber wird gescrollt statt gewachsen.
+# Auf niedrigen Bildschirmen (z. B. 1366x768) faellt die Obergrenze kleiner aus, sonst
+# passt der Dialog dort nicht mehr auf den Schirm.
+MIN_TREE_ROWS = 4
+MAX_TREE_ROWS = 7
+MAX_TREE_ROWS_SMALL = 4
+SMALL_SCREEN_HEIGHT = 900
 
 
 def _model_of(camera: dict) -> str:
@@ -69,6 +77,7 @@ def _mb(size: int) -> str:
 class FirmwareDialog(ActionDialog):
     title_text = "Firmware aktualisieren"
     capability = Capability.FIRMWARE
+    log_height = 4      # der Dialog bringt viel eigenen Inhalt mit
 
     def build_body(self, parent):
         # Nach dem Update in die Liste zu übernehmen:
@@ -95,26 +104,33 @@ class FirmwareDialog(ActionDialog):
 
         ttk.Label(
             parent,
-            text="Pro Modell eine passende Firmware-Datei zuweisen — von Hand oder "
-                 "über die Update-Suche. Eine Modellzeile lässt sich aufklappen, um "
-                 "die einzelnen Kameras zu sehen.",
-            wraplength=560, justify=tk.LEFT,
-        ).pack(anchor=tk.W, pady=(0, 6))
+            text="Pro Modell eine Firmware-Datei zuweisen — von Hand oder über die "
+                 "Update-Suche. Modellzeilen lassen sich aufklappen.",
+            wraplength=620, justify=tk.LEFT,
+        ).pack(anchor=tk.W, pady=(0, 4))
 
+        # Höhe an die Zahl der Modelle anpassen, aber gedeckelt: Bei vielen Kameras —
+        # oder sobald Modellzeilen aufgeklappt werden — wüchse der Dialog sonst über
+        # kleine Bildschirme hinaus. Stattdessen wird der Bereich scrollbar.
+        cap = (MAX_TREE_ROWS if self.winfo_screenheight() >= SMALL_SCREEN_HEIGHT
+               else MAX_TREE_ROWS_SMALL)
+        rows = max(MIN_TREE_ROWS, min(cap, len(self._by_model) + 1))
+        tree_box = ttk.Frame(parent)
+        tree_box.pack(fill=tk.BOTH, expand=True)
         cols = ("count", "current", "online", "file")
-        self.tree = ttk.Treeview(parent, columns=cols, show="tree headings", height=10,
-                                 selectmode="browse")
+        self.tree = ttk.Treeview(tree_box, columns=cols, show="tree headings",
+                                 height=rows, selectmode="browse")
         self.tree.heading("#0", text="Modell / Kamera")
         self.tree.heading("count", text="Kameras")
         self.tree.heading("current", text="Aktuelle Firmware")
         self.tree.heading("online", text="Verfügbar (online)")
         self.tree.heading("file", text="Neue Firmware-Datei")
-        self.tree.column("#0", width=200)
-        self.tree.column("count", width=60, anchor=tk.CENTER)
-        self.tree.column("current", width=120, anchor=tk.CENTER)
-        self.tree.column("online", width=150, anchor=tk.CENTER)
-        self.tree.column("file", width=220)
-        self.tree.pack(fill=tk.X)
+        self.tree.column("#0", width=200, minwidth=140)
+        self.tree.column("count", width=60, anchor=tk.CENTER, minwidth=50)
+        self.tree.column("current", width=120, anchor=tk.CENTER, minwidth=90)
+        self.tree.column("online", width=150, anchor=tk.CENTER, minwidth=110)
+        self.tree.column("file", width=220, minwidth=120)
+        add_scrollbars(tree_box, self.tree)
         # Erfolgs-Markierung: grüne Zeile.
         self.tree.tag_configure("done", background="#2e7d32", foreground="white")
         for model, cams in sorted(self._by_model.items()):
@@ -149,15 +165,15 @@ class FirmwareDialog(ActionDialog):
             variable=self._factory).pack(anchor=tk.W)
 
         from kkm.gui import theme
+        row = ttk.Frame(parent)
+        row.pack(fill=tk.X, pady=(4, 0))
+        ttk.Button(row, text="Firmware aufspielen",
+                   command=self._do_upgrade).pack(side=tk.LEFT)
         ttk.Label(
-            parent,
-            text="Achtung: Die Firmware MUSS zum jeweiligen Modell passen. "
-                 "Die Kameras starten nach dem Update neu.",
-            foreground=theme.CURRENT["warn"], wraplength=560, justify=tk.LEFT,
-        ).pack(anchor=tk.W, pady=(4, 6))
-
-        ttk.Button(parent, text="Firmware aufspielen",
-                   command=self._do_upgrade).pack(anchor=tk.W)
+            row,
+            text="Achtung: Die Firmware muss zum Modell passen — die Kameras starten neu.",
+            foreground=theme.CURRENT["warn"], wraplength=460, justify=tk.LEFT,
+        ).pack(side=tk.LEFT, padx=8)
 
         self.after(200, self._drain_success)   # Erfolge -> Zeilen grün färben
 

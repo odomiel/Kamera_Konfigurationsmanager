@@ -4,6 +4,21 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b10 — 2026-07-11
+
+- **Firmware-Dialog passt jetzt auf kleine Bildschirme.** Die Modell-/Kameraliste war fest
+  zehn Zeilen hoch und hatte **keinen Scrollbalken** — bei vielen Kameras (oder aufgeklappten
+  Modellzeilen) war der Rest praktisch nicht erreichbar, und der Dialog wurde auf 768p-
+  Bildschirmen unten abgeschnitten. Die Liste ist nun **scrollbar** (Balken erscheint nur,
+  wenn nötig) und ihre Höhe richtet sich nach der Zahl der Modelle, gedeckelt auf 7 Zeilen —
+  auf niedrigen Bildschirmen auf 4. Aufklappen lässt den Dialog dadurch nicht mehr wachsen.
+  Zusätzlich kompakter: kürzere Hinweistexte, der Warnhinweis steht neben dem Knopf statt
+  darüber, und das Ergebnis-Log ist in diesem Dialog kleiner. Die Dialoghöhe liegt damit
+  konstant bei rund 660 px (vorher über 800 px und mit der Kameraliste wachsend); Aktions-
+  Dialoge werden generell nicht höher als der Bildschirm.
+- Der auto-versteckende Scrollbalken-Helfer des Hauptfensters liegt jetzt in
+  `kkm/gui/widgets.py` — die Dialoge brauchen ihn ebenfalls.
+
 ## 26.07.11b9 — 2026-07-11
 
 - **Eingebaute Hilfe (`HILFE.md`) auf den aktuellen Stand gebracht.** Sie kannte die

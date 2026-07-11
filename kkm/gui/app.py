@@ -51,6 +51,7 @@ from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
 from kkm.core.groups import config_dir
 from kkm.plugins import build_registry
 from kkm.gui import theme
+from kkm.gui.widgets import add_scrollbars
 from kkm.gui.dialogs import ACTION_DIALOGS
 from kkm.gui.dialogs.settings_dialog import SettingsDialog
 from kkm.gui.dialogs.credentials_prompt import CredentialPromptDialog
@@ -279,31 +280,11 @@ class MainWindow(tk.Tk):
         except tk.TclError:
             pass
 
-    def _add_scrollbars(self, container, tree):
-        """Bettet *tree* per Grid in *container* ein und hängt auto-versteckende
-        Scrollbalken an (vertikal rechts, horizontal unten). Ein Balken wird nur
-        eingeblendet, wenn der Inhalt in der jeweiligen Richtung nicht passt."""
-        vbar = ttk.Scrollbar(container, orient=tk.VERTICAL, command=tree.yview)
-        hbar = ttk.Scrollbar(container, orient=tk.HORIZONTAL, command=tree.xview)
-        tree.configure(
-            yscrollcommand=self._autohide_scroll(vbar, row=0, column=1, sticky="ns"),
-            xscrollcommand=self._autohide_scroll(hbar, row=1, column=0, sticky="ew"),
-        )
-        tree.grid(row=0, column=0, sticky="nsew")
-        container.rowconfigure(0, weight=1)
-        container.columnconfigure(0, weight=1)
-
     @staticmethod
-    def _autohide_scroll(bar, row, column, sticky):
-        """Liefert ein ``set``-Callback, das *bar* nur einblendet (grid), wenn der
-        sichtbare Bereich < 1 ist, sonst ausblendet (grid_remove)."""
-        def _set(first, last):
-            if float(first) <= 0.0 and float(last) >= 1.0:
-                bar.grid_remove()
-            else:
-                bar.grid(row=row, column=column, sticky=sticky)
-            bar.set(first, last)
-        return _set
+    def _add_scrollbars(container, tree):
+        """Auto-versteckende Scrollbalken (gemeinsam mit den Aktions-Dialogen,
+        siehe :mod:`kkm.gui.widgets`)."""
+        add_scrollbars(container, tree)
 
     def _build_statusbar(self):
         self.status = ttk.Label(self, text="Bereit", relief=tk.SUNKEN, anchor=tk.W)
