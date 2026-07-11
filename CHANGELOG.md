@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11 — 2026-07-11
+
+- **Neues Programm-Icon.** Statt der Bullet-Kamera mit gelbem Zahnrad nun ein weißes,
+  stilisiertes Zahnrad auf dem bisherigen blauen Verlaufshintergrund; im Innenloch des
+  Zahnrads sitzt eine Kameralinse (dunkler Fassungsring, blaue Iris mit Radialverlauf,
+  Pupille und Glanzlichter). Die Silhouette bleibt bis 16 px lesbar. `assets/`-PNG
+  (1024×1024) und Windows-`.ico` (16–256) neu erzeugt; AppImage- und Windows-Build
+  nutzen sie unverändert automatisch.
+
 ## 26.07.05b7 — 2026-07-05
 
 - **Meldungsfenster erscheinen jetzt zuverlässig im Vordergrund.** Hinweis- und
