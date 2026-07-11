@@ -20,7 +20,9 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
   mit Online-Update-Suche), Konfiguration (Axis `.cfg` Im-/Export v1+v2).
 - **Passwort-Tresor**: Master-Passwort → PBKDF2 → AES-256-GCM (eine Datei,
   portabel, kein OS-Keyring, keine DB).
-- **Plugin-System** je Hersteller, an-/abschaltbar — derzeit nur **Axis**.
+- **Plugin-System** je Hersteller, an-/abschaltbar — **Axis** (voller Funktionsumfang)
+  und ein generisches **ONVIF**-Plugin (Standard-Geräte: Suche, Info, IP, ONVIF-
+  Benutzer, Werksreset; ab Werk ausgeschaltet).
 
 ## Architektur
 
@@ -28,13 +30,19 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
 kkm/
   core/                 vendor-neutral
     plugins.py          VendorPlugin-Interface + Registry, Credentials, Capability
+    camera.py           Form des Kamera-Dicts (FIELD_NAMES) + Helfer darauf
     groups.py           GroupStore (JSON), "Alle Kameras", Online-Prüfung je Gruppe
     vault.py            PasswordVault (PBKDF2 + AES-256-GCM)
   plugins/
     axis/
       vapix.py          VAPIX/ONVIF-Client (kopiert aus Discovery, stdlib-only)
-      discovery.py      mDNS-Discovery + FIELD_NAMES + Export
+      discovery.py      mDNS-Discovery
+      firmware_repo.py  Firmware-Verzeichnis (Update-Suche + Download)
       plugin.py         AxisPlugin: adaptiert vapix/discovery an VendorPlugin
+    onvif/
+      soap.py           ONVIF Device Management (WS-Security, stdlib-only)
+      discovery.py      WS-Discovery (UDP-Multicast)
+      plugin.py         OnvifPlugin: generisch, kann weniger als ein Hersteller-Plugin
   gui/
     app.py              Hauptfenster: Gruppen-Baum + Tabelle + Aktions-Toolbar
 main.py                 Startpunkt (GUI)

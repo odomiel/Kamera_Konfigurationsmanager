@@ -14,11 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Single source of truth for the application version.
+"""Generic ONVIF plugin (Device Management service only)."""
 
-Version scheme follows the Discovery tool: ``JJ.MM.TT`` (2-digit year);
-multiple releases the same day get an incrementing ``bN`` suffix.
-"""
+from .plugin import OnvifPlugin
 
-__version__ = "26.07.11b5"
-APP_NAME = "Kamera_Konfigurationsmanager"
+__all__ = ["OnvifPlugin"]

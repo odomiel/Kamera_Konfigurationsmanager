@@ -667,10 +667,19 @@ class MainWindow(tk.Tk):
 
     def _worker_search(self):
         found: list[dict] = []
+        generic: list[dict] = []
         try:
             for plugin in self.registry.enabled():
-                if plugin.supports(Capability.DISCOVER):
-                    found.extend(plugin.discover(timeout=self.creds.timeout))
+                if not plugin.supports(Capability.DISCOVER):
+                    continue
+                cams = plugin.discover(timeout=self.creds.timeout)
+                (generic if plugin.generic else found).extend(cams)
+            # Ein generisches Plugin (ONVIF) findet auch Kameras, für die es ein
+            # Hersteller-Plugin gibt — dieselbe Kamera stünde sonst zweimal in der
+            # Liste (andere Kennung: MAC vs. ONVIF-UUID). Das spezialisierte Plugin
+            # kann mehr, also gewinnt es; der generische Treffer entfällt.
+            known_ips = {get_first_ip(cam) for cam in found}
+            found.extend(cam for cam in generic if get_first_ip(cam) not in known_ips)
             self._q.put(("search_done", found))
         except Exception as exc:  # noqa: BLE001 - surfaced to the user
             self._q.put(("error", f"Suche fehlgeschlagen: {exc}"))

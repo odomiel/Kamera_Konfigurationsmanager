@@ -93,6 +93,11 @@ class VendorPlugin(abc.ABC):
     name: str = ""
     #: set of Capability.* this plugin implements
     capabilities: set[str] = set()
+    #: True fuer herstellerneutrale Plugins (ONVIF): sie finden auch Geraete, fuer
+    #: die es ein spezialisiertes Plugin gibt. Die Suche im Hauptfenster verwirft
+    #: darum generische Treffer, deren IP ein Hersteller-Plugin schon gemeldet hat —
+    #: sonst stuende dieselbe Kamera zweimal in der Liste.
+    generic: bool = False
 
     #: Rollen des Benutzer-Dialogs bzw. Stufen des ONVIF-Dialogs, hoechstes Recht
     #: zuerst. Die Dialoge lesen sie vom Plugin — sie sind herstellerabhaengig.

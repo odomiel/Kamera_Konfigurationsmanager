@@ -4,6 +4,33 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.11b5 — 2026-07-11
+
+- **Neues Plugin: ONVIF (generisch).** Ein zweites Plugin neben Axis — es spricht nur den
+  standardisierten *Device-Management*-Dienst und funktioniert damit herstellerübergreifend
+  mit jeder ONVIF-Kamera. Es kann bewusst **weniger** als das Axis-Plugin:
+  - **Enthalten:** Gerätesuche (WS-Discovery statt mDNS), Online-Prüfung, Geräte-Info
+    (Hersteller/Modell/Firmware/Seriennummer), IP-Adresse (fest/DHCP inkl. Gateway),
+    ONVIF-Benutzer (anlegen/Passwort ändern), Werksreset (Soft/Hard).
+  - **Nicht enthalten:** *Konfiguration* — ONVIF kennt kein Parameter-Template
+    (`GetSystemBackup` liefert nur einen undurchsichtigen Blob für genau dieses Gerät);
+    *Firmware* — die beiden ONVIF-Wege sind optional und uneinheitlich umgesetzt;
+    *Update-Suche* — es gibt kein standardisiertes Firmware-Verzeichnis; *Benutzer* — der
+    Standard kennt nur **eine** Benutzerliste, und das ist die ONVIF-Liste. Die
+    entsprechenden Knöpfe bleiben für ONVIF-Geräte ausgegraut.
+  - **Anmeldung** per WS-Security-UsernameToken mit Passwort-Digest. Der Zeitstempel wird
+    an die **Uhr der Kamera** angeglichen (`GetSystemDateAndTime`, laut Spec ohne
+    Anmeldung erreichbar) — ohne das schlägt die Anmeldung bei Zeitversatz fehl, ohne
+    erkennbaren Grund.
+  - **Ab Werk ausgeschaltet** und im Plugin-Manager zuschaltbar: Das Plugin findet auch
+    Kameras, für die es ein Hersteller-Plugin gibt. Sind beide an, verwirft die Suche den
+    generischen Treffer, wenn dieselbe IP schon von einem Hersteller-Plugin kam — sonst
+    stünde dieselbe Kamera zweimal in der Liste (Kennung: MAC gegen ONVIF-UUID).
+  - Auf einen WS-Discovery-Probe antworten auch Windows-Rechner und Drucker (WSD,
+    Port 5357); die Suche prüft daher die Typ-Angabe und nimmt nur Videosender.
+  - Keine neue Abhängigkeit: `urllib` + `hashlib` + `socket` + `xml.etree`, wie im
+    Axis-Plugin.
+
 ## 26.07.11b4 — 2026-07-11
 
 - **Herstellergrenze wieder hergestellt (Vorarbeit für ein zweites Plugin).** CLAUDE.md
