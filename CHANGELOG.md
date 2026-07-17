@@ -4,6 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.17 — 2026-07-17
+
+- **Kontextmenü „Zu Gruppe hinzufügen“ jetzt alphabetisch sortiert.** Die Gruppen
+  standen bislang in der internen Speicherreihenfolge; sie werden nun (unabhängig von
+  Groß-/Kleinschreibung) nach Namen sortiert angezeigt.
+
 ## 26.07.11b13 — 2026-07-11
 
 - **Abhängigkeiten geprüft; libffi auf 3.7.1 angehoben** (vorher 3.6.0 — zwei Versionen

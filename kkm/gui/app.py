@@ -583,8 +583,10 @@ class MainWindow(tk.Tk):
         menu.add_separator()
 
         add_menu = tk.Menu(menu, tearoff=0)
-        user_groups = [(gid, g) for gid, g in self.store.groups.items()
-                       if gid not in VIRTUAL_GROUP_IDS]
+        user_groups = sorted(
+            ((gid, g) for gid, g in self.store.groups.items()
+             if gid not in VIRTUAL_GROUP_IDS),
+            key=lambda item: item[1].name.casefold())
         for gid, g in user_groups:
             add_menu.add_command(label=g.name,
                                  command=lambda gid=gid: self._assign_selected(gid, keys))
