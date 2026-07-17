@@ -206,9 +206,44 @@ exec "\$HERE/usr/bin/python$PY_XY" "\$HERE/app/main.py" "\$@"
 APPRUN
 chmod +x "$APPDIR/AppRun"
 
-# Build-Reste verschlanken
-rm -rf "$PREFIX/lib/python$PY_XY/test" "$PREFIX/lib/python$PY_XY/"*/test 2>/dev/null || true
+# --------------------------------------------------------------- 7b. Verschlanken
+# Alles Folgende ist reiner Build-Ballast, der zur Laufzeit nie angefasst wird —
+# entfernen halbiert die AppImage grob (siehe CHANGELOG). Bewusst NICHT angetastet:
+# die selbst gebauten .so (nur gestrippt), cryptographys _rust.abi3.so, Tcl/Tk-tzdata.
+echo "==== AppDir verschlanken ===="
+_before=$(du -sm "$PREFIX" | cut -f1)
+
+# (1) statische Bibliotheken (libpython*.a ~69 MB, libcrypto/ssl.a ~14 MB): wir
+#     linken ausschliesslich die shared libs.
+find "$PREFIX" -name "*.a" -delete 2>/dev/null || true
+# (2) Header, Manpages, Doku, pkg-config/cmake-Metadaten: alles nur zum Kompilieren.
+rm -rf "$PREFIX/include" "$PREFIX/share/man" "$PREFIX/share/doc" \
+       "$PREFIX/lib/pkgconfig" "$PREFIX/lib/cmake" 2>/dev/null || true
+# (3) ensurepip inkl. gebuendeltem pip-Wheel (wir bauen mit --with-ensurepip=no,
+#     Reste bleiben trotzdem liegen) und die openssl-Kommandozeile.
+rm -rf "$PREFIX/lib/python$PY_XY/ensurepip" "$PREFIX/bin/openssl" 2>/dev/null || true
+# (4) Test-Suiten der Standardbibliothek und Test-Erweiterungsmodule.
+rm -rf "$PREFIX/lib/python$PY_XY/test" "$PREFIX/lib/python$PY_XY/"*/test \
+       "$PREFIX/lib/python$PY_XY/idlelib" "$PREFIX/lib/python$PY_XY/turtledemo" \
+       "$PREFIX/lib/python$PY_XY/lib2to3" 2>/dev/null || true
+find "$PREFIX/lib/python$PY_XY/lib-dynload" \
+     \( -name "_test*.so" -o -name "_xxtestfuzz*.so" -o -name "xxlimited*.so" \) \
+     -delete 2>/dev/null || true
 find "$PREFIX" -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+
+# (5) Debug-Symbole aus allen mitgelieferten Binaerdateien strippen (.so + python).
+#     --strip-unneeded ist fuer shared libs sicher (behaelt exportierte Symbole).
+#     ABER: Tcl/Tk 9 haengen ihre Script-Library (init.tcl usw.) per zipfs hinter
+#     die .so an. strip verwirft diese Trailing-Daten -> "cannot find init.tcl".
+#     Daher libtcl*/libtk* zwingend auslassen.
+if command -v strip >/dev/null 2>&1; then
+    find "$PREFIX" -type f \( -name "*.so" -o -name "*.so.*" \) \
+        -not -name "libtcl*" -not -name "libtk*" \
+        -exec strip --strip-unneeded {} + 2>/dev/null || true
+    strip "$PREFIX/bin/python$PY_VER" 2>/dev/null || true
+fi
+_after=$(du -sm "$PREFIX" | cut -f1)
+echo ">> usr/ verschlankt: ${_before} MB -> ${_after} MB"
 
 # --------------------------------------------------------------- 8. AppImage packen
 echo "==== AppImage packen ===="
@@ -219,7 +254,10 @@ chmod +x "$AIT"
 [ "${1:-}" = "--bump" ] && python3 "$ROOT/bump_version.py" >/dev/null
 VERSION="$(python3 "$ROOT/bump_version.py" --print)"
 OUT="$ROOT/$APP-${VERSION}-x86_64.AppImage"
-ARCH=x86_64 "$AIT" --appimage-extract-and-run "$APPDIR" "$OUT" 2>&1 | tail -5
+# zstd auf hoher Stufe: nahe an xz, aber schnelleres Entpacken beim Start.
+ARCH=x86_64 "$AIT" --appimage-extract-and-run \
+    --comp zstd --mksquashfs-opt -Xcompression-level --mksquashfs-opt 19 \
+    "$APPDIR" "$OUT" 2>&1 | tail -5
 ln -sfn "$(basename "$OUT")" "$ROOT/$APP-x86_64.AppImage"
 
 echo ">> Fertig: $OUT"

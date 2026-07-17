@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.17b3 — 2026-07-17
+
+- **AppImage von ~64 MB auf ~21 MB verkleinert** — reiner Build-Ballast, der zur
+  Laufzeit nie angefasst wird, wird jetzt aus der AppDir entfernt: statische
+  Bibliotheken (`libpython3.14.a` ~69 MB, `libcrypto/ssl.a` ~14 MB), Header,
+  Manpages/Doku, `pkgconfig`/`cmake`, `ensurepip` samt gebündeltem pip-Wheel, die
+  `openssl`-Kommandozeile sowie die Test-Suiten/Testmodule der Standardbibliothek.
+  Zusätzlich werden alle mitgelieferten `.so` und das Python-Binary gestrippt und
+  das SquashFS mit zstd (Stufe 19) gepackt. **Wichtig:** `libtcl*`/`libtk*` werden
+  bewusst *nicht* gestrippt — Tcl/Tk 9 hängen ihre Script-Library (`init.tcl` …) per
+  zipfs an die `.so` an; `strip` würde diese Daten verwerfen. Funktional unverändert
+  (ssl/HTTPS, Tk, ctypes/zeroconf, Tresor geprüft).
+
 ## 26.07.17b1 — 2026-07-17
 
 - **Haftungshinweis beim Programmstart.** Ein Popup weist darauf hin, dass dies kein
