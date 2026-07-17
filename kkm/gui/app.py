@@ -142,6 +142,12 @@ class MainWindow(tk.Tk):
         if self.settings.get("start_maximized", False):
             # Nach dem ersten Zeichnen maximieren, damit der Fenstermanager es annimmt.
             self.after(10, self._maximize_window)
+        # Haftungshinweis anzeigen, bis er dauerhaft bestätigt wurde.
+        self.after(120, self._show_disclaimer)
+
+    def _show_disclaimer(self):
+        from kkm.gui.dialogs.disclaimer import show_if_needed
+        show_if_needed(self, self.settings)
 
     def _maximize_window(self):
         """Fenster maximieren — plattformübergreifend (Windows/macOS vs. Linux/X11)."""

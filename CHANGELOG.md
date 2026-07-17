@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.17b1 — 2026-07-17
+
+- **Haftungshinweis beim Programmstart.** Ein Popup weist darauf hin, dass dies kein
+  offizielles Tool der unterstützten Hersteller ist und die Nutzung auf eigene Gefahr
+  erfolgt. Mit „OK" wird der Hinweis geschlossen; eine Checkbox „Ich weiß, was ich
+  tue – nicht wieder anzeigen" bestätigt ihn dauerhaft. Solange sie nicht gesetzt
+  ist, erscheint der Hinweis bei jedem Start. Derselbe Warntext steht zusätzlich
+  unter **Einstellungen → Über**.
+
 ## 26.07.17 — 2026-07-17
 
 - **Kontextmenü „Zu Gruppe hinzufügen“ jetzt alphabetisch sortiert.** Die Gruppen

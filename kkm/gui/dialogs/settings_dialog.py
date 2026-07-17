@@ -715,6 +715,13 @@ class SettingsDialog(tk.Toplevel):
             ttk.Label(grid, text=ver).grid(row=i, column=1, sticky=tk.W, pady=1)
 
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
+        from kkm.gui import theme
+        from kkm.gui.dialogs.disclaimer import DISCLAIMER_TEXT
+        ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=DISCLAIMER_TEXT,
+                  foreground=theme.CURRENT.get("warn", "#c0392b"),
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
+
+        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
         ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=(
             "Dieses Programm wurde mit Unterstützung von künstlicher Intelligenz "
             "(Claude von Anthropic) entwickelt.")).pack(anchor=tk.W)
