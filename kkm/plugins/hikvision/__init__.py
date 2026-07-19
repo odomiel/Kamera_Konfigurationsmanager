@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Single source of truth for the application version.
+"""Hikvision vendor plugin package (ISAPI + SADP, stdlib-only).
 
-Version scheme follows the Discovery tool: ``JJ.MM.TT`` (2-digit year);
-multiple releases the same day get an incrementing ``bN`` suffix.
+Experimental — see ``HIKVISION_PLUGIN_RECHERCHE.md`` and ``plugin.py``.
 """
 
-__version__ = "26.07.19b3"
-APP_NAME = "Kamera_Konfigurationsmanager"
+from .plugin import HikvisionPlugin
+
+__all__ = ["HikvisionPlugin"]

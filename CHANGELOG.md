@@ -4,6 +4,25 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.19b3 — 2026-07-19
+
+- **Neues (experimentelles) Hikvision-Plugin.** Erstes Hersteller-Plugin nach Axis:
+  Gerätesuche per **SADP** (UDP-Multicast 37020, liefert MAC/Modell/Seriennummer/
+  Aktivierungsstatus), Geräteinfo, IP setzen (fest/DHCP), Benutzerverwaltung,
+  ONVIF-Benutzer (über den bestehenden ONVIF-SOAP-Client wiederverwendet),
+  Firmware-Upload (`.dav`) und Werksreset — alles über die **ISAPI**-Schnittstelle
+  (HTTP-Digest, XML, stdlib-only, gleiches Muster wie `vapix.py`). Kein
+  `FIRMWARE_CHECK` (kein offenes Firmware-Verzeichnis) und kein `CONFIG` (ISAPI hat
+  keine Fleet-Konfigurationsvorlage), analog zum ONVIF-Plugin.
+- **Plugins können sich als „experimentell" kennzeichnen** (neues Basis-Flag
+  `VendorPlugin.experimental`). Der Plugin-Manager (Einstellungen → Plugins) hängt
+  „(experimentell)" an den Namen und zeigt einen Warnhinweis, dass solche Plugins noch
+  nicht an echter Hardware geprüft sind. Das Hikvision-Plugin ist so markiert und wie
+  das ONVIF-Plugin **ab Werk ausgeschaltet**. Die genauen ISAPI-Payloads (v. a. IP und
+  Benutzer) folgen der Dokumentation, sind aber noch nicht an Hardware verifiziert;
+  ISAPI-Besonderheiten (uhrzeitempfindlicher Digest, Konto-Sperre nach zu vielen
+  Fehlversuchen) werden mit eigenen Fehlermeldungen behandelt.
+
 ## 26.07.19b2 — 2026-07-19
 
 - **Neue Spalte „IPv6-Adresse" samt Erkennung.** Die Suche erfasst jetzt auch die

@@ -294,6 +294,15 @@ Das ONVIF-Plugin ist **ab Werk ausgeschaltet** und wird in den Einstellungen unt
 *Plugins* zugeschaltet. Es ist für Kameras gedacht, für die es kein eigenes Plugin gibt —
 bei Axis-Geräten kann es schlicht weniger.
 
+> **Experimentell: Hikvision.** Zusätzlich liegt ein **Hikvision**-Plugin bei (Suche per
+> SADP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer, Firmware-Upload, Werksreset über die
+> ISAPI-Schnittstelle). Es ist im Plugin-Manager als **„experimentell"** gekennzeichnet,
+> **ab Werk ausgeschaltet** und noch **nicht an echter Hardware verifiziert** — die
+> Schreib-Aktionen folgen der ISAPI-Dokumentation, sollten aber vorsichtig und auf eigene
+> Gefahr eingesetzt werden. Eine Update-Suche und den Konfigurations-Im-/Export gibt es
+> hier nicht (Hikvision bietet kein offenes Firmware-Verzeichnis und keine
+> Konfigurationsvorlage).
+
 **Was ONVIF nicht kann und warum:** Der Standard normiert keine Konfigurationsvorlage
 (seine Sicherungsfunktion liefert nur einen undurchsichtigen Datenblock für genau ein
 Gerät), das Firmware-Update ist im Standard optional und bei den Herstellern sehr

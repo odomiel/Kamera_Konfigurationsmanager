@@ -20,9 +20,11 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
   mit Online-Update-Suche), Konfiguration (Axis `.cfg` Im-/Export v1+v2).
 - **Passwort-Tresor**: Master-Passwort → PBKDF2 → AES-256-GCM (eine Datei,
   portabel, kein OS-Keyring, keine DB).
-- **Plugin-System** je Hersteller, an-/abschaltbar — **Axis** (voller Funktionsumfang)
-  und ein generisches **ONVIF**-Plugin (Standard-Geräte: Suche, Info, IP, ONVIF-
-  Benutzer, Werksreset; ab Werk ausgeschaltet).
+- **Plugin-System** je Hersteller, an-/abschaltbar — **Axis** (voller Funktionsumfang),
+  ein generisches **ONVIF**-Plugin (Standard-Geräte: Suche, Info, IP, ONVIF-Benutzer,
+  Werksreset; ab Werk ausgeschaltet) und **Hikvision** (ISAPI/SADP; Suche, Info, IP,
+  Benutzer, ONVIF-Benutzer, Firmware-Upload, Werksreset — **experimentell**, noch nicht
+  an echter Hardware verifiziert, ab Werk ausgeschaltet).
 
 ## Architektur
 
@@ -43,6 +45,10 @@ kkm/
       soap.py           ONVIF Device Management (WS-Security, stdlib-only)
       discovery.py      WS-Discovery (UDP-Multicast)
       plugin.py         OnvifPlugin: generisch, kann weniger als ein Hersteller-Plugin
+    hikvision/
+      isapi.py          ISAPI-Client (HTTP-Digest, XML, stdlib-only)
+      discovery.py      SADP-Discovery (UDP-Multicast 37020)
+      plugin.py         HikvisionPlugin: experimentell, ONVIF-Benutzer via onvif/soap
   gui/
     app.py              Hauptfenster: Gruppen-Baum + Tabelle + Aktions-Toolbar
 main.py                 Startpunkt (GUI)

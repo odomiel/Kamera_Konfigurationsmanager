@@ -30,14 +30,16 @@ when a third-party camera turns up.
 from kkm.core.plugins import PluginRegistry
 from .axis import AxisPlugin
 from .onvif import OnvifPlugin
+from .hikvision import HikvisionPlugin
 
-#: Plugins, die ohne gespeicherte Auswahl ausgeschaltet bleiben.
-DEFAULT_OFF = {OnvifPlugin.id}
+#: Plugins, die ohne gespeicherte Auswahl ausgeschaltet bleiben (generisches ONVIF
+#: sowie noch nicht an Hardware verifizierte, experimentelle Hersteller-Plugins).
+DEFAULT_OFF = {OnvifPlugin.id, HikvisionPlugin.id}
 
 
 def build_registry(enabled_ids: list[str] | None = None) -> PluginRegistry:
     registry = PluginRegistry()
-    available = [AxisPlugin(), OnvifPlugin()]
+    available = [AxisPlugin(), HikvisionPlugin(), OnvifPlugin()]
     for plugin in available:
         if enabled_ids is None:
             default_on = plugin.id not in DEFAULT_OFF
@@ -47,4 +49,4 @@ def build_registry(enabled_ids: list[str] | None = None) -> PluginRegistry:
     return registry
 
 
-__all__ = ["build_registry", "AxisPlugin", "OnvifPlugin"]
+__all__ = ["build_registry", "AxisPlugin", "OnvifPlugin", "HikvisionPlugin"]

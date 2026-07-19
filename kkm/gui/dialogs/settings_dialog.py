@@ -272,11 +272,25 @@ class SettingsDialog(tk.Toplevel):
         tab = ttk.Frame(parent, padding=10)
         ttk.Label(tab, text="Hersteller-Plugins aktivieren/deaktivieren:").pack(anchor=tk.W)
         self._plugin_vars = {}
+        has_experimental = False
         for plugin in self.registry.all():
             var = tk.BooleanVar(value=self.registry.is_enabled(plugin.id))
             self._plugin_vars[plugin.id] = var
-            ttk.Checkbutton(tab, text=plugin.name, variable=var,
+            label = plugin.name
+            if getattr(plugin, "experimental", False):
+                label += "  (experimentell)"
+                has_experimental = True
+            ttk.Checkbutton(tab, text=label, variable=var,
                             command=self._save_plugins).pack(anchor=tk.W, pady=2)
+        if has_experimental:
+            from kkm.gui import theme
+            ttk.Label(
+                tab, wraplength=460, justify=tk.LEFT,
+                foreground=theme.CURRENT.get("warn", "#c0392b"),
+                text="⚠ Experimentelle Plugins sind noch nicht an echter Hardware "
+                     "geprüft — Schreib-Aktionen (IP, Benutzer, Firmware, Reset) auf "
+                     "eigene Gefahr verwenden.",
+            ).pack(anchor=tk.W, pady=(8, 0))
         return tab
 
     def _save_plugins(self):

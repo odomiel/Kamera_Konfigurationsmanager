@@ -99,6 +99,10 @@ class VendorPlugin(abc.ABC):
     #: sonst stuende dieselbe Kamera zweimal in der Liste.
     generic: bool = False
 
+    #: True fuer noch nicht an echter Hardware verifizierte Plugins. Der
+    #: Plugin-Manager kennzeichnet sie als „experimentell"; sie sind ab Werk aus.
+    experimental: bool = False
+
     #: Rollen des Benutzer-Dialogs bzw. Stufen des ONVIF-Dialogs, hoechstes Recht
     #: zuerst. Die Dialoge lesen sie vom Plugin — sie sind herstellerabhaengig.
     USER_ROLES: tuple[str, ...] = ()
