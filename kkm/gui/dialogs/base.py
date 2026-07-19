@@ -88,7 +88,21 @@ class ActionDialog(tk.Toplevel):
             self.geometry(f"{self.winfo_reqwidth()}x{max_h}+40+20")
         self.maxsize(self.winfo_screenwidth(), max_h)
 
+        # Schließen wird abgefangen: läuft noch ein Durchlauf, erst nachfragen.
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(120, self._poll)
+
+    def _on_close(self):
+        """Fenster-Schließen: bei laufendem Durchlauf zuerst rückfragen (der
+        Worker-Thread selbst läuft als Daemon im Hintergrund weiter)."""
+        if self._busy and not messagebox.askyesno(
+                self.title_text,
+                "Ein Vorgang läuft noch. Dialog trotzdem schließen?\n"
+                "(Die laufenden Kamera-Zugriffe werden im Hintergrund beendet, "
+                "ihre Ergebnisse sind dann aber nicht mehr sichtbar.)",
+                parent=self):
+            return
+        self.destroy()
 
     # ------------------------------------------------------------ credentials
     def _build_credentials(self, parent):
@@ -272,6 +286,11 @@ class ActionDialog(tk.Toplevel):
 
     # --------------------------------------------------------------------- queue
     def _poll(self):
+        # Nach dem Schließen des Dialogs können noch Meldungen des Worker-Threads
+        # eintreffen — die Widgets sind dann zerstört, also Schleife beenden statt
+        # mit TclError zu sterben.
+        if not self.winfo_exists():
+            return
         try:
             while True:
                 kind, payload = self._q.get_nowait()

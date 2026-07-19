@@ -45,10 +45,6 @@ class AxisDiscovery:
         self.zeroconf = Zeroconf()
         self.services = []
 
-    def on_service_state_change(self, zeroconf, service_type, name, state_change):
-        if state_change is Zeroconf.StateChange.Added:
-            self.add_service(zeroconf, service_type, name)
-
     def add_service(self, zeroconf, service_type, name):
         info = zeroconf.get_service_info(service_type, name)
         if info:

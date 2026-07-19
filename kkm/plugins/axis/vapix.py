@@ -44,6 +44,14 @@ class VapixError(Exception):
     """Fehler bei einem VAPIX-Aufruf (Netzwerk, Auth oder Geraeteantwort)."""
 
 
+class VapixConnectError(VapixError):
+    """Verbindungs-/Netzwerkfehler: das Geraet war ueber dieses Schema gar nicht
+    erreichbar. NUR dann probiert 'auto' das naechste Schema — bei HTTP-Fehlern
+    (z. B. 401) hat das Geraet ja geantwortet, ein Wechsel auf HTTP wuerde die
+    Zugangsdaten unnoetig im Klartext wiederholen und Fehlversuche verdoppeln
+    (Brute-Force-Sperre des Geraets)."""
+
+
 def _build_opener(host_port, username, password, auth=True):
     """Opener mit ungepruefter HTTPS-Verbindung.
 
@@ -81,18 +89,21 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
             raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
         raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}")
     except urllib.error.URLError as exc:
-        raise VapixError(f"Nicht erreichbar: {exc.reason}")
+        raise VapixConnectError(f"Nicht erreichbar: {exc.reason}")
     except (TimeoutError, OSError) as exc:
-        raise VapixError(f"Verbindungsfehler: {exc}")
+        raise VapixConnectError(f"Verbindungsfehler: {exc}")
 
 
 def _request_auto(ip, username, password, path, scheme="auto", port=None, timeout=10, auth=True):
-    """Wie _request, aber 'auto' probiert erst HTTPS, dann HTTP."""
+    """Wie _request, aber 'auto' probiert erst HTTPS, dann HTTP.
+
+    Der Rueckfall auf HTTP greift NUR bei Verbindungsfehlern (HTTPS-Port zu o. Ae.)
+    — nicht bei HTTP-Fehlern wie 401, siehe VapixConnectError."""
     if scheme != "auto":
         return _request(ip, username, password, path, scheme, port, timeout, auth)
     try:
         return _request(ip, username, password, path, "https", port, timeout, auth)
-    except VapixError:
+    except VapixConnectError:
         return _request(ip, username, password, path, "http", port, timeout, auth)
 
 
@@ -116,18 +127,19 @@ def _post_form(ip, username, password, path, fields, scheme, port, timeout):
             raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
         raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}")
     except urllib.error.URLError as exc:
-        raise VapixError(f"Nicht erreichbar: {exc.reason}")
+        raise VapixConnectError(f"Nicht erreichbar: {exc.reason}")
     except (TimeoutError, OSError) as exc:
-        raise VapixError(f"Verbindungsfehler: {exc}")
+        raise VapixConnectError(f"Verbindungsfehler: {exc}")
 
 
 def _post_form_auto(ip, username, password, path, fields, scheme="auto", port=None, timeout=30):
-    """Wie _post_form, aber 'auto' probiert erst HTTPS, dann HTTP."""
+    """Wie _post_form, aber 'auto' probiert erst HTTPS, dann HTTP (Rueckfall nur
+    bei Verbindungsfehlern, siehe VapixConnectError)."""
     if scheme != "auto":
         return _post_form(ip, username, password, path, fields, scheme, port, timeout)
     try:
         return _post_form(ip, username, password, path, fields, "https", port, timeout)
-    except VapixError:
+    except VapixConnectError:
         return _post_form(ip, username, password, path, fields, "http", port, timeout)
 
 
@@ -181,9 +193,9 @@ def _post_json(ip, username, password, path, obj, scheme, port, timeout):
         raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}"
                          + (f" — {detail}" if detail else ""))
     except urllib.error.URLError as exc:
-        raise VapixError(f"Nicht erreichbar: {exc.reason}")
+        raise VapixConnectError(f"Nicht erreichbar: {exc.reason}")
     except (TimeoutError, OSError) as exc:
-        raise VapixError(f"Verbindungsfehler: {exc}")
+        raise VapixConnectError(f"Verbindungsfehler: {exc}")
     if not text.strip():
         return {}
     try:
@@ -193,12 +205,13 @@ def _post_json(ip, username, password, path, obj, scheme, port, timeout):
 
 
 def _post_json_auto(ip, username, password, path, obj, scheme="auto", port=None, timeout=30):
-    """Wie _post_json, aber 'auto' probiert erst HTTPS, dann HTTP."""
+    """Wie _post_json, aber 'auto' probiert erst HTTPS, dann HTTP (Rueckfall nur
+    bei Verbindungsfehlern, siehe VapixConnectError)."""
     if scheme != "auto":
         return _post_json(ip, username, password, path, obj, scheme, port, timeout)
     try:
         return _post_json(ip, username, password, path, obj, "https", port, timeout)
-    except VapixError:
+    except VapixConnectError:
         return _post_json(ip, username, password, path, obj, "http", port, timeout)
 
 
@@ -624,18 +637,19 @@ def _onvif_post(ip, username, password, inner, scheme, port, timeout):
         reason = _extract_soap_fault(detail) or f"HTTP {exc.code}: {exc.reason}"
         raise VapixError(f"ONVIF-Fehler: {reason}")
     except urllib.error.URLError as exc:
-        raise VapixError(f"Nicht erreichbar: {exc.reason}")
+        raise VapixConnectError(f"Nicht erreichbar: {exc.reason}")
     except (TimeoutError, OSError) as exc:
-        raise VapixError(f"Verbindungsfehler: {exc}")
+        raise VapixConnectError(f"Verbindungsfehler: {exc}")
 
 
 def _onvif_post_auto(ip, username, password, inner, scheme, port, timeout):
-    """Wie _onvif_post, aber 'auto' probiert erst HTTPS, dann HTTP."""
+    """Wie _onvif_post, aber 'auto' probiert erst HTTPS, dann HTTP (Rueckfall nur
+    bei Verbindungsfehlern, siehe VapixConnectError)."""
     if scheme != "auto":
         return _onvif_post(ip, username, password, inner, scheme, port, timeout)
     try:
         return _onvif_post(ip, username, password, inner, "https", port, timeout)
-    except VapixError:
+    except VapixConnectError:
         return _onvif_post(ip, username, password, inner, "http", port, timeout)
 
 

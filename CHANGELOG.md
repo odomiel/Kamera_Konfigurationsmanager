@@ -4,6 +4,46 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.19 — 2026-07-19
+
+Stabilitäts-/Robustheits-Durchsicht des gesamten Codes; zehn Punkte behoben:
+
+- **Beschädigte `groups.json` crasht den Start nicht mehr.** Die Datei wird als
+  `groups.json.corrupt` beiseitegelegt (nicht gelöscht) und die App startet mit
+  leerem Bestand. Unbekannte Felder und einzelne kaputte Gruppen-Einträge werden
+  übersprungen statt mit `TypeError` zu scheitern (Vorwärtskompatibilität).
+- **Beschädigte Tresor-Datei liefert eine klare Fehlermeldung.** `unlock()` wirft
+  jetzt immer `VaultError` — vorher schlug ein korruptes `vault.enc` als
+  unbehandelte `JSONDecodeError` im Klick-Handler des Schloss-Buttons auf.
+- **Aktions-Dialoge:** Die Poll-Schleife endet sauber, wenn der Dialog geschlossen
+  wird, während ein Durchlauf noch Meldungen liefert (vorher `TclError` auf
+  zerstörten Widgets). Beim Schließen während eines laufenden Durchlaufs wird
+  zudem nachgefragt.
+- **Tresor sperren während der Hintergrund-Anreicherung** (Firmware/Modell nach
+  der Suche) ließ den Worker sterben — die Progressbar lief endlos. Der Fall wird
+  jetzt als Fehlversuch gezählt und der Lauf endet normal.
+- **`auto`-Schema (HTTPS→HTTP) fällt nur noch bei Verbindungsfehlern zurück,**
+  nicht mehr bei HTTP-Fehlern wie 401. Vorher wurden Zugangsdaten nach einem
+  fehlgeschlagenen HTTPS-Login nochmals im Klartext über HTTP gesendet, jeder
+  Fehlversuch zählte doppelt (schnellere Brute-Force-Sperre des Geräts) und die
+  angezeigte Fehlermeldung stammte vom zweiten Versuch (neu: `VapixConnectError`).
+- **Fortlaufende IP-Vergabe überspringt `.0`/`.255`** (Netz-/Broadcast-Adresse im
+  üblichen /24) — vorher konnte eine Kamera die unerreichbare `x.y.z.255`
+  bekommen. `next_ip` erkennt außerdem den Überlauf hinter `255.255.255.255`.
+- **Einstellungen-Speichern wirft nicht mehr,** wenn das Config-Verzeichnis nicht
+  beschreibbar ist (hing u. a. am Spaltenziehen in der Tabelle — jeder Klick hätte
+  einen Fehler ausgelöst); die Einstellungen gelten dann nur für die Sitzung.
+- **Aktions-Buttons/Kontextmenü grauen jetzt wirklich aus,** was das Plugin der
+  ausgewählten Kameras nicht kann (z. B. „Konfiguration“/„Firmware“ bei
+  generischen ONVIF-Kameras) — bisher öffnete der Dialog und jede Kamera schlug
+  mit einer leeren Fehlermeldung fehl.
+- **Toten, fehlerhaften Code entfernt:** `AxisDiscovery.on_service_state_change`
+  referenzierte das nicht existierende `Zeroconf.StateChange`.
+- **Suche doppelt so schnell bei mehreren Plugins:** Axis-mDNS und ONVIF-
+  WS-Discovery warten jeweils das volle Timeout ab und laufen jetzt parallel statt
+  nacheinander (10 s statt 20 s bei zwei aktiven Plugins). Scheitert ein Plugin,
+  bleiben die Treffer der anderen erhalten und der Fehler wird gemeldet.
+
 ## 26.07.17b3 — 2026-07-17
 
 - **AppImage von ~64 MB auf ~21 MB verkleinert** — reiner Build-Ballast, der zur

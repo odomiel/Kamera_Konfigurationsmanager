@@ -133,8 +133,14 @@ class IpDialog(ActionDialog):
                 if not start:
                     messagebox.showinfo(self.title_text, "Bitte eine Start-IP angeben.", parent=self)
                     return
-                for idx, cam in enumerate(self.cameras):
-                    targets[camera_key(cam)] = next_ip(start, idx)
+                ip = next_ip(start, 0)   # validiert die Start-IP
+                for cam in self.cameras:
+                    # Netz-/Broadcast-Adressen (.0/.255 im üblichen /24) niemals
+                    # vergeben — eine Kamera auf x.y.z.255 wäre unerreichbar.
+                    while ip.rsplit(".", 1)[1] in ("0", "255"):
+                        ip = next_ip(ip)
+                    targets[camera_key(cam)] = ip
+                    ip = next_ip(ip)
             else:  # each
                 for cam in self.cameras:
                     key = camera_key(cam)

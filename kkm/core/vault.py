@@ -135,12 +135,17 @@ class PasswordVault:
         self._flush()
 
     def unlock(self, master: str) -> None:
-        """Open an existing vault. Raises VaultError on a wrong password."""
-        with open(self.path, encoding="utf-8") as fh:
-            blob = json.load(fh)
-        salt = base64.b64decode(blob["salt"])
-        nonce = base64.b64decode(blob["nonce"])
-        ct = base64.b64decode(blob["ct"])
+        """Open an existing vault. Raises VaultError on a wrong password or a
+        missing/corrupt vault file (never a raw OSError/JSONDecodeError — die
+        Aufrufer fangen gezielt VaultError)."""
+        try:
+            with open(self.path, encoding="utf-8") as fh:
+                blob = json.load(fh)
+            salt = base64.b64decode(blob["salt"])
+            nonce = base64.b64decode(blob["nonce"])
+            ct = base64.b64decode(blob["ct"])
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise VaultError(f"Tresor-Datei nicht lesbar oder beschädigt: {exc}") from exc
         key = _derive(master, salt)
         try:
             plain = _aesgcm()(key).decrypt(nonce, ct, None)

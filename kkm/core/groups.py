@@ -33,7 +33,7 @@ import json
 import os
 import sys
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, fields, asdict
 
 ALL_CAMERAS_ID = "all"
 ALL_CAMERAS_NAME = "Alle Kameras"
@@ -99,13 +99,33 @@ class GroupStore:
 
     # --- persistence --------------------------------------------------------
     def load(self) -> None:
+        data: dict = {}
         if os.path.exists(self.path):
-            with open(self.path, encoding="utf-8") as fh:
-                data = json.load(fh)
-            self.groups = {
-                g["id"]: Group(**g) for g in data.get("groups", [])
-            }
-            self.roster = data.get("roster", {})
+            try:
+                with open(self.path, encoding="utf-8") as fh:
+                    data = json.load(fh)
+                if not isinstance(data, dict):
+                    raise ValueError("kein JSON-Objekt")
+            except (OSError, ValueError):
+                # Beschädigte Datei darf den Start nicht verhindern — beiseitelegen
+                # (nicht löschen!), damit der nächste save() sie nicht überschreibt.
+                try:
+                    os.replace(self.path, self.path + ".corrupt")
+                except OSError:
+                    pass
+                data = {}
+        # Unbekannte Felder ignorieren (Vorwärtskompatibilität: eine neuere Version
+        # darf Felder ergänzen, ohne dass ältere Stände hier mit TypeError scheitern).
+        known = {f.name for f in fields(Group)}
+        self.groups = {}
+        for g in data.get("groups", []):
+            try:
+                self.groups[g["id"]] = Group(
+                    **{k: v for k, v in g.items() if k in known})
+            except (TypeError, KeyError):
+                continue   # einzelner kaputter Eintrag -> überspringen, Rest behalten
+        roster = data.get("roster", {})
+        self.roster = roster if isinstance(roster, dict) else {}
         # Guarantee the non-deletable "Alle Kameras" group exists.
         if ALL_CAMERAS_ID not in self.groups:
             self.groups[ALL_CAMERAS_ID] = Group(

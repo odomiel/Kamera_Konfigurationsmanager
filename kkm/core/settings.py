@@ -63,10 +63,16 @@ class AppSettings:
                 pass  # corrupt/unreadable -> fall back to defaults
 
     def save(self) -> None:
-        tmp = self.path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
-            json.dump(self._data, fh, indent=2, ensure_ascii=False)
-        os.replace(tmp, self.path)
+        try:
+            tmp = self.path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(self._data, fh, indent=2, ensure_ascii=False)
+            os.replace(tmp, self.path)
+        except OSError:
+            # z. B. Config-Verzeichnis nicht beschreibbar: Einstellungen gelten dann
+            # nur für die laufende Sitzung. save() hängt u. a. am Spaltenziehen —
+            # ein Fehler hier darf keinen Tk-Callback sprengen.
+            pass
 
     def get(self, key, default=None):
         return self._data.get(key, default)

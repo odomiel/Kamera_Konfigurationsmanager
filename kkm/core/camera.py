@@ -75,6 +75,9 @@ def next_ip(ip_str: str, step: int = 1) -> str:
         raise ValueError(f"Ungültige IPv4-Adresse: {ip_str}")
     value = (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]
     value += step
+    # Kein stiller Überlauf (255.255.255.255 + 1 würde sonst zu 0.0.0.0 wickeln).
+    if not 0 <= value <= 0xFFFFFFFF:
+        raise ValueError(f"IP-Bereich überschritten: {ip_str} + {step}")
     return ".".join(str((value >> shift) & 0xFF) for shift in (24, 16, 8, 0))
 
 

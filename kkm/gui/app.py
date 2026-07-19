@@ -279,6 +279,8 @@ class MainWindow(tk.Tk):
         self.table.bind("<Double-Button-1>", self._open_camera_web)
         # Nach dem Ziehen an einer Spaltengrenze die Breiten merken.
         self.table.bind("<ButtonRelease-1>", self._save_column_widths, add="+")
+        # Aktions-Buttons an die Auswahl koppeln (Capabilities der Plugins).
+        self.table.bind("<<TreeviewSelect>>", self._update_action_buttons, add="+")
 
     def _init_left_min(self):
         """Mindestbreite der linken Spalte aus der Button-Zeile ableiten und die
@@ -450,6 +452,8 @@ class MainWindow(tk.Tk):
         g = self.store.groups.get(self._current_gid)
         n = len(self._row_cam)
         self.status.config(text=f"{g.name if g else ''}: {n} Gerät(e)")
+        # Neuaufbau verwirft die Auswahl -> Buttons neu bewerten.
+        self._update_action_buttons()
 
     def _sort_by(self, col):
         """Klick auf Spaltenkopf: nach dieser Spalte sortieren, Richtung togglen."""
@@ -472,6 +476,25 @@ class MainWindow(tk.Tk):
 
     def _selected_cameras(self) -> list[dict]:
         return [self._row_cam[r] for r in self.table.selection() if r in self._row_cam]
+
+    def _action_supported(self, capability: str, cams: list[dict]) -> bool:
+        """True, wenn die Aktion für ALLE ausgewählten Kameras verfügbar ist —
+        d. h. jedes zuständige Plugin die Capability meldet."""
+        if not cams:
+            return False
+        for cam in cams:
+            plugin = self.registry.get(cam.get("_vendor", "axis"))
+            if plugin is None or not plugin.supports(capability):
+                return False
+        return True
+
+    def _update_action_buttons(self, _evt=None):
+        """Toolbar-Aktionen anhand der Auswahl ausgrauen (Plugins ohne die
+        jeweilige Capability — z. B. ONVIF ohne CONFIG/FIRMWARE)."""
+        cams = self._selected_cameras()
+        for cap, btn in self._action_buttons.items():
+            state = tk.NORMAL if self._action_supported(cap, cams) else tk.DISABLED
+            btn.config(state=state)
 
     def apply_ip_changes(self, mapping: dict) -> None:
         """Neue feste IPs (camera_key vor der Umstellung -> IP) in Roster, Gruppen
@@ -582,9 +605,11 @@ class MainWindow(tk.Tk):
                              command=lambda: self._open_camera_web_cam(cams[0]))
             menu.add_separator()
 
-        # Vorderansicht-Aktionen (wie die Toolbar-Buttons): wirken auf die Auswahl.
+        # Vorderansicht-Aktionen (wie die Toolbar-Buttons): wirken auf die Auswahl;
+        # nicht unterstützte Aktionen (Capability fehlt) sind ausgegraut.
         for label, cap in ACTION_ITEMS:
-            menu.add_command(label=label,
+            state = tk.NORMAL if self._action_supported(cap, cams) else tk.DISABLED
+            menu.add_command(label=label, state=state,
                              command=lambda c=cap, l=label: self._open_action(c, l))
         menu.add_separator()
 
@@ -668,21 +693,40 @@ class MainWindow(tk.Tk):
     def _worker_search(self):
         found: list[dict] = []
         generic: list[dict] = []
-        try:
-            for plugin in self.registry.enabled():
-                if not plugin.supports(Capability.DISCOVER):
-                    continue
-                cams = plugin.discover(timeout=self.creds.timeout)
-                (generic if plugin.generic else found).extend(cams)
-            # Ein generisches Plugin (ONVIF) findet auch Kameras, für die es ein
-            # Hersteller-Plugin gibt — dieselbe Kamera stünde sonst zweimal in der
-            # Liste (andere Kennung: MAC vs. ONVIF-UUID). Das spezialisierte Plugin
-            # kann mehr, also gewinnt es; der generische Treffer entfällt.
-            known_ips = {get_first_ip(cam) for cam in found}
-            found.extend(cam for cam in generic if get_first_ip(cam) not in known_ips)
-            self._q.put(("search_done", found))
-        except Exception as exc:  # noqa: BLE001 - surfaced to the user
-            self._q.put(("error", f"Suche fehlgeschlagen: {exc}"))
+        plugins = [p for p in self.registry.enabled()
+                   if p.supports(Capability.DISCOVER)]
+        if not plugins:
+            self._q.put(("search_done", []))
+            return
+        errors: list[str] = []
+
+        def run(plugin):
+            try:
+                return plugin, plugin.discover(timeout=self.creds.timeout), None
+            except Exception as exc:  # noqa: BLE001 - je Plugin melden, Rest behalten
+                return plugin, [], exc
+
+        # Alle Plugins GLEICHZEITIG suchen lassen: mDNS (Axis) und WS-Discovery
+        # (ONVIF) warten jeweils das volle Timeout ab — nacheinander würde sich
+        # die Wartezeit pro aktivem Plugin addieren.
+        with ThreadPoolExecutor(max_workers=len(plugins)) as ex:
+            for plugin, cams, exc in ex.map(run, plugins):
+                if exc is not None:
+                    errors.append(f"{plugin.name}: {exc}")
+                elif plugin.generic:
+                    generic.extend(cams)
+                else:
+                    found.extend(cams)
+        # Ein generisches Plugin (ONVIF) findet auch Kameras, für die es ein
+        # Hersteller-Plugin gibt — dieselbe Kamera stünde sonst zweimal in der
+        # Liste (andere Kennung: MAC vs. ONVIF-UUID). Das spezialisierte Plugin
+        # kann mehr, also gewinnt es; der generische Treffer entfällt.
+        known_ips = {get_first_ip(cam) for cam in found}
+        found.extend(cam for cam in generic if get_first_ip(cam) not in known_ips)
+        self._q.put(("search_done", found))
+        if errors:
+            self._q.put(("error", "Suche teilweise fehlgeschlagen: "
+                         + "; ".join(errors)))
 
     def start_online_check(self):
         cams = self._selected_cameras() or self.store.cameras_in(self._current_gid)
@@ -769,12 +813,14 @@ class MainWindow(tk.Tk):
         lock = threading.Lock()
         def task(cam):
             plugin = self.registry.get(cam.get("_vendor", "axis"))
-            creds = self._creds_for(cam)
-            if not plugin or not creds:
-                with lock:
-                    stats["fail"] += 1
-                return
             try:
+                # _creds_for gehört mit ins try: sperrt der Nutzer den Tresor,
+                # während dieser Worker läuft, wirft get_password() VaultLocked —
+                # sonst stürbe der Thread und "enrich_done" käme nie an
+                # (Progressbar liefe endlos).
+                creds = self._creds_for(cam)
+                if not plugin or not creds:
+                    raise ValueError("keine Zugangsdaten")
                 info = plugin.device_info(cam, creds)
                 self._q.put(("device_info", (camera_key(cam), info)))
                 with lock:
@@ -928,6 +974,12 @@ class MainWindow(tk.Tk):
         cams = self._selected_cameras()
         if not cams:
             messagebox.showinfo(APP_NAME, "Bitte zuerst Kameras in der Tabelle auswählen.", parent=self)
+            return
+        if not self._action_supported(capability, cams):
+            messagebox.showinfo(
+                APP_NAME,
+                f"„{label}“ wird von (mindestens) einer der ausgewählten Kameras "
+                "nicht unterstützt.", parent=self)
             return
         dialog_cls = ACTION_DIALOGS.get(capability)
         if dialog_cls is None:
