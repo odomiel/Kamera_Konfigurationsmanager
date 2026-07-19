@@ -14,11 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Single source of truth for the application version.
+"""Dahua vendor plugin package (HTTP API + DHIP discovery, stdlib-only).
 
-Version scheme follows the Discovery tool: ``JJ.MM.TT`` (2-digit year);
-multiple releases the same day get an incrementing ``bN`` suffix.
+Experimental — see ``DAHUA_PLUGIN_RECHERCHE.md`` and ``plugin.py``. Also covers
+Dahua-OEM rebrands (Honeywell Performance Series, Amcrest).
 """
 
-__version__ = "26.07.19b4"
-APP_NAME = "Kamera_Konfigurationsmanager"
+from .plugin import DahuaPlugin
+
+__all__ = ["DahuaPlugin"]

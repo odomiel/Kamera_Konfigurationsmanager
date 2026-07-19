@@ -4,6 +4,23 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.19b4 — 2026-07-19
+
+- **Neues (experimentelles) Dahua-Plugin.** Zweites Hersteller-Plugin nach dem
+  Hikvision-Muster: Gerätesuche per **DHIP** (UDP-Multicast 37810, liefert MAC/Modell/
+  Seriennummer/Firmware), Geräteinfo, IP setzen (fest/DHCP), Benutzerverwaltung,
+  ONVIF-Benutzer (über den bestehenden ONVIF-SOAP-Client wiederverwendet),
+  Firmware-Upload und Werksreset — alles über die **Dahua HTTP API** (HTTP-Digest,
+  `KEY=VALUE` wie Axis `param.cgi`, stdlib-only). Kein `FIRMWARE_CHECK` (kein offenes
+  Firmware-Verzeichnis) und kein `CONFIG` (kein Fleet-Vorlagenformat). Im
+  Plugin-Manager als **„experimentell"** gekennzeichnet und **ab Werk ausgeschaltet**;
+  die genauen `setConfig`-Payloads folgen der (halb-öffentlichen) Dahua-Dokumentation,
+  sind aber noch nicht an Hardware verifiziert. **Bonus:** deckt zugleich viele
+  Dahua-OEM-Marken ab (u. a. **Honeywell Performance Series**, Amcrest).
+- Recherche-Notizen für weitere mögliche Plugins ergänzt (Hanwha, ACTi, Dahua, ABUS,
+  Honeywell). ABUS und Honeywell sind überwiegend OEM-Ware und laufen über das
+  Hikvision- bzw. Dahua-/ONVIF-Plugin — ein eigenes Plugin lohnt dort nicht.
+
 ## 26.07.19b3 — 2026-07-19
 
 - **Neues (experimentelles) Hikvision-Plugin.** Erstes Hersteller-Plugin nach Axis:

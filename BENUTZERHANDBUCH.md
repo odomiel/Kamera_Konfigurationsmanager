@@ -294,14 +294,20 @@ Das ONVIF-Plugin ist **ab Werk ausgeschaltet** und wird in den Einstellungen unt
 *Plugins* zugeschaltet. Es ist für Kameras gedacht, für die es kein eigenes Plugin gibt —
 bei Axis-Geräten kann es schlicht weniger.
 
-> **Experimentell: Hikvision.** Zusätzlich liegt ein **Hikvision**-Plugin bei (Suche per
-> SADP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer, Firmware-Upload, Werksreset über die
-> ISAPI-Schnittstelle). Es ist im Plugin-Manager als **„experimentell"** gekennzeichnet,
-> **ab Werk ausgeschaltet** und noch **nicht an echter Hardware verifiziert** — die
-> Schreib-Aktionen folgen der ISAPI-Dokumentation, sollten aber vorsichtig und auf eigene
-> Gefahr eingesetzt werden. Eine Update-Suche und den Konfigurations-Im-/Export gibt es
-> hier nicht (Hikvision bietet kein offenes Firmware-Verzeichnis und keine
-> Konfigurationsvorlage).
+> **Experimentell: Hikvision und Dahua.** Zusätzlich liegen zwei Hersteller-Plugins bei,
+> beide im Plugin-Manager als **„experimentell"** gekennzeichnet, **ab Werk
+> ausgeschaltet** und noch **nicht an echter Hardware verifiziert** — die Schreib-Aktionen
+> folgen der jeweiligen Hersteller-Dokumentation, sollten aber vorsichtig und auf eigene
+> Gefahr eingesetzt werden:
+>
+> - **Hikvision** (ISAPI): Suche per SADP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
+>   Firmware-Upload, Werksreset.
+> - **Dahua** (HTTP-API): Suche per DHIP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
+>   Firmware-Upload, Werksreset. Deckt zugleich viele **Dahua-OEM-Marken** ab — u. a. die
+>   **Honeywell Performance Series** und Amcrest.
+>
+> Bei beiden gibt es keine Update-Suche und keinen Konfigurations-Im-/Export (kein offenes
+> Firmware-Verzeichnis, keine herstellerübergreifende Konfigurationsvorlage).
 
 **Was ONVIF nicht kann und warum:** Der Standard normiert keine Konfigurationsvorlage
 (seine Sicherungsfunktion liefert nur einen undurchsichtigen Datenblock für genau ein
