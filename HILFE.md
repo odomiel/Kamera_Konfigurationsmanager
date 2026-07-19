@@ -28,7 +28,10 @@ ONVIF"). Ein ausführliches **Benutzerhandbuch** liegt als `Benutzerhandbuch.pdf
   und rechter Seite lässt sich verschieben, aber nicht enger als nötig, damit die
   Gruppen-Buttons lesbar bleiben.
 - **Rechts:** die Geräteliste der gewählten Gruppe mit den Spalten Name, Modell,
-  IP-Adresse, MAC/Seriennummer, Firmware, **Gruppe(n)** und **Status** (online).
+  IP-Adresse, IPv6-Adresse, MAC/Seriennummer, Firmware, **Gruppe(n)** und
+  **Status** (online). Die IPv6-Adressen werden bei der Suche miterkannt
+  (mDNS-AAAA-Records bzw. ONVIF-XAddrs) und dienen der Anzeige — die Aktionen
+  (IP, Benutzer, Firmware …) laufen weiterhin über IPv4.
   Ein **Klick auf einen Spaltenkopf** sortiert nach dieser Spalte (erneuter Klick
   kehrt die Richtung um; ▲/▼ zeigt die aktive Spalte). Sortiert wird „natürlich" —
   IP-Adressen und Firmware-Versionen ordnen sich zahlenrichtig.

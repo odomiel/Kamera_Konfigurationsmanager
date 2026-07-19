@@ -99,6 +99,8 @@ def _device_to_camera(dev: dict) -> dict:
         "Name": model or mac or "?",            # kein Anzeigename im Export -> Modell
         "IP Adresse: Zeroconfig": "",
         "IP Adresse: Konfiguriert": ip,
+        "IP Adresse: IPv6": "",             # ADM-Exporte enthalten keine IPv6
+
         "Port": port if port not in (None, "") else "",
         "Hostname": str(dev.get("hostName") or "").strip(),
         "MAC-Adresse/Seriennummer": mac,

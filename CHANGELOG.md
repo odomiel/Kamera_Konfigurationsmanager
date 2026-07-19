@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.19b2 — 2026-07-19
+
+- **Neue Spalte „IPv6-Adresse" samt Erkennung.** Die Suche erfasst jetzt auch die
+  IPv6-Adressen der Kameras: das Axis-Plugin fragt per mDNS zusätzlich
+  AAAA-Records ab (`Zeroconf(ip_version=All)`, mit Rückfall auf IPv4 auf Hosts
+  ohne IPv6-Stack), das ONVIF-Plugin wertet IPv6-XAddrs der WS-Discovery-Antwort
+  aus, statt sie zu verwerfen. Anzeige kommagetrennt, globale Adressen vor
+  Link-Local (fe80::); die Spalte ist wie gewohnt ausblendbar und wird beim
+  CSV-Export mitgeschrieben (neues Basisfeld „IP Adresse: IPv6"). IPv6 fließt
+  auch in die Duplikat-Erkennung Hersteller-/ONVIF-Treffer ein. Die **Aktionen**
+  (IP setzen, Benutzer, Firmware …) laufen weiterhin über IPv4 — reine
+  IPv6-Antworten ohne IPv4-Adresse werden daher weiterhin übersprungen.
+
 ## 26.07.19b1 — 2026-07-19
 
 - **ONVIF- und Hersteller-Plugin melden dieselbe Kamera nicht mehr als zwei

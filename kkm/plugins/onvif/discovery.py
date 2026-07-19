@@ -80,18 +80,26 @@ def _parse_match(data: str) -> dict | None:
     xaddrs = _XADDRS_RE.search(data)
     if not xaddrs:
         return None
-    # Mehrere XAddrs (IPv4/IPv6, mehrere Interfaces) -> erste http(s)-Adresse nehmen.
-    url = next((x for x in xaddrs.group(1).split() if x.startswith("http")), "")
+    # Mehrere XAddrs (IPv4/IPv6, mehrere Interfaces): erste IPv4-http(s)-Adresse
+    # wird die Arbeitsadresse; IPv6-Hosts landen im IPv6-Feld (nur Anzeige).
+    urls = [x for x in xaddrs.group(1).split() if x.startswith("http")]
+    url = ""
+    ipv6: list[str] = []
+    for x in urls:
+        h = urlparse(x).hostname or ""
+        if ":" in h:                        # IPv6-Host (urlparse entfernt [ ])
+            if h not in ipv6:
+                ipv6.append(h)
+        elif not url:
+            url = x
     if not url:
-        return None
+        return None   # ohne IPv4-Adresse nicht ansprechbar (Aktionen laufen über IPv4)
     types = _TYPES_RE.search(data)
     types = types.group(1) if types else ""
     if "NetworkVideoTransmitter" not in types and "/onvif/" not in url.lower():
         return None
     parsed = urlparse(url)
     host = parsed.hostname or ""
-    if ":" in host:            # IPv6 — die Anwendung arbeitet mit IPv4
-        return None
 
     scopes = _SCOPES_RE.search(data)
     scopes = scopes.group(1) if scopes else ""
@@ -103,6 +111,7 @@ def _parse_match(data: str) -> dict | None:
         "Name": name,
         "IP Adresse: Zeroconfig": "",
         "IP Adresse: Konfiguriert": host,
+        "IP Adresse: IPv6": ", ".join(ipv6),
         "Port": parsed.port or (443 if parsed.scheme == "https" else 80),
         "Hostname": host,
         # WS-Discovery meldet keine MAC — die Geraete-UUID ist die stabile Kennung.

@@ -59,8 +59,8 @@ from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 
 ONLINE_COL = "● Status"
 GROUP_COL = "Gruppe(n)"
-TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "MAC/Seriennummer", "Firmware",
-                 GROUP_COL, ONLINE_COL]
+TABLE_COLUMNS = ["Name", "Modell", "IP-Adresse", "IPv6-Adresse",
+                 "MAC/Seriennummer", "Firmware", GROUP_COL, ONLINE_COL]
 FIXED_COLUMNS = {"Name"}   # always visible, cannot be hidden
 COL_MIN_WIDTH = 70         # Mindestbreite einer Tabellenspalte beim Ziehen
 GROUP_SEARCH_PLACEHOLDER = "Suche"   # Platzhalter im Gruppen-Suchfeld
@@ -85,11 +85,12 @@ def _cam_ips(cam: dict) -> set[str]:
     reicht nicht — meldet die Kamera mehrere Adressen und der ONVIF-Treffer eine
     andere davon, würde dieselbe Kamera zweimal in der Liste landen."""
     ips = set()
-    for field in ("IP Adresse: Konfiguriert", "IP Adresse: Zeroconfig"):
+    for field in ("IP Adresse: Konfiguriert", "IP Adresse: Zeroconfig",
+                  "IP Adresse: IPv6"):
         for part in str(cam.get(field, "")).split(","):
             part = part.strip()
             if part:
-                ips.add(part)
+                ips.add(part.lower())   # IPv6 case-insensitiv vergleichbar
     return ips
 
 
@@ -449,6 +450,7 @@ class MainWindow(tk.Tk):
                 cam.get("Name", ""),
                 cam.get("_model", cam.get("Name", "")),
                 get_first_ip(cam),
+                cam.get("IP Adresse: IPv6", ""),
                 cam.get("MAC-Adresse/Seriennummer", ""),
                 cam.get("_firmware", ""),
                 groups,

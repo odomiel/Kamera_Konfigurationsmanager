@@ -27,13 +27,9 @@ is where a plugin's discovery reaches for them.
 
 import time
 
-from zeroconf import ServiceBrowser, Zeroconf
+from zeroconf import IPVersion, ServiceBrowser, Zeroconf
 
 from kkm.core.camera import FIELD_NAMES, get_first_ip, export_results  # noqa: F401
-
-
-def convert_bytearray_to_ipv4(bytearray_address):
-    return ".".join(str(byte) for byte in bytearray_address)
 
 
 class AxisDiscovery:
@@ -42,13 +38,22 @@ class AxisDiscovery:
     SERVICE_TYPE = "_axis-video._tcp.local."
 
     def __init__(self):
-        self.zeroconf = Zeroconf()
+        try:
+            # IPv4 UND IPv6 abfragen (A- + AAAA-Records) — ohne ip_version fragt
+            # zeroconf nur IPv4 ab und die Kameras meldeten keine IPv6-Adresse.
+            self.zeroconf = Zeroconf(ip_version=IPVersion.All)
+        except OSError:
+            # Host ohne (nutzbaren) IPv6-Stack -> wie bisher nur IPv4.
+            self.zeroconf = Zeroconf()
         self.services = []
 
     def add_service(self, zeroconf, service_type, name):
         info = zeroconf.get_service_info(service_type, name)
         if info:
-            addresses = [convert_bytearray_to_ipv4(a) for a in info.addresses]
+            addresses = info.parsed_addresses(IPVersion.V4Only)
+            # IPv6: globale Adressen zuerst, Link-Local (fe80::) dahinter.
+            ipv6 = sorted(info.parsed_addresses(IPVersion.V6Only),
+                          key=lambda a: a.lower().startswith("fe80"))
 
             name = name.replace("._axis-video._tcp.local.", "")
             # Serial/MAC suffix stripped -> model name only
@@ -64,6 +69,7 @@ class AxisDiscovery:
                 "Name": name,
                 "IP Adresse: Zeroconfig": ", ".join(zeroconf_ips),
                 "IP Adresse: Konfiguriert": ", ".join(configured_ips),
+                "IP Adresse: IPv6": ", ".join(ipv6),
                 "Port": info.port,
                 "Hostname": info.server,
                 "MAC-Adresse/Seriennummer": mac_address,

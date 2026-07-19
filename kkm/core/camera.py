@@ -38,6 +38,10 @@ FIELD_NAMES = [
     "Name",
     "IP Adresse: Zeroconfig",
     "IP Adresse: Konfiguriert",
+    # IPv6-Adressen (kommagetrennt, globale zuerst, Link-Local fe80:: dahinter).
+    # Nur Anzeige/Export — die Aktionen (VAPIX/ONVIF) laufen weiterhin über IPv4
+    # (get_first_ip), weil die URL-Bildung der Plugins keine [Brackets] setzt.
+    "IP Adresse: IPv6",
     "Port",
     "Hostname",
     "MAC-Adresse/Seriennummer",
