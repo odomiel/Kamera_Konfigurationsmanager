@@ -51,6 +51,11 @@ Benötigt Python 3.14 mit Tkinter sowie die Pakete `zeroconf`, `cryptography` un
 
 ## 3 Erste Schritte
 
+Beim Start erscheint zunächst ein **Haftungshinweis**: Dies ist kein offizielles Tool der
+unterstützten Hersteller, die Nutzung erfolgt auf eigene Gefahr. Mit der Checkbox
+*„Ich weiß, was ich tue – nicht wieder anzeigen"* lässt er sich dauerhaft bestätigen;
+derselbe Text steht auch unter *Einstellungen → Über*.
+
 Der typische Ablauf beim ersten Start:
 
 1. **Suchen/aktualisieren** anklicken. Das Programm durchsucht das lokale Netz und trägt
@@ -78,7 +83,10 @@ frisch gefundene), darunter Ihre eigenen Gruppen alphabetisch. Das **Suchfeld** 
 Überschrift filtert die Gruppenliste live.
 
 **Rechts** steht die Geräteliste der gewählten Gruppe mit den Spalten *Name, Modell,
-IP-Adresse, MAC/Seriennummer, Firmware, Gruppe(n)* und *Status*. Ein Klick auf einen
+IP-Adresse, IPv6-Adresse, MAC/Seriennummer, Firmware, Gruppe(n)* und *Status*. Die
+IPv6-Adressen werden bei der Suche miterkannt (globale Adressen zuerst, Link-Local
+`fe80::` dahinter) und dienen der Anzeige und dem Export — die Aktionen selbst laufen
+über die IPv4-Adresse. Ein Klick auf einen
 Spaltenkopf sortiert danach, ein erneuter Klick kehrt die Richtung um (▲/▼ zeigt die
 aktive Spalte). Sortiert wird „natürlich", das heißt IP-Adressen und Firmware-Versionen
 ordnen sich zahlenrichtig und nicht alphabetisch. Die **Spaltenbreiten** ändern Sie durch
@@ -108,8 +116,12 @@ Online-Prüfung** mit Intervall einschalten (Kapitel 12).
 
 > **Doppelte Einträge?** Sind Axis- und ONVIF-Plugin gleichzeitig aktiv, findet das
 > ONVIF-Plugin die Axis-Kameras ebenfalls. Das Programm verwirft solche Treffer
-> automatisch: Wurde eine IP schon von einem Hersteller-Plugin gemeldet, gewinnt dieses,
-> weil es mehr kann.
+> automatisch: Wurde eine der IP-Adressen schon von einem Hersteller-Plugin gemeldet,
+> gewinnt dieses, weil es mehr kann. Steht dieselbe Kamera aus früheren Suchen doch
+> einmal unter beiden Identitäten in der Liste, führt die nächste Suche die Einträge
+> selbsttätig zusammen — Gruppenzuordnung, Online-Status und gespeicherte Zugangsdaten
+> wandern dabei zum Hersteller-Eintrag (die Statuszeile meldet „… ONVIF-Duplikat(e)
+> zusammengeführt").
 
 ## 6 Gruppen
 
@@ -139,8 +151,10 @@ markierten Kameras.
 ### 8.1 IP-Adresse
 
 Stellt die Netzwerkadresse der markierten Kameras um — wahlweise auf **DHCP**, auf eine
-**feste IP fortlaufend ab einer Start-IP** (die Adressen werden der Reihe nach vergeben)
-oder **pro Kamera einzeln** (je Kamera ein Feld, mit der aktuellen IP vorbefüllt).
+**feste IP fortlaufend ab einer Start-IP** (die Adressen werden der Reihe nach vergeben;
+Netz- und Broadcast-Adressen wie `x.y.z.0`/`x.y.z.255` überspringt das Programm dabei
+automatisch) oder **pro Kamera einzeln** (je Kamera ein Feld, mit der aktuellen IP
+vorbefüllt).
 
 Die Zieladressen werden vor der Umstellung geprüft. Bei fester IP aktualisiert das
 Programm die Geräteliste sofort auf die neue Adresse; bei DHCP bleibt die angezeigte
@@ -373,9 +387,10 @@ Prüfung stillschweigend abzuschalten.
 **ONVIF meldet „Sender not authorized" oder Anmeldefehler.** Es fehlt ein ONVIF-Benutzer auf
 der Kamera (bei Axis eine eigene Liste!), oder die Uhr der Kamera geht grob falsch.
 
-**Eine Kamera steht doppelt in der Liste.** Das passiert nur, wenn dieselbe Kamera unter
-zwei verschiedenen IPs bekannt ist (etwa nach einem DHCP-Wechsel). Entfernen Sie den alten
-Eintrag über *Kamera(s) vollständig entfernen*.
+**Eine Kamera steht doppelt in der Liste.** Axis-/ONVIF-Doppelgänger derselben Kamera
+werden bei der nächsten Suche automatisch zusammengeführt (siehe Kapitel 5). Bleibt ein
+Duplikat übrig, ist dieselbe Kamera unter zwei verschiedenen IPs bekannt (etwa nach einem
+DHCP-Wechsel) — entfernen Sie den alten Eintrag über *Kamera(s) vollständig entfernen*.
 
 **Nach dem Firmware-Update bleibt die Kamera „nicht rechtzeitig zurück".** Das Aufspielen
 war erfolgreich, der Neustart dauerte nur länger als das Zeitfenster. Suchen Sie später
