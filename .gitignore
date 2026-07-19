@@ -14,8 +14,9 @@ squashfs-root/
 appimagetool*.AppImage
 base.AppImage
 
-# Lokale Claude-Code-Einstellungen (maschinenspezifisch)
-.claude/settings.local.json
+# Lokale Claude-Code-Einstellungen (maschinenspezifisch, inkl. temporärer
+# Schreibdateien wie settings.local.json.tmp.*)
+.claude/settings.local.json*
 
 # Lokale Testdaten (ADM-Konfigurationsdateien, Firmware-Images)
 *.cfg
