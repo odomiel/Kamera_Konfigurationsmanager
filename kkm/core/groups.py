@@ -230,6 +230,22 @@ class GroupStore:
                 g.members = [new_key if k == old_key else k for k in g.members]
         self._rebuild_index()
 
+    def merge_camera(self, dup_key: str, into_key: str) -> None:
+        """Zwei Identitäten derselben physischen Kamera zusammenführen (z. B.
+        generischer ONVIF-Treffer per Geräte-UUID -> Hersteller-Identität per MAC):
+        Gruppenzugehörigkeiten wandern zum Ziel (ohne Dubletten), der
+        Duplikat-Eintrag verschwindet aus dem Roster. Kein Save — der Aufrufer
+        speichert gebündelt."""
+        if dup_key == into_key or dup_key not in self.roster:
+            return
+        for g in self.groups.values():
+            if dup_key in g.members:
+                g.members = [k for k in g.members if k != dup_key]
+                if into_key not in g.members:
+                    g.members.append(into_key)
+        self.roster.pop(dup_key, None)
+        self._rebuild_index()
+
     def assign(self, gid: str, camera_keys: list[str]) -> None:
         g = self.groups.get(gid)
         if not g or gid in VIRTUAL_GROUP_IDS:

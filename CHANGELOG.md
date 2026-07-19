@@ -4,6 +4,20 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.19b1 — 2026-07-19
+
+- **ONVIF- und Hersteller-Plugin melden dieselbe Kamera nicht mehr als zwei
+  Geräte.** Die Entdopplung hatte zwei Lücken: Sie verglich nur die *erste* IP
+  (Kameras mit mehreren Adressen fielen durch) und sie griff nur innerhalb eines
+  Suchlaufs — fand mDNS die Kamera einmal nicht (oder war das Hersteller-Plugin
+  zeitweise deaktiviert), blieb der generische ONVIF-Treffer unter seiner
+  Geräte-UUID dauerhaft neben der MAC-Identität im Bestand. Jetzt wird über
+  **alle** gemeldeten IPs verglichen, und nach jeder Suche werden bestehende
+  Duplikate im Bestand zusammengeführt: Gruppenzugehörigkeiten, Online-Status und
+  gespeicherte Zugangsdaten (Tresor/Sitzung) wandern zur Hersteller-Identität,
+  der generische Eintrag verschwindet. Die Statuszeile meldet die Anzahl der
+  Zusammenführungen.
+
 ## 26.07.19 — 2026-07-19
 
 Stabilitäts-/Robustheits-Durchsicht des gesamten Codes; zehn Punkte behoben:

@@ -78,6 +78,21 @@ ACTION_ITEMS = [
 _NUM_CHUNK = re.compile(r"(\d+)")
 
 
+def _cam_ips(cam: dict) -> set[str]:
+    """ALLE bekannten IPs einer Kamera (konfiguriert + Zeroconf, kommagetrennt).
+
+    Für die Entdopplung Hersteller- vs. ONVIF-Treffer: get_first_ip() allein
+    reicht nicht — meldet die Kamera mehrere Adressen und der ONVIF-Treffer eine
+    andere davon, würde dieselbe Kamera zweimal in der Liste landen."""
+    ips = set()
+    for field in ("IP Adresse: Konfiguriert", "IP Adresse: Zeroconfig"):
+        for part in str(cam.get(field, "")).split(","):
+            part = part.strip()
+            if part:
+                ips.add(part)
+    return ips
+
+
 def _sort_key(value):
     """Natürliche Sortierung: Zahlengruppen numerisch, Rest kleingeschrieben.
 
@@ -554,6 +569,65 @@ class MainWindow(tk.Tk):
             self.store.save()
             self._refresh_table()
 
+    def _merge_generic_duplicates(self) -> tuple[int, list[dict]]:
+        """Dieselbe physische Kamera kann unter zwei Identitäten im Bestand stehen:
+        Hersteller-Plugin (MAC/Seriennummer) und generisches ONVIF-Plugin
+        (Geräte-UUID). Die Entdopplung der Suche greift nur innerhalb EINES Laufs —
+        findet z. B. mDNS die Kamera in einem Lauf nicht (oder war das
+        Hersteller-Plugin zeitweise deaktiviert), landet der generische Treffer
+        dauerhaft im Roster. Hier werden solche Duplikate anhand der IP
+        zusammengeführt: Gruppen, Online-Status und (falls vorhanden) Zugangsdaten
+        wandern zur Hersteller-Identität, der generische Eintrag verschwindet.
+
+        Liefert (Anzahl Zusammenführungen, Ziel-Kameras) — der Aufrufer speichert
+        und kann die Ziele nachträglich anreichern (Firmware/Modell lesen)."""
+        vendor_by_ip: dict[str, str] = {}
+        generic_keys: list[str] = []
+        for key, cam in self.store.roster.items():
+            plugin = self.registry.get(cam.get("_vendor", "axis"))
+            if plugin is None:
+                continue
+            if plugin.generic:
+                generic_keys.append(key)
+            else:
+                for ip in _cam_ips(cam):
+                    vendor_by_ip.setdefault(ip, key)
+        merged = 0
+        targets: list[dict] = []
+        for key in generic_keys:
+            cam = self.store.roster.get(key)
+            if cam is None:
+                continue
+            target_key = next((vendor_by_ip[ip] for ip in _cam_ips(cam)
+                               if ip in vendor_by_ip), None)
+            if not target_key or target_key == key:
+                continue
+            target = self.store.roster.get(target_key)
+            if target is None:
+                continue
+            # Der generische Treffer war ggf. das einzige Lebenszeichen dieser
+            # Kamera in diesem Lauf (mDNS-Aussetzer) -> Status übernehmen.
+            if cam.get("_online"):
+                target["_online"] = True
+            self.store.merge_camera(key, target_key)
+            self._transfer_creds(key, target_key)
+            targets.append(target)
+            merged += 1
+        return merged, targets
+
+    def _transfer_creds(self, old_key: str, new_key: str) -> None:
+        """Zugangsdaten einer zusammengeführten Duplikat-Identität übertragen —
+        ohne einen bereits vorhandenen Eintrag des Ziels zu überschreiben."""
+        if old_key in self._cam_creds:
+            self._cam_creds.setdefault(new_key, self._cam_creds.pop(old_key))
+        if self.vault and not self.vault.is_locked:
+            stored = self.vault.get_password(old_key)
+            if stored:
+                if not self.vault.get_password(new_key):
+                    self.vault.set_password(new_key, stored.get("username", ""),
+                                            stored.get("password", ""))
+                self.vault.delete(old_key)
+
     def _move_key(self, old_key: str, new_key: str) -> None:
         """Sitzungs-Cache und Tresor-Eintrag auf den neuen Kameraschlüssel umziehen."""
         cache = self._cam_creds
@@ -720,9 +794,12 @@ class MainWindow(tk.Tk):
         # Ein generisches Plugin (ONVIF) findet auch Kameras, für die es ein
         # Hersteller-Plugin gibt — dieselbe Kamera stünde sonst zweimal in der
         # Liste (andere Kennung: MAC vs. ONVIF-UUID). Das spezialisierte Plugin
-        # kann mehr, also gewinnt es; der generische Treffer entfällt.
-        known_ips = {get_first_ip(cam) for cam in found}
-        found.extend(cam for cam in generic if get_first_ip(cam) not in known_ips)
+        # kann mehr, also gewinnt es; der generische Treffer entfällt. Verglichen
+        # werden ALLE gemeldeten IPs beider Seiten (nicht nur die erste).
+        known_ips: set[str] = set()
+        for cam in found:
+            known_ips |= _cam_ips(cam)
+        found.extend(cam for cam in generic if not (_cam_ips(cam) & known_ips))
         self._q.put(("search_done", found))
         if errors:
             self._q.put(("error", "Suche teilweise fehlgeschlagen: "
@@ -892,10 +969,26 @@ class MainWindow(tk.Tk):
                     found_keys = {camera_key(c) for c in payload}
                     for key, cam in self.store.roster.items():
                         cam["_online"] = key in found_keys
+                    # Persistente Duplikate (Hersteller- vs. ONVIF-Identität
+                    # derselben Kamera) zusammenführen.
+                    merged, merge_targets = self._merge_generic_duplicates()
+                    if merged:
+                        self.store.save()
                     self.progress.stop()
                     self._refresh_table()
-                    self.status.config(text=f"Suche fertig: {len(payload)} Gerät(e)")
-                    self._after_search(payload)
+                    # Zusammengeführte generische Treffer sind aus dem Roster
+                    # verschwunden — stattdessen ihre (online-)Hersteller-Identität
+                    # weiterbehandeln (anreichern bzw. nach Zugangsdaten fragen).
+                    alive = {camera_key(c): c for c in payload
+                             if camera_key(c) in self.store.roster}
+                    for cam in merge_targets:
+                        if cam.get("_online"):
+                            alive.setdefault(camera_key(cam), cam)
+                    text = f"Suche fertig: {len(alive)} Gerät(e)"
+                    if merged:
+                        text += f" — {merged} ONVIF-Duplikat(e) zusammengeführt"
+                    self.status.config(text=text)
+                    self._after_search(list(alive.values()))
                 elif kind == "online":
                     key, ok = payload
                     if key in self.store.roster:
