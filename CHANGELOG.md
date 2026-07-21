@@ -14,6 +14,11 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   einen Fehler, `Skip` (gleiche Version bereits installiert) wird als solches
   gemeldet, beim eigentlichen Flashen kappt das Gerät die Verbindung (Reboot) = 
   Erfolg. Ein echter 52-MB-Flash an der Wisenet QNO-6082R lief erfolgreich durch.
+- **Hanwha-Werksreset (`keep_ip`) an echter Hardware verifiziert** (lief ohne
+  Codeänderung): `ExcludeSettings=Network` behält die IP-Adresse, der übrige
+  Auslieferungszustand wird hergestellt (das Admin-Passwort wird dabei
+  zurückgesetzt — normales Reset-Verhalten). Damit sind **alle acht Capabilities**
+  des Hanwha-Plugins an echter Hardware getestet.
 
 ## 26.07.21b2 — 2026-07-21
 
