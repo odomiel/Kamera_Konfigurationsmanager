@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.21b3 — 2026-07-21
+
+- **Hanwha-Firmware-Upload an echter Hardware verifiziert** — Fehler behoben: Der
+  SUNAPI-Firmware-Endpunkt verlangt zwingend den Parameter **`Type=Normal`** (fehlt
+  er, antwortet die Kamera mit „Invalid Input Value"); der Multipart-Feldname ist
+  dagegen egal. Die Antwort ist ein **Status-Stream** (`DownloadAck` → `DownloadOK`
+  → … → `End`/`OK` bzw. `Fail`/`Skip`), der jetzt ausgewertet wird: `Fail` wirft
+  einen Fehler, `Skip` (gleiche Version bereits installiert) wird als solches
+  gemeldet, beim eigentlichen Flashen kappt das Gerät die Verbindung (Reboot) = 
+  Erfolg. Ein echter 52-MB-Flash an der Wisenet QNO-6082R lief erfolgreich durch.
+
 ## 26.07.21b2 — 2026-07-21
 
 - **Neues (experimentelles) Hanwha-/Wisenet-Plugin.** Viertes Hersteller-Plugin,

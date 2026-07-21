@@ -346,10 +346,15 @@ def reboot(ip, username, password, scheme="auto", port=None, timeout=30):
 def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
                      port=None, timeout=600, factory_default=False):
     """Spielt eine Firmware-Datei auf (``system.cgi?msubmenu=firmwareupdate&
-    action=control``), multipart/form-data. Das Geraet startet nach dem Upload neu.
+    action=control&Type=Normal``), multipart/form-data. Das Geraet startet nach dem
+    Upload neu.
 
-    **Experimentell/ungetestet:** der genaue Upload-Mechanismus (Multipart-Feldname)
-    ist nicht an Hardware verifiziert."""
+    **Wichtig (an echter Hardware verifiziert):** ``Type=Normal`` ist Pflicht (fehlt
+    er, antwortet die Kamera mit „Invalid Input Value"); der Multipart-Feldname ist
+    egal. Die Antwort ist ein Status-Stream (``Status=DownloadAck/DownloadOK/Start/
+    UpdatingISP/End/OK`` bzw. ``Fail``/``Skip``). ``Skip`` = gleiche Version bereits
+    installiert. Beim eigentlichen Flashen kappt das Geraet die Verbindung (Reboot) —
+    das ist erwartbar und wird als Erfolg gewertet."""
     import os
     with open(firmware_path, "rb") as fh:
         data = fh.read()
@@ -368,21 +373,29 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
     for sc in schemes:
         p = port if port else DEFAULT_PORTS[sc]
         host_port = f"{ip}:{p}"
-        url = f"{sc}://{host_port}{CGI}/system.cgi?msubmenu=firmwareupdate&action=control"
+        url = (f"{sc}://{host_port}{CGI}/system.cgi"
+               "?msubmenu=firmwareupdate&action=control&Type=Normal")
         req = urllib.request.Request(
             url, data=body, method="POST",
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
         try:
             with _opener(host_port, username, password).open(req, timeout=timeout) as resp:
-                resp.read()
-            return "Firmware aufgespielt — Geraet startet neu"
+                text = resp.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
                 raise SunapiError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
             raise SunapiError(f"SUNAPI-Fehler {exc.code}: {exc.reason}")
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            last_conn = exc
+            last_conn = exc            # Reboot kappt die Verbindung -> erwartet
             continue
+        # Status-Stream auswerten
+        statuses = re.findall(r"Status=(\w+)", text)
+        if any(s.lower() in ("fail", "downloadfail") for s in statuses):
+            raise SunapiError(f"Firmware-Update fehlgeschlagen (Status: "
+                              f"{', '.join(statuses) or 'unbekannt'}).")
+        if any(s.lower() == "skip" for s in statuses):
+            return "Firmware übersprungen — diese Version ist bereits installiert."
+        return "Firmware aufgespielt — Gerät startet neu"
     if last_conn is not None:
-        return "Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu"
+        return "Firmware hochgeladen — Verbindung getrennt, Gerät flasht/startet neu"
     raise SunapiConnectError("Kamera nicht erreichbar.")
