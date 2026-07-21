@@ -24,8 +24,11 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
     für alle Schreib-Aktionen.
 
   Verifiziert: SADP-Discovery, Online-/Geräteinfo, Auslieferungszustand, Benutzer
-  anlegen/ändern, IP fest/DHCP, ONVIF-Benutzer. **Weiterhin experimentell**, da
-  Firmware-Upload und Werksreset (destruktiv) noch nicht an Hardware getestet sind.
+  anlegen/ändern, IP fest/DHCP, ONVIF-Benutzer sowie Werksreset mit Erhalt der
+  Netzwerkeinstellungen (`mode=basic` — IP und Admin-Zugang bleiben erhalten, lief
+  ohne Codeänderung). **Weiterhin experimentell**, da der Firmware-Upload und der
+  vollständige Werksreset (`mode=full`, setzt das Passwort zurück) noch nicht an
+  echter Hardware getestet sind.
 
 ## 26.07.19b4 — 2026-07-19
 
