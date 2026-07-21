@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.21b4 — 2026-07-21
+
+- **Hanwha: Auslieferungszustand erkennen.** Eine werksneue oder zurückgesetzte
+  Wisenet-Kamera blockiert die gesamte SUNAPI mit HTTP **403** (eine initialisierte
+  verlangt dagegen eine Anmeldung, 401). `is_unconfigured` nutzt diesen Unterschied,
+  sodass solche Kameras im Hauptfenster als **„Ersteinrichtung erforderlich"** geführt
+  werden, statt vergeblich nach einem Passwort zu fragen (wie bei Axis/Hikvision). Das
+  **Setzen** des Erstpassworts bleibt der Wisenet-Web-UI vorbehalten (RSA-verschlüsselt);
+  über die reguläre API ist es im uninitialisierten Zustand bewusst nicht möglich. An
+  echter Hardware verifiziert.
+
 ## 26.07.21b3 — 2026-07-21
 
 - **Hanwha-Firmware-Upload an echter Hardware verifiziert** — Fehler behoben: Der

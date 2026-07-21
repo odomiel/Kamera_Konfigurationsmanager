@@ -105,6 +105,17 @@ class HanwhaPlugin(VendorPlugin):
             camera.setdefault("_mac", mac)
         return info
 
+    def is_unconfigured(self, camera: dict, creds: Credentials | None = None) -> bool:
+        ip = self.ip_of(camera)
+        if not ip:
+            return False
+        creds = creds or Credentials()
+        try:
+            return sunapi.is_unconfigured(ip, scheme=creds.scheme, port=creds.port,
+                                          timeout=min(creds.timeout, 5))
+        except Exception:  # noqa: BLE001
+            return False
+
     # --- actions ------------------------------------------------------------
     def set_static_ip(self, camera, creds: Credentials, new_ip, mask, gateway):
         ip = self.ip_of(camera)

@@ -188,6 +188,32 @@ def get_mac(ip, username, password, scheme="auto", port=None, timeout=10) -> str
         return ""
 
 
+def is_unconfigured(ip, scheme="auto", port=None, timeout=5) -> bool:
+    """True, wenn die Wisenet noch **nicht initialisiert** ist (werksneu / nach
+    Werksreset).
+
+    Solche Kameras blockieren die **gesamte** SUNAPI mit HTTP **403** (ohne
+    ``WWW-Authenticate``) — eine bereits initialisierte Kamera verlangt dagegen eine
+    Anmeldung (401). Der Unterschied 403↔401 ist das Erkennungsmerkmal (an echter
+    Hardware verifiziert). Das Erst-Passwort lässt sich anschliessend **nur über die
+    Web-UI** setzen (RSA-verschluesselt), nicht ueber die regulaere API — daher wird
+    die Kamera im Hauptfenster als „Ersteinrichtung erforderlich" gefuehrt statt nach
+    einem Passwort gefragt."""
+    schemes = ["https", "http"] if scheme == "auto" else [scheme]
+    for sc in schemes:
+        p = port if port else DEFAULT_PORTS[sc]
+        url = f"{sc}://{ip}:{p}{CGI}/system.cgi?msubmenu=deviceinfo&action=view"
+        try:
+            with _opener(f"{ip}:{p}", "", "", auth=False).open(url, timeout=timeout) as r:
+                r.read()
+            return False   # 200 ohne Auth -> kein Init-Blockade-Fall
+        except urllib.error.HTTPError as exc:
+            return exc.code == 403   # 403 = uninitialisiert, 401 = bereits initialisiert
+        except (urllib.error.URLError, TimeoutError, OSError):
+            continue
+    return False
+
+
 # ------------------------------------------------------------------- network
 def _interface(ip, username, password, scheme, port, timeout) -> dict:
     """Aktuelle Interface-Konfiguration (``network.cgi interface view``)."""
