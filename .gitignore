@@ -31,3 +31,8 @@ curl_firmware_test.txt
 
 # Lokale AXIS-Device-Manager-Exporte (enthalten Klartext-Zugangsdaten!)
 axisdevicemanager_export/
+
+# Firmware-Testdateien (gross, gehoeren nicht ins Repo)
+*.dav
+*.img
+*.bin
