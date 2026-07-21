@@ -4,6 +4,29 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.21 — 2026-07-21
+
+- **Hikvision-Plugin an echter Hardware verifiziert** (ein STD-CGI-OEM-Gerät,
+  ISAPI-Firmware V5.4.5) — dabei drei Fehler in den Schreib-Aktionen behoben:
+  - **IP setzen scheiterte mit „Invalid XML Content" (HTTP 400).** Ältere ISAPI-
+    Geräte akzeptieren beim `PUT` auf `…/ipAddress` nur das **vollständige**
+    Objekt, nicht einen minimalen Payload. `set_static_ip`/`set_dhcp` arbeiten jetzt
+    per **Read-Modify-Write**: das aktuelle `ipAddress`-Objekt wird gelesen und nur
+    Adresstyp/IP/Maske/Gateway geändert.
+  - **IP-Update hätte IPv6 abgeschaltet.** Der alte Payload sendete hart
+    `ipVersion=v4`; auf einem Dual-Stack-Gerät (`dual`) hätte das IPv6 deaktiviert.
+    Durch Read-Modify-Write bleiben `ipVersion`, IPv6-Adressen und DNS erhalten
+    (verifiziert: IPv6 unverändert nach dem Setzen).
+  - **„Reboot Required" wurde als Fehler gewertet.** Das Gerät quittiert eine
+    übernommene IP-Änderung mit `statusCode 1` + „Reboot Required" — das ist ein
+    Erfolg mit Hinweis, kein Fehler. Neue zentrale Status-Auswertung `_check_status`
+    (prüft `statusCode`, behandelt „Reboot Required" als Erfolg, benennt den Lockout)
+    für alle Schreib-Aktionen.
+
+  Verifiziert: SADP-Discovery, Online-/Geräteinfo, Auslieferungszustand, Benutzer
+  anlegen/ändern, IP fest/DHCP, ONVIF-Benutzer. **Weiterhin experimentell**, da
+  Firmware-Upload und Werksreset (destruktiv) noch nicht an Hardware getestet sind.
+
 ## 26.07.19b4 — 2026-07-19
 
 - **Neues (experimentelles) Dahua-Plugin.** Zweites Hersteller-Plugin nach dem

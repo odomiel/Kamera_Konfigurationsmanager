@@ -104,6 +104,32 @@ def _isapi_error(body: str) -> str:
     return status or sub or "unbekannter ISAPI-Fehler"
 
 
+def _check_status(text: str) -> str:
+    """Wertet eine ISAPI-``ResponseStatus``-Antwort auf eine Schreib-Aktion aus.
+
+    Erfolg ist ``statusCode == 1`` (bzw. ``statusString`` „OK"); eine **leere**
+    Antwort gilt ebenfalls als Erfolg (manche Endpunkte antworten ohne Body). Der
+    Sonderfall **„Reboot Required"** (Aenderung uebernommen, wird erst nach Neustart
+    wirksam) ist KEIN Fehler — er wird als Hinweistext zurueckgegeben. Alles andere
+    wirft :class:`IsapiError` mit lesbarer Ursache (inkl. Lockout, siehe
+    :func:`_isapi_error`). An echter STD-CGI-OEM-Hardware verifiziert (das PUT auf
+    ``ipAddress`` antwortet dort mit ``statusCode 1`` + „Reboot Required")."""
+    if not text.strip():
+        return ""
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return ""
+    code = _text(root, "statusCode")
+    status = _text(root, "statusString")
+    sub = _text(root, "subStatusCode").lower()
+    if "reboot" in status.lower() or "reboot" in sub:
+        return "Neustart nötig, damit die Änderung wirksam wird"
+    if code == "1" or status.lower() == "ok" or sub == "ok":
+        return ""
+    raise IsapiError(f"Geraet meldete: {_isapi_error(text)}")
+
+
 # ------------------------------------------------------------------- HTTP
 def _opener(host_port: str, username: str, password: str, auth: bool = True):
     handlers = [urllib.request.HTTPSHandler(context=_SSL_CONTEXT)]
@@ -229,50 +255,89 @@ def is_unconfigured(ip, scheme="auto", port=None, timeout=5) -> bool:
 
 
 # ------------------------------------------------------------------- network
-def _network_interface_id(ip, username, password, scheme, port, timeout) -> str:
-    """Token/ID der ersten Netzwerkschnittstelle (i. d. R. ``1``)."""
+def _network_interface_info(ip, username, password, scheme, port, timeout):
+    """``(id, ipVersion)`` der ersten Netzwerkschnittstelle (i. d. R. ``1``/``dual``).
+
+    ``ipVersion`` wird beim Setzen der IP **erhalten** — ein Dual-Stack-Geraet
+    (``dual``) darf durch ein IPv4-Update nicht ungewollt auf IPv4-only umgestellt
+    werden (das schaltete IPv6 ab). An echter Hardware (STD-CGI-OEM) verifiziert."""
     text = _request_auto(ip, username, password, f"{ISAPI}/System/Network/interfaces",
                          scheme=scheme, port=port, timeout=timeout)
     try:
-        iid = _text(ET.fromstring(text), "id")
+        root = ET.fromstring(text)
+        iid = _text(root, "id") or "1"
+        ver = _text(root, "ipVersion") or "dual"
     except ET.ParseError:
-        iid = ""
-    return iid or "1"
+        iid, ver = "1", "dual"
+    return iid, ver
 
 
-def _put_ip_config(ip, username, password, iface, addressing_type, scheme, port,
-                   timeout, new_ip="", mask="", gateway=""):
-    manual = ""
-    if addressing_type == "static":
-        manual = (f"<ipAddress>{_xml_escape(new_ip)}</ipAddress>"
-                  f"<subnetMask>{_xml_escape(mask)}</subnetMask>"
-                  "<DefaultGateway>"
-                  f"<ipAddress>{_xml_escape(gateway)}</ipAddress></DefaultGateway>")
+def _ns_of(root) -> str:
+    """Namensraum-URI eines geparsten Elements (leer, wenn keiner)."""
+    return root.tag[1:root.tag.index("}")] if root.tag.startswith("{") else ""
+
+
+def _q(ns: str, tag: str) -> str:
+    return f"{{{ns}}}{tag}" if ns else tag
+
+
+def _set_child(parent, ns: str, tag: str, value: str) -> None:
+    """Text eines direkten Kind-Elements setzen (anlegen, falls es fehlt)."""
+    node = parent.find(_q(ns, tag))
+    if node is None:
+        node = ET.SubElement(parent, _q(ns, tag))
+    node.text = value
+
+
+def _read_ip_object(ip, username, password, iface, scheme, port, timeout):
+    """Aktuelles ``ipAddress``-Objekt der Schnittstelle lesen -> ``(root, ns)``."""
+    text = _request_auto(ip, username, password,
+                         f"{ISAPI}/System/Network/interfaces/{iface}/ipAddress",
+                         scheme=scheme, port=port, timeout=timeout)
+    root = ET.fromstring(text)
+    return root, _ns_of(root)
+
+
+def _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout) -> str:
+    """Modifiziertes ``ipAddress``-Objekt zurueckschreiben (PUT). Liefert einen
+    optionalen Hinweis (z. B. „Neustart nötig")."""
+    if ns:
+        ET.register_namespace("", ns)   # Default-NS ohne Praefix serialisieren
     body = ('<?xml version="1.0" encoding="UTF-8"?>'
-            '<IPAddress version="2.0" xmlns="http://www.hikvision.com/ver20/XMLSchema">'
-            "<ipVersion>v4</ipVersion>"
-            f"<addressingType>{addressing_type}</addressingType>"
-            f"{manual}</IPAddress>")
+            + ET.tostring(root, encoding="unicode"))
     path = f"{ISAPI}/System/Network/interfaces/{iface}/ipAddress"
     text = _request_auto(ip, username, password, path, method="PUT", body=body,
                          scheme=scheme, port=port, timeout=timeout)
-    status = _text(ET.fromstring(text), "statusString") if text.strip() else "OK"
-    if status and status.lower() not in ("ok", ""):
-        raise IsapiError(f"Geraet meldete: {status}")
+    return _check_status(text)
 
 
 def set_static_ip(ip, username, password, new_ip, subnet_mask, gateway,
                   scheme="auto", port=None, timeout=10):
-    iface = _network_interface_id(ip, username, password, scheme, port, timeout)
-    _put_ip_config(ip, username, password, iface, "static", scheme, port, timeout,
-                   new_ip=new_ip, mask=subnet_mask, gateway=gateway)
-    return f"feste IP {new_ip} gesetzt"
+    """Feste IP setzen. **Read-Modify-Write**: das vollstaendige ``ipAddress``-Objekt
+    wird gelesen und nur Adresstyp/IP/Maske/Gateway geaendert — so bleiben IPv6, DNS
+    und ``ipVersion`` erhalten und das (aeltere) Geraet akzeptiert das Schema (ein
+    minimaler PUT wird mit „Invalid XML Content"/400 abgelehnt; an echter STD-CGI-OEM-
+    Hardware verifiziert)."""
+    iface, _ = _network_interface_info(ip, username, password, scheme, port, timeout)
+    root, ns = _read_ip_object(ip, username, password, iface, scheme, port, timeout)
+    _set_child(root, ns, "addressingType", "static")
+    _set_child(root, ns, "ipAddress", new_ip)
+    _set_child(root, ns, "subnetMask", subnet_mask)
+    gw = root.find(_q(ns, "DefaultGateway"))
+    if gw is None:
+        gw = ET.SubElement(root, _q(ns, "DefaultGateway"))
+    _set_child(gw, ns, "ipAddress", gateway)
+    hint = _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout)
+    return f"feste IP {new_ip} gesetzt" + (f" — {hint}" if hint else "")
 
 
 def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
-    iface = _network_interface_id(ip, username, password, scheme, port, timeout)
-    _put_ip_config(ip, username, password, iface, "dynamic", scheme, port, timeout)
-    return "auf DHCP umgestellt"
+    """Auf DHCP umstellen (nur ``addressingType`` im vollen Objekt aendern)."""
+    iface, _ = _network_interface_info(ip, username, password, scheme, port, timeout)
+    root, ns = _read_ip_object(ip, username, password, iface, scheme, port, timeout)
+    _set_child(root, ns, "addressingType", "dynamic")
+    hint = _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout)
+    return "auf DHCP umgestellt" + (f" — {hint}" if hint else "")
 
 
 # --------------------------------------------------------------------- users
@@ -310,9 +375,7 @@ def add_user(ip, username, password, new_user, new_password, role="viewer",
     text = _request_auto(ip, username, password, f"{ISAPI}/Security/users",
                          method="POST", body=body, scheme=scheme, port=port,
                          timeout=timeout)
-    status = _text(ET.fromstring(text), "statusString") if text.strip() else "OK"
-    if status and status.lower() not in ("ok", ""):
-        raise IsapiError(f"Geraet meldete: {status}")
+    _check_status(text)
     return f"Benutzer '{new_user}' angelegt ({role})"
 
 
@@ -332,9 +395,7 @@ def set_user_password(ip, username, password, target_user, new_password,
     path = f"{ISAPI}/Security/users/{urllib.parse.quote(match['id'])}"
     text = _request_auto(ip, username, password, path, method="PUT", body=body,
                          scheme=scheme, port=port, timeout=timeout)
-    status = _text(ET.fromstring(text), "statusString") if text.strip() else "OK"
-    if status and status.lower() not in ("ok", ""):
-        raise IsapiError(f"Geraet meldete: {status}")
+    _check_status(text)
     return f"Passwort von '{target_user}' geaendert"
 
 
@@ -353,9 +414,7 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
                              timeout=timeout)
     except IsapiConnectError:
         return "Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu"
-    status = _text(ET.fromstring(text), "statusString") if text.strip() else "OK"
-    if status and status.lower() not in ("ok", ""):
-        raise IsapiError(f"Geraet meldete: {status}")
+    _check_status(text)
     return "Firmware aufgespielt — Geraet startet neu"
 
 
