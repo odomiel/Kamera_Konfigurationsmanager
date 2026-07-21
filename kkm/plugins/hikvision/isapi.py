@@ -101,6 +101,18 @@ def _isapi_error(body: str) -> str:
         extra = f" (noch {mins} s gesperrt)" if mins else ""
         return ("Konto wegen zu vieler Fehlversuche gesperrt" + extra +
                 " — bitte warten, nicht erneut versuchen.")
+    # Der subStatusCode ist oft aussagekraeftiger als der statusString (dieses
+    # STD-CGI-OEM meldet z. B. beim Firmware-Upload einer modellfremden Datei den
+    # generischen statusString „Invalid XML Content", der wahre Grund steht im
+    # subStatusCode „badDevType"). Bekannte Codes klar uebersetzen.
+    known = {
+        "baddevtype": "Firmware passt nicht zu diesem Gerätemodell (falscher Gerätetyp).",
+        "badlanguage": "Firmware hat die falsche Sprachvariante für dieses Gerät.",
+        "badversion": "Firmware-Version wird von diesem Gerät nicht akzeptiert.",
+        "notsupport": "Vom Gerät nicht unterstützt.",
+    }
+    if sub in known:
+        return known[sub]
     return status or sub or "unbekannter ISAPI-Fehler"
 
 
@@ -142,18 +154,23 @@ def _opener(host_port: str, username: str, password: str, auth: bool = True):
 
 
 def _request(ip, username, password, path, method="GET", body=None,
-             scheme="http", port=None, timeout=10, auth=True):
+             scheme="http", port=None, timeout=10, auth=True,
+             content_type="application/xml"):
     """Fuehrt einen ISAPI-Aufruf aus und liefert den Antworttext (str).
 
-    ``body`` (str) wird als ``application/xml`` gesendet. Wirft IsapiError bei
-    HTTP-/Auth-Fehlern, IsapiConnectError bei Verbindungsfehlern."""
+    ``body`` wird als *content_type* gesendet — Vorgabe ``application/xml`` (die
+    ISAPI-Config-Endpunkte), fuer den **Firmware-Upload** dagegen
+    ``application/octet-stream``: eine ``.dav`` als ``application/xml`` zu senden
+    beantwortet das Geraet mit HTTP 400 „Invalid XML Content" (an echter Hardware
+    verifiziert). Wirft IsapiError bei HTTP-/Auth-Fehlern, IsapiConnectError bei
+    Verbindungsfehlern."""
     if port is None:
         port = DEFAULT_PORTS[scheme]
     host_port = f"{ip}:{port}"
     url = f"{scheme}://{host_port}{path}"
     data = body.encode("utf-8") if isinstance(body, str) else body
     req = urllib.request.Request(url, data=data, method=method,
-                                 headers={"Content-Type": "application/xml"})
+                                 headers={"Content-Type": content_type})
     try:
         with _opener(host_port, username, password, auth).open(req, timeout=timeout) as resp:
             return resp.read().decode("utf-8", errors="replace")
@@ -173,18 +190,19 @@ def _request(ip, username, password, path, method="GET", body=None,
 
 
 def _request_auto(ip, username, password, path, method="GET", body=None,
-                  scheme="auto", port=None, timeout=10, auth=True):
+                  scheme="auto", port=None, timeout=10, auth=True,
+                  content_type="application/xml"):
     """Wie _request; ``auto`` probiert erst HTTPS, dann HTTP — Rueckfall nur bei
     Verbindungsfehlern (nicht bei 401, siehe IsapiConnectError)."""
     if scheme != "auto":
         return _request(ip, username, password, path, method, body, scheme, port,
-                        timeout, auth)
+                        timeout, auth, content_type)
     try:
         return _request(ip, username, password, path, method, body, "https", port,
-                        timeout, auth)
+                        timeout, auth, content_type)
     except IsapiConnectError:
         return _request(ip, username, password, path, method, body, "http", port,
-                        timeout, auth)
+                        timeout, auth, content_type)
 
 
 def _xml_escape(text) -> str:
@@ -404,14 +422,17 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
                      port=None, timeout=600, factory_default=False):
     """Spielt eine Firmware-Datei auf (``PUT /ISAPI/System/updateFirmware``).
 
-    Hikvision-Firmware ist eine ``digicap.dav``. Das Geraet startet nach dem
-    Upload neu; ein danach auftretender Verbindungsfehler ist erwartbar."""
+    Hikvision-Firmware ist eine ``digicap.dav``; sie wird als
+    ``application/octet-stream`` gesendet — als ``application/xml`` (der Default der
+    anderen Endpunkte) antwortet das Geraet mit HTTP 400 „Invalid XML Content" (an
+    echter Hardware verifiziert). Das Geraet startet nach dem Upload neu; ein danach
+    auftretender Verbindungsfehler ist erwartbar und wird als Erfolg gewertet."""
     with open(firmware_path, "rb") as fh:
         data = fh.read()
     try:
         text = _request_auto(ip, username, password, f"{ISAPI}/System/updateFirmware",
                              method="PUT", body=data, scheme=scheme, port=port,
-                             timeout=timeout)
+                             timeout=timeout, content_type="application/octet-stream")
     except IsapiConnectError:
         return "Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu"
     _check_status(text)

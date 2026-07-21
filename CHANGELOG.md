@@ -4,6 +4,24 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.21b1 — 2026-07-21
+
+- **Hikvision-Firmware-Upload an echter Hardware verifiziert** — zwei Fehler behoben:
+  - **Falscher Content-Type.** Die Firmware (`.dav`) wurde wie alle anderen Aufrufe
+    als `application/xml` gesendet; das Gerät versucht sie dann als XML zu parsen und
+    lehnt mit HTTP 400 ab. Der Upload nutzt jetzt `application/octet-stream` (der
+    ISAPI-Request-Helfer nimmt dafür einen `content_type`-Parameter).
+  - **Irreführende Fehlermeldung.** Passt die Firmware nicht zum Modell, meldet das
+    getestete Gerät den generischen `statusString` „Invalid XML Content"; die wahre
+    Ursache steht im `subStatusCode` (`badDevType`). Die Fehlerauswertung übersetzt
+    bekannte Sub-Codes jetzt klar (z. B. „Firmware passt nicht zu diesem Gerätemodell").
+
+  Damit ist der Upload-Weg (Endpunkt, PUT, Content-Type, Fehlerbehandlung) bestätigt:
+  das Gerät empfängt und **validiert** die Firmware. Ein tatsächliches Flashen war
+  nicht möglich, weil die vorliegende `.dav` für ein anderes Modell ist — die Kamera
+  hat sie korrekt (und ohne Schaden) abgelehnt. Damit sind **alle acht Capabilities**
+  des Plugins an echter Hardware getestet.
+
 ## 26.07.21 — 2026-07-21
 
 - **Hikvision-Plugin an echter Hardware verifiziert** (ein STD-CGI-OEM-Gerät,
