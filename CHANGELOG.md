@@ -4,6 +4,27 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.21b2 — 2026-07-21
+
+- **Neues (experimentelles) Hanwha-/Wisenet-Plugin.** Viertes Hersteller-Plugin,
+  direkt an echter Hardware (Wisenet QNO-6082R, Firmware 1.41.18) entwickelt und
+  verifiziert: Gerätesuche (ONVIF-WS-Discovery, auf Hanwha gefiltert über den
+  ONVIF-`manufacturer`-Scope), Geräteinfo inkl. MAC, IP setzen (fest/DHCP),
+  Benutzerverwaltung, ONVIF-Benutzer (über den bestehenden ONVIF-SOAP-Client) —
+  alles über **SUNAPI** (`/stw-cgi/`, HTTP-Digest, `KEY=VALUE`, stdlib-only). Der in
+  der Recherche befürchtete Haken (SUNAPI-Doku NDA-gebunden) entfiel: die Kamera
+  **dokumentiert ihre eigene API** unter `/stw-cgi/attributes.cgi/<cgi>`. Kein
+  `FIRMWARE_CHECK`, kein `CONFIG`. Im Plugin-Manager als **„experimentell"**
+  gekennzeichnet und **ab Werk ausgeschaltet**; Firmware-Upload und Werksreset sind
+  implementiert, aber noch nicht an Hardware getestet (nur ein Modell insgesamt).
+  SUNAPI-Eigenheiten, die beim Hardware-Test auffielen und im Code berücksichtigt
+  sind: Schreib-Antworten stehen als `OK`/`NG`+Fehlercode im **200-Body** (nicht im
+  HTTP-Status); die Action heißt `update` (nicht `add/update`); Benutzer sind feste
+  Slots (`user1..userN`, ein freier Slot ist ein deaktivierter); `IPv4Type=Manual`
+  und `IPv4PrefixLength` darf nicht zusammen mit `IPv4SubnetMask` gesendet werden.
+- Das generische ONVIF-Discovery-Dict trägt jetzt zusätzlich den Hersteller aus dem
+  ONVIF-Scope (`_manufacturer`) — darüber filtert das Hanwha-Plugin seine Treffer.
+
 ## 26.07.21b1 — 2026-07-21
 
 - **Hikvision-Firmware-Upload an echter Hardware verifiziert** — zwei Fehler behoben:

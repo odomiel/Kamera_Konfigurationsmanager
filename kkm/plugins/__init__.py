@@ -32,15 +32,17 @@ from .axis import AxisPlugin
 from .onvif import OnvifPlugin
 from .hikvision import HikvisionPlugin
 from .dahua import DahuaPlugin
+from .hanwha import HanwhaPlugin
 
 #: Plugins, die ohne gespeicherte Auswahl ausgeschaltet bleiben (generisches ONVIF
 #: sowie noch nicht an Hardware verifizierte, experimentelle Hersteller-Plugins).
-DEFAULT_OFF = {OnvifPlugin.id, HikvisionPlugin.id, DahuaPlugin.id}
+DEFAULT_OFF = {OnvifPlugin.id, HikvisionPlugin.id, DahuaPlugin.id, HanwhaPlugin.id}
 
 
 def build_registry(enabled_ids: list[str] | None = None) -> PluginRegistry:
     registry = PluginRegistry()
-    available = [AxisPlugin(), HikvisionPlugin(), DahuaPlugin(), OnvifPlugin()]
+    available = [AxisPlugin(), HikvisionPlugin(), DahuaPlugin(), HanwhaPlugin(),
+                 OnvifPlugin()]
     for plugin in available:
         if enabled_ids is None:
             default_on = plugin.id not in DEFAULT_OFF
@@ -51,4 +53,4 @@ def build_registry(enabled_ids: list[str] | None = None) -> PluginRegistry:
 
 
 __all__ = ["build_registry", "AxisPlugin", "OnvifPlugin", "HikvisionPlugin",
-           "DahuaPlugin"]
+           "DahuaPlugin", "HanwhaPlugin"]

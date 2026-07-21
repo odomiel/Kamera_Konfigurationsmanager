@@ -305,8 +305,11 @@ bei Axis-Geräten kann es schlicht weniger.
 > - **Dahua** (HTTP-API): Suche per DHIP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
 >   Firmware-Upload, Werksreset. Deckt zugleich viele **Dahua-OEM-Marken** ab — u. a. die
 >   **Honeywell Performance Series** und Amcrest.
+> - **Hanwha/Wisenet** (SUNAPI): Suche über ONVIF, Geräteinfo, IP, Benutzer,
+>   ONVIF-Benutzer, Firmware, Werksreset. An einer Wisenet-Kamera verifiziert (Discovery,
+>   Info, IP, Benutzer); Firmware und Werksreset noch nicht.
 >
-> Bei beiden gibt es keine Update-Suche und keinen Konfigurations-Im-/Export (kein offenes
+> Bei allen gibt es keine Update-Suche und keinen Konfigurations-Im-/Export (kein offenes
 > Firmware-Verzeichnis, keine herstellerübergreifende Konfigurationsvorlage).
 
 **Was ONVIF nicht kann und warum:** Der Standard normiert keine Konfigurationsvorlage

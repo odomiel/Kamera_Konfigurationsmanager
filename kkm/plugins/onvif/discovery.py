@@ -119,6 +119,9 @@ def _parse_match(data: str) -> dict | None:
         "_onvif_xaddr": url,
         "_model": _scope(scopes, "hardware"),
         "_location": _scope(scopes, "location"),
+        # Hersteller aus dem ONVIF-Scope (z. B. „Hanwha Techwin") — ein
+        # Hersteller-Plugin (Hanwha) filtert die WS-Discovery-Treffer darüber.
+        "_manufacturer": _scope(scopes, "manufacturer"),
     }
 
 

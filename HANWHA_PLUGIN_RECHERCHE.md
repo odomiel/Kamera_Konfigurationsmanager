@@ -1,5 +1,14 @@
 # Recherche: Hanwha-(Wisenet-)Plugin
 
+> **UMGESETZT (2026-07-21).** Das Plugin ist gebaut (`kkm/plugins/hanwha/`) und an
+> echter Hardware (Wisenet QNO-6082R, Firmware 1.41.18) verifiziert — Discovery,
+> Geräteinfo, IP (fest/DHCP), Benutzer und ONVIF-Benutzer. Der in Abschnitt 4 genannte
+> Haupt-Haken („SUNAPI-Doku NDA-gebunden") entfiel: die Kamera **dokumentiert ihre
+> eigene API** unter `/stw-cgi/attributes.cgi/<cgi>` (jedes Submenu/Action/Parameter
+> mit Zugriffsstufe), woraus die exakten Endpunkte/Parameter gelesen wurden. Weiterhin
+> `experimental` (nur ein Modell getestet). Firmware-Upload und Werksreset noch offen.
+> Details unten sind der ursprüngliche Rechercheertrag (2026-07-17).
+
 *Stand: 2026-07-17. Machbarkeits- und Aufwandsanalyse, noch keine Umsetzung.*
 
 Ziel: Ein Hersteller-Plugin für Hanwha-/Wisenet-Kameras, das (wie das Axis-Plugin)

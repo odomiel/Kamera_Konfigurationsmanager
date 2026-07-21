@@ -26,7 +26,10 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
   Benutzer, ONVIF-Benutzer, Firmware-Upload, Werksreset — **experimentell**, noch nicht
   an echter Hardware verifiziert, ab Werk ausgeschaltet) sowie **Dahua** (HTTP-API/DHIP;
   gleicher Funktionsumfang, deckt auch Dahua-OEMs wie die Honeywell Performance Series
-  und Amcrest ab — ebenfalls **experimentell**, ab Werk ausgeschaltet).
+  und Amcrest ab — ebenfalls **experimentell**, ab Werk ausgeschaltet) sowie
+  **Hanwha/Wisenet** (SUNAPI; Suche über ONVIF, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
+  Firmware, Werksreset — **experimentell**, an einer Wisenet-Kamera verifiziert, ab Werk
+  ausgeschaltet).
 
 ## Architektur
 
@@ -51,6 +54,10 @@ kkm/
       isapi.py          ISAPI-Client (HTTP-Digest, XML, stdlib-only)
       discovery.py      SADP-Discovery (UDP-Multicast 37020)
       plugin.py         HikvisionPlugin: experimentell, ONVIF-Benutzer via onvif/soap
+    hanwha/
+      sunapi.py         SUNAPI-Client (HTTP-Digest, KEY=VALUE, stdlib-only)
+      discovery.py      ONVIF-WS-Discovery, auf Hanwha gefiltert
+      plugin.py         HanwhaPlugin: experimentell, ONVIF-Benutzer via onvif/soap
     dahua/
       httpapi.py        Dahua HTTP API (HTTP-Digest, KEY=VALUE, stdlib-only)
       discovery.py      DHIP-Discovery (UDP 37810)
