@@ -27,6 +27,7 @@ VERSION = _m.group(1) if _m else "0"
 datas = [
     ("README.md", "."),
     ("HILFE.md", "."),
+    ("HILFE_EN.md", "."),
     ("LICENSE", "."),
     ("THIRD_PARTY_LICENSES.md", "."),
 ]

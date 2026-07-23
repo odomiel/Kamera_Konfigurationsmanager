@@ -47,7 +47,7 @@ from kkm.version import APP_NAME, __version__
 from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
                       UNGROUPED_ID, VIRTUAL_GROUP_IDS, camera_key, PasswordVault,
                       AppSettings, VaultError, FIELD_NAMES, get_first_ip,
-                      export_results, t, set_language)
+                      export_results, t, set_language, get_language)
 from kkm.core.groups import config_dir
 from kkm.plugins import build_registry
 from kkm.gui import theme
@@ -1114,10 +1114,17 @@ class MainWindow(tk.Tk):
             base = Path(getattr(sys, "_MEIPASS", "."))
         else:
             base = Path(__file__).resolve().parents[2]   # <root>/ bzw. AppImage app/
-        path = base / "HILFE.md"
-        try:
-            help_text = path.read_text(encoding="utf-8")
-        except OSError:
+        # Sprachabhängige Hilfedatei; deutsche Datei als Rückfall, falls die
+        # englische fehlt (die msgid der Fehlermeldung nennt bewusst HILFE.md).
+        names = ["HILFE_EN.md", "HILFE.md"] if get_language() == "en" else ["HILFE.md"]
+        help_text = None
+        for name in names:
+            try:
+                help_text = (base / name).read_text(encoding="utf-8")
+                break
+            except OSError:
+                continue
+        if help_text is None:
             help_text = t("Hilfedatei (HILFE.md) nicht gefunden.")
 
         win = tk.Toplevel(self)

@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.23b3 — 2026-07-23
+
+- **Englische In-App-Hilfe.** Der **„Help"-Button** zeigt im Englisch-Modus jetzt die
+  englische Hilfe (`HILFE_EN.md`) statt der deutschen. `_open_help` wählt die Datei
+  anhand der aktiven Sprache und fällt auf `HILFE.md` zurück, falls die englische fehlt.
+  Die Hilfe verwendet die exakten englischen UI-Beschriftungen aus dem Katalog, passt
+  also zur sichtbaren Oberfläche. `HILFE_EN.md` wird in AppImage (`build_appimage.sh`)
+  und Windows-Build (`.spec`) mitgepackt. An bundled-AppImage-Python verifiziert:
+  DE → deutsche, EN → englische Hilfe.
+
 ## 26.07.23b2 — 2026-07-23
 
 - **i18n-Reihenfolge-Fix:** Die virtuellen Gruppennamen **„Alle Kameras"** und **„Ohne
