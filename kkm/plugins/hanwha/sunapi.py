@@ -46,6 +46,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+try:
+    from kkm.core import t                 # Uebersetzung, wenn in KKM eingebettet
+except Exception:                          # eigenstaendig lauffaehig (stdlib-only)
+    def t(s, /, **kw):
+        return s.format(**kw) if kw else s
+
 # Hanwha-Geraete nutzen selbstsignierte Zertifikate -> Pruefung aus (wie Axis/Dahua).
 _SSL_CONTEXT = ssl._create_unverified_context()
 
@@ -102,16 +108,16 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise SunapiError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
+            raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         try:
             detail = exc.read().decode("utf-8", errors="replace").strip()
         except Exception:  # noqa: BLE001
             detail = ""
-        raise SunapiError(f"SUNAPI-Fehler {exc.code}: {detail[:160] or exc.reason}")
+        raise SunapiError(t("SUNAPI-Fehler {code}: {detail}", code=exc.code, detail=detail[:160] or exc.reason))
     except urllib.error.URLError as exc:
-        raise SunapiConnectError(f"Nicht erreichbar: {exc.reason}")
+        raise SunapiConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
     except (TimeoutError, OSError) as exc:
-        raise SunapiConnectError(f"Verbindungsfehler: {exc}")
+        raise SunapiConnectError(t("Verbindungsfehler: {err}", err=exc))
 
 
 def _request_auto(ip, username, password, path, scheme="auto", port=None, timeout=10,
@@ -135,13 +141,14 @@ def _check_response(text: str) -> str:
     ``Error Code``/-Meldung = Fehler (der HTTP-Status bleibt 200!). Wirft daher
     SunapiError bei ``NG`` — sonst würden Fehler stumm verschluckt. An echter
     Hardware verifiziert (z. B. ``NG / Error Code: 601 / Action Not Found``)."""
-    t = text.strip()
-    if t.upper().startswith("NG"):
+    body = text.strip()
+    if body.upper().startswith("NG"):
         code = re.search(r"Error Code:\s*(\d+)", text)
-        lines = [ln.strip() for ln in t.splitlines() if ln.strip()]
-        msg = lines[-1] if lines else t
-        raise SunapiError(f"Geräte-Fehler {code.group(1) if code else '?'}: {msg}")
-    return t
+        lines = [ln.strip() for ln in body.splitlines() if ln.strip()]
+        msg = lines[-1] if lines else body
+        raise SunapiError(t("Geräte-Fehler {code}: {msg}",
+                            code=code.group(1) if code else '?', msg=msg))
+    return body
 
 
 # --------------------------------------------------------------- status/info
@@ -241,7 +248,7 @@ def set_static_ip(ip, username, password, new_ip, subnet_mask, gateway,
         ip, username, password,
         f"{CGI}/network.cgi?msubmenu=interface&action=set&{_query(params)}",
         scheme=scheme, port=port, timeout=timeout))
-    return f"feste IP {new_ip} gesetzt"
+    return t("feste IP {ip} gesetzt", ip=new_ip)
 
 
 def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
@@ -250,7 +257,7 @@ def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
         ip, username, password,
         f"{CGI}/network.cgi?msubmenu=interface&action=set&IPv4Type=DHCP",
         scheme=scheme, port=port, timeout=timeout))
-    return "auf DHCP umgestellt"
+    return t("auf DHCP umgestellt")
 
 
 # --------------------------------------------------------------------- users
@@ -308,7 +315,7 @@ def add_user(ip, username, password, new_user, new_password, role="viewer",
         # ``Enable=False``. An echter Hardware verifiziert.
         slot = next((u for u in users if u["index"] > 0 and not u["enabled"]), None)
     if slot is None:
-        raise SunapiError("Kein freier Benutzer-Slot verfuegbar (alle belegt).")
+        raise SunapiError(t("Kein freier Benutzer-Slot verfuegbar (alle belegt)."))
     params = {
         "Index": slot["index"], "UserID": new_user, "Password": new_password,
         "IsPasswordEncrypted": "False", "Enable": "True",
@@ -318,7 +325,7 @@ def add_user(ip, username, password, new_user, new_password, role="viewer",
         ip, username, password,
         f"{CGI}/security.cgi?msubmenu=users&action=update&{_query(params)}",
         scheme=scheme, port=port, timeout=timeout))
-    return f"Benutzer '{new_user}' angelegt/aktualisiert ({role})"
+    return t("Benutzer '{user}' angelegt/aktualisiert ({role})", user=new_user, role=role)
 
 
 def set_user_password(ip, username, password, target_user, new_password,
@@ -327,14 +334,14 @@ def set_user_password(ip, username, password, target_user, new_password,
     users = get_users(ip, username, password, scheme, port, timeout)
     slot = next((u for u in users if u["userid"] == target_user), None)
     if slot is None:
-        raise SunapiError(f"Benutzer '{target_user}' nicht gefunden.")
+        raise SunapiError(t("Benutzer '{user}' nicht gefunden.", user=target_user))
     params = {"Index": slot["index"], "UserID": target_user,
               "Password": new_password, "IsPasswordEncrypted": "False"}
     _check_response(_request_auto(
         ip, username, password,
         f"{CGI}/security.cgi?msubmenu=users&action=update&{_query(params)}",
         scheme=scheme, port=port, timeout=timeout))
-    return f"Passwort von '{target_user}' geaendert"
+    return t("Passwort von '{user}' geaendert", user=target_user)
 
 
 # ------------------------------------------------------------- factory reset
@@ -353,8 +360,8 @@ def factory_reset(ip, username, password, keep_ip=True, scheme="auto", port=None
                       timeout=timeout)
     except SunapiConnectError:
         pass   # Reboot kappt die Verbindung -> erwartet
-    return "auf Werkseinstellungen zurueckgesetzt" + (
-        " (IP erhalten)" if keep_ip else " (inkl. IP)")
+    return t("auf Werkseinstellungen zurueckgesetzt") + (
+        t(" (IP erhalten)") if keep_ip else t(" (inkl. IP)"))
 
 
 def reboot(ip, username, password, scheme="auto", port=None, timeout=30):
@@ -365,7 +372,7 @@ def reboot(ip, username, password, scheme="auto", port=None, timeout=30):
                       scheme=scheme, port=port, timeout=timeout)
     except SunapiConnectError:
         pass
-    return "Neustart ausgeloest"
+    return t("Neustart ausgeloest")
 
 
 # ----------------------------------------------------------------- firmware
@@ -409,19 +416,19 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
                 text = resp.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise SunapiError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
-            raise SunapiError(f"SUNAPI-Fehler {exc.code}: {exc.reason}")
+                raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise SunapiError(t("SUNAPI-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last_conn = exc            # Reboot kappt die Verbindung -> erwartet
             continue
         # Status-Stream auswerten
         statuses = re.findall(r"Status=(\w+)", text)
         if any(s.lower() in ("fail", "downloadfail") for s in statuses):
-            raise SunapiError(f"Firmware-Update fehlgeschlagen (Status: "
-                              f"{', '.join(statuses) or 'unbekannt'}).")
+            raise SunapiError(t("Firmware-Update fehlgeschlagen (Status: {status}).",
+                              status=', '.join(statuses) or t("unbekannt")))
         if any(s.lower() == "skip" for s in statuses):
-            return "Firmware übersprungen — diese Version ist bereits installiert."
-        return "Firmware aufgespielt — Gerät startet neu"
+            return t("Firmware übersprungen — diese Version ist bereits installiert.")
+        return t("Firmware aufgespielt — Gerät startet neu")
     if last_conn is not None:
-        return "Firmware hochgeladen — Verbindung getrennt, Gerät flasht/startet neu"
-    raise SunapiConnectError("Kamera nicht erreichbar.")
+        return t("Firmware hochgeladen — Verbindung getrennt, Gerät flasht/startet neu")
+    raise SunapiConnectError(t("Kamera nicht erreichbar."))

@@ -39,7 +39,7 @@ from tkinter import ttk, messagebox, simpledialog
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import (ALL_CAMERAS_ID, VIRTUAL_GROUP_IDS, VaultError, Capability,
-                      camera_key)
+                      camera_key, t, LANGUAGES, get_language, language_label)
 from kkm.core.backup import create_backup, restore_backup, BackupError
 from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 from kkm.version import __version__, APP_NAME
@@ -67,7 +67,7 @@ class SettingsDialog(tk.Toplevel):
                  columns, fixed_columns=(), apply_columns=None,
                  theme_mode="dark", on_theme_change=None):
         super().__init__(parent)
-        self.title("Einstellungen")
+        self.title(t("Einstellungen"))
         self.transient(parent)
         self.vault = vault
         self.registry = registry
@@ -85,39 +85,54 @@ class SettingsDialog(tk.Toplevel):
 
         nb = ttk.Notebook(self)
         nb.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
-        nb.add(self._build_appearance_tab(nb), text="Darstellung")
-        nb.add(self._build_vault_tab(nb), text="Tresor")
-        nb.add(self._build_plugins_tab(nb), text="Plugins")
-        nb.add(self._build_online_tab(nb), text="Online-Prüfung")
-        nb.add(self._build_columns_tab(nb), text="Spalten")
-        nb.add(self._build_firmware_tab(nb), text="Firmwareupdates")
-        nb.add(self._build_import_tab(nb), text="Import und Sicherung")
-        nb.add(self._build_about_tab(nb), text="Über")
+        nb.add(self._build_appearance_tab(nb), text=t("Darstellung"))
+        nb.add(self._build_vault_tab(nb), text=t("Tresor"))
+        nb.add(self._build_plugins_tab(nb), text=t("Plugins"))
+        nb.add(self._build_online_tab(nb), text=t("Online-Prüfung"))
+        nb.add(self._build_columns_tab(nb), text=t("Spalten"))
+        nb.add(self._build_firmware_tab(nb), text=t("Firmwareupdates"))
+        nb.add(self._build_import_tab(nb), text=t("Import und Sicherung"))
+        nb.add(self._build_about_tab(nb), text=t("Über"))
 
-        ttk.Button(self, text="Schließen", command=self.destroy).pack(
+        ttk.Button(self, text=t("Schließen"), command=self.destroy).pack(
             anchor=tk.E, padx=8, pady=(0, 8))
 
     # -------------------------------------------------------------- appearance
     def _build_appearance_tab(self, parent):
         tab = ttk.Frame(parent, padding=10)
-        ttk.Label(tab, text="Erscheinungsbild:",
+        ttk.Label(tab, text=t("Erscheinungsbild:"),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 6))
         self._theme_var = tk.StringVar(value=self.theme_mode)
-        for val, text in (("dark", "Dunkel"), ("light", "Hell")):
+        for val, text in (("dark", t("Dunkel")), ("light", t("Hell"))):
             ttk.Radiobutton(tab, text=text, value=val, variable=self._theme_var,
                             command=self._on_theme).pack(anchor=tk.W, pady=1)
-        ttk.Label(tab, text="Modernes Sun-Valley-Design. Wirkt sofort.").pack(
+        ttk.Label(tab, text=t("Modernes Sun-Valley-Design. Wirkt sofort.")).pack(
             anchor=tk.W, pady=(6, 0))
 
+        # --- Sprache / Language ---
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
-        ttk.Label(tab, text="Fenster:",
+        ttk.Label(tab, text=t("Sprache / Language:"),
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 4))
+        row = ttk.Frame(tab)
+        row.pack(anchor=tk.W)
+        # Anzeige = native Bezeichnung ("Deutsch"/"English"), intern der Code.
+        self._lang_labels = {language_label(code): code for code, _ in LANGUAGES}
+        self._lang_var = tk.StringVar(value=language_label(get_language()))
+        ttk.Combobox(row, textvariable=self._lang_var, state="readonly", width=16,
+                     values=[language_label(code) for code, _ in LANGUAGES]).pack(side=tk.LEFT)
+        self._lang_var.trace_add("write", lambda *_: self._save_language())
+        ttk.Label(tab, text=t("Wirkt beim nächsten Programmstart.")).pack(
+            anchor=tk.W, pady=(4, 0))
+
+        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
+        ttk.Label(tab, text=t("Fenster:"),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 4))
         self._start_max_var = tk.BooleanVar(
             value=bool(self.settings.get("start_maximized", False)))
-        ttk.Checkbutton(tab, text="Beim Start maximiert öffnen",
+        ttk.Checkbutton(tab, text=t("Beim Start maximiert öffnen"),
                         variable=self._start_max_var,
                         command=self._save_start_maximized).pack(anchor=tk.W)
-        ttk.Label(tab, text="Wirkt beim nächsten Programmstart.").pack(
+        ttk.Label(tab, text=t("Wirkt beim nächsten Programmstart.")).pack(
             anchor=tk.W, pady=(2, 0))
         return tab
 
@@ -127,6 +142,15 @@ class SettingsDialog(tk.Toplevel):
 
     def _save_start_maximized(self):
         self.settings.set("start_maximized", bool(self._start_max_var.get()))
+
+    def _save_language(self):
+        code = self._lang_labels.get(self._lang_var.get(), "de")
+        if code != self.settings.get("language", "de"):
+            self.settings.set("language", code)
+            messagebox.showinfo(
+                t("Sprache / Language"),
+                t("Die Sprache wird beim nächsten Programmstart übernommen."),
+                parent=self)
 
     # ------------------------------------------------------------------- vault
     def _build_vault_tab(self, parent):
@@ -143,35 +167,35 @@ class SettingsDialog(tk.Toplevel):
         for w in self._vault_body.winfo_children():
             w.destroy()
         if self.vault is None:
-            self._vault_status.config(text="Tresor nicht verfügbar.")
+            self._vault_status.config(text=t("Tresor nicht verfügbar."))
             return
 
         if not self.vault.exists:
-            self._vault_status.config(text="Status: noch nicht angelegt")
+            self._vault_status.config(text=t("Status: noch nicht angelegt"))
             self._pw_fields(self._vault_body,
-                            [("Master-Passwort:", "m1"), ("Wiederholen:", "m2")])
-            ttk.Button(self._vault_body, text="Tresor anlegen",
+                            [(t("Master-Passwort:"), "m1"), (t("Wiederholen:"), "m2")])
+            ttk.Button(self._vault_body, text=t("Tresor anlegen"),
                        command=self._create_vault).grid(row=2, column=0, columnspan=2,
                                                         sticky=tk.W, pady=6)
         elif self.vault.is_locked:
-            self._vault_status.config(text="Status: gesperrt 🔒")
-            self._pw_fields(self._vault_body, [("Master-Passwort:", "m1")])
-            ttk.Button(self._vault_body, text="Entsperren",
+            self._vault_status.config(text=t("Status: gesperrt 🔒"))
+            self._pw_fields(self._vault_body, [(t("Master-Passwort:"), "m1")])
+            ttk.Button(self._vault_body, text=t("Entsperren"),
                        command=self._unlock_vault).grid(row=1, column=0, columnspan=2,
                                                         sticky=tk.W, pady=6)
             self._autounlock_widgets(self._vault_body, start_row=2)
         else:
-            self._vault_status.config(text="Status: entsperrt 🔓")
-            ttk.Button(self._vault_body, text="Sperren",
+            self._vault_status.config(text=t("Status: entsperrt 🔓"))
+            ttk.Button(self._vault_body, text=t("Sperren"),
                        command=self._lock_vault).grid(row=0, column=0, sticky=tk.W)
             ttk.Separator(self._vault_body, orient=tk.HORIZONTAL).grid(
                 row=1, column=0, columnspan=2, sticky="ew", pady=8)
-            ttk.Label(self._vault_body, text="Master-Passwort ändern:").grid(
+            ttk.Label(self._vault_body, text=t("Master-Passwort ändern:")).grid(
                 row=2, column=0, columnspan=2, sticky=tk.W)
             self._pw_fields(self._vault_body,
-                            [("Aktuell:", "old"), ("Neu:", "m1"), ("Wiederholen:", "m2")],
+                            [(t("Aktuell:"), "old"), (t("Neu:"), "m1"), (t("Wiederholen:"), "m2")],
                             start_row=3)
-            ttk.Button(self._vault_body, text="Ändern",
+            ttk.Button(self._vault_body, text=t("Ändern"),
                        command=self._change_master).grid(row=6, column=0, columnspan=2,
                                                          sticky=tk.W, pady=6)
             ttk.Separator(self._vault_body, orient=tk.HORIZONTAL).grid(
@@ -182,21 +206,21 @@ class SettingsDialog(tk.Toplevel):
         """Checkbox + Warnhinweis für die automatische Entsperrung beim Start."""
         from kkm.gui import theme
         self._auto_var = tk.BooleanVar(value=self.vault.autounlock_enabled)
-        ttk.Checkbutton(parent, text="Tresor beim Programmstart automatisch entsperren",
+        ttk.Checkbutton(parent, text=t("Tresor beim Programmstart automatisch entsperren"),
                         variable=self._auto_var,
                         command=self._toggle_autounlock).grid(
             row=start_row, column=0, columnspan=2, sticky=tk.W, pady=(2, 0))
         ttk.Label(parent, wraplength=380, justify=tk.LEFT,
                   foreground=theme.CURRENT.get("warn", "#c0392b"),
-                  text="Hinweis: Speichert das Master-Passwort gerätegebunden auf "
-                       "diesem Rechner. Bequem, aber weniger sicher — wer als dieser "
-                       "Benutzer Zugriff hat, kann den Tresor öffnen.").grid(
+                  text=t("Hinweis: Speichert das Master-Passwort gerätegebunden auf "
+                         "diesem Rechner. Bequem, aber weniger sicher — wer als dieser "
+                         "Benutzer Zugriff hat, kann den Tresor öffnen.")).grid(
             row=start_row + 1, column=0, columnspan=2, sticky=tk.W, pady=(2, 0))
 
     def _toggle_autounlock(self):
         if self._auto_var.get():
             pw = simpledialog.askstring(
-                "Auto-Entsperrung", "Master-Passwort zur Bestätigung:",
+                t("Auto-Entsperrung"), t("Master-Passwort zur Bestätigung:"),
                 show="*", parent=self)
             if not pw:
                 self._auto_var.set(False)
@@ -204,12 +228,12 @@ class SettingsDialog(tk.Toplevel):
             try:
                 self.vault.enable_autounlock(pw)
             except VaultError as exc:
-                messagebox.showerror("Tresor", str(exc), parent=self)
+                messagebox.showerror(t("Tresor"), str(exc), parent=self)
                 self._auto_var.set(False)
                 return
             messagebox.showinfo(
-                "Tresor", "Auto-Entsperrung aktiviert — der Tresor wird beim Start "
-                "automatisch entsperrt.", parent=self)
+                t("Tresor"), t("Auto-Entsperrung aktiviert — der Tresor wird beim Start "
+                "automatisch entsperrt."), parent=self)
             self._render_vault()       # war evtl. gesperrt -> jetzt entsperrt
         else:
             self.vault.disable_autounlock()
@@ -227,24 +251,24 @@ class SettingsDialog(tk.Toplevel):
     def _create_vault(self):
         m1, m2 = self._pw_vars["m1"].get(), self._pw_vars["m2"].get()
         if not m1:
-            messagebox.showinfo("Tresor", "Bitte ein Master-Passwort eingeben.", parent=self)
+            messagebox.showinfo(t("Tresor"), t("Bitte ein Master-Passwort eingeben."), parent=self)
             return
         if m1 != m2:
-            messagebox.showerror("Tresor", "Die Passwörter stimmen nicht überein.", parent=self)
+            messagebox.showerror(t("Tresor"), t("Die Passwörter stimmen nicht überein."), parent=self)
             return
         try:
             self.vault.create(m1)
         except VaultError as exc:
-            messagebox.showerror("Tresor", str(exc), parent=self)
+            messagebox.showerror(t("Tresor"), str(exc), parent=self)
             return
-        messagebox.showinfo("Tresor", "Tresor angelegt und entsperrt.", parent=self)
+        messagebox.showinfo(t("Tresor"), t("Tresor angelegt und entsperrt."), parent=self)
         self._render_vault()
 
     def _unlock_vault(self):
         try:
             self.vault.unlock(self._pw_vars["m1"].get())
         except VaultError as exc:
-            messagebox.showerror("Tresor", str(exc), parent=self)
+            messagebox.showerror(t("Tresor"), str(exc), parent=self)
             return
         self._render_vault()
 
@@ -256,21 +280,21 @@ class SettingsDialog(tk.Toplevel):
         old, m1, m2 = (self._pw_vars["old"].get(), self._pw_vars["m1"].get(),
                        self._pw_vars["m2"].get())
         if m1 != m2:
-            messagebox.showerror("Tresor", "Die neuen Passwörter stimmen nicht überein.",
+            messagebox.showerror(t("Tresor"), t("Die neuen Passwörter stimmen nicht überein."),
                                  parent=self)
             return
         try:
             self.vault.change_master(old, m1)
         except VaultError as exc:
-            messagebox.showerror("Tresor", str(exc), parent=self)
+            messagebox.showerror(t("Tresor"), str(exc), parent=self)
             return
-        messagebox.showinfo("Tresor", "Master-Passwort geändert.", parent=self)
+        messagebox.showinfo(t("Tresor"), t("Master-Passwort geändert."), parent=self)
         self._render_vault()
 
     # ----------------------------------------------------------------- plugins
     def _build_plugins_tab(self, parent):
         tab = ttk.Frame(parent, padding=10)
-        ttk.Label(tab, text="Hersteller-Plugins aktivieren/deaktivieren:").pack(anchor=tk.W)
+        ttk.Label(tab, text=t("Hersteller-Plugins aktivieren/deaktivieren:")).pack(anchor=tk.W)
         self._plugin_vars = {}
         has_experimental = False
         for plugin in self.registry.all():
@@ -278,7 +302,7 @@ class SettingsDialog(tk.Toplevel):
             self._plugin_vars[plugin.id] = var
             label = plugin.name
             if getattr(plugin, "experimental", False):
-                label += "  (experimentell)"
+                label += t("  (experimentell)")
                 has_experimental = True
             ttk.Checkbutton(tab, text=label, variable=var,
                             command=self._save_plugins).pack(anchor=tk.W, pady=2)
@@ -287,9 +311,9 @@ class SettingsDialog(tk.Toplevel):
             ttk.Label(
                 tab, wraplength=460, justify=tk.LEFT,
                 foreground=theme.CURRENT.get("warn", "#c0392b"),
-                text="⚠ Experimentelle Plugins sind noch nicht an echter Hardware "
-                     "geprüft — Schreib-Aktionen (IP, Benutzer, Firmware, Reset) auf "
-                     "eigene Gefahr verwenden.",
+                text=t("⚠ Experimentelle Plugins sind noch nicht an echter Hardware "
+                       "geprüft — Schreib-Aktionen (IP, Benutzer, Firmware, Reset) auf "
+                       "eigene Gefahr verwenden."),
             ).pack(anchor=tk.W, pady=(8, 0))
         return tab
 
@@ -303,23 +327,23 @@ class SettingsDialog(tk.Toplevel):
         tab = ttk.Frame(parent, padding=10)
         g = self.store.groups.get(self.current_gid)
         name = g.name if g else "?"
-        ttk.Label(tab, text=f"Online-Prüfung für Gruppe: {name}",
+        ttk.Label(tab, text=t("Online-Prüfung für Gruppe: {name}", name=name),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 6))
 
         self._online_on = tk.BooleanVar(value=bool(g and g.online_check))
-        ttk.Checkbutton(tab, text="Automatische Online-Prüfung aktiv",
+        ttk.Checkbutton(tab, text=t("Automatische Online-Prüfung aktiv"),
                         variable=self._online_on,
                         command=self._save_online).pack(anchor=tk.W)
         row = ttk.Frame(tab)
         row.pack(anchor=tk.W, pady=4)
-        ttk.Label(row, text="Intervall (Sekunden):").pack(side=tk.LEFT)
+        ttk.Label(row, text=t("Intervall (Sekunden):")).pack(side=tk.LEFT)
         self._online_interval = tk.IntVar(value=(g.online_interval if g else 60))
         sp = ttk.Spinbox(row, from_=5, to=3600, width=7,
                          textvariable=self._online_interval, command=self._save_online)
         sp.pack(side=tk.LEFT, padx=4)
         sp.bind("<FocusOut>", lambda _e: self._save_online())
-        ttk.Label(tab, text="Gilt je Gruppe; im Hauptfenster wird die jeweils "
-                            "gewählte Gruppe automatisch geprüft.").pack(anchor=tk.W, pady=(6, 0))
+        ttk.Label(tab, text=t("Gilt je Gruppe; im Hauptfenster wird die jeweils "
+                              "gewählte Gruppe automatisch geprüft.")).pack(anchor=tk.W, pady=(6, 0))
         return tab
 
     def _save_online(self):
@@ -329,14 +353,14 @@ class SettingsDialog(tk.Toplevel):
     # ----------------------------------------------------------------- columns
     def _build_columns_tab(self, parent):
         tab = ttk.Frame(parent, padding=10)
-        ttk.Label(tab, text="Sichtbare Spalten der Geräteliste:").pack(anchor=tk.W)
+        ttk.Label(tab, text=t("Sichtbare Spalten der Geräteliste:")).pack(anchor=tk.W)
         hidden = set(self.settings.get("hidden_columns", []))
         self._col_vars = {}
         for col in self.columns:
             var = tk.BooleanVar(value=col not in hidden)
             self._col_vars[col] = var
             state = tk.DISABLED if col in self.fixed_columns else tk.NORMAL
-            ttk.Checkbutton(tab, text=col, variable=var, state=state,
+            ttk.Checkbutton(tab, text=t(col), variable=var, state=state,
                             command=self._save_columns).pack(anchor=tk.W, pady=1)
         return tab
 
@@ -350,18 +374,18 @@ class SettingsDialog(tk.Toplevel):
     # -------------------------------------------------------------- firmwareupdates
     def _build_firmware_tab(self, parent):
         tab = ttk.Frame(parent, padding=10)
-        ttk.Label(tab, text="Firmware-Updates",
+        ttk.Label(tab, text=t("Firmware-Updates"),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 6))
 
         self._fw_parallel = tk.BooleanVar(
             value=bool(self.settings.get("firmware_parallel", True)))
         ttk.Checkbutton(
-            tab, text="Firmware-Updates parallel ausführen (statt nacheinander)",
+            tab, text=t("Firmware-Updates parallel ausführen (statt nacheinander)"),
             variable=self._fw_parallel, command=self._save_firmware).pack(anchor=tk.W)
 
         row = ttk.Frame(tab)
         row.pack(anchor=tk.W, pady=(6, 0))
-        ttk.Label(row, text="Maximal gleichzeitig:").pack(side=tk.LEFT)
+        ttk.Label(row, text=t("Maximal gleichzeitig:")).pack(side=tk.LEFT)
         self._fw_max = tk.IntVar(
             value=int(self.settings.get("firmware_max_parallel", 4) or 4))
         self._fw_max_spin = ttk.Spinbox(
@@ -372,32 +396,32 @@ class SettingsDialog(tk.Toplevel):
 
         ttk.Label(
             tab, justify=tk.LEFT, wraplength=460,
-            text="Ist die Option aktiv, werden mehrere ausgewählte Kameras "
-                 "gleichzeitig aktualisiert (bis zur angegebenen Anzahl), statt eine "
-                 "nach der anderen. Das verkürzt Sammel-Updates deutlich, da bei "
-                 "jeder Kamera auf den Neustart gewartet wird.").pack(
+            text=t("Ist die Option aktiv, werden mehrere ausgewählte Kameras "
+                   "gleichzeitig aktualisiert (bis zur angegebenen Anzahl), statt eine "
+                   "nach der anderen. Das verkürzt Sammel-Updates deutlich, da bei "
+                   "jeder Kamera auf den Neustart gewartet wird.")).pack(
             anchor=tk.W, pady=(8, 0))
 
         # --- Online-Update-Suche ---
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=10)
-        ttk.Label(tab, text="Update-Suche",
+        ttk.Label(tab, text=t("Update-Suche"),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 6))
 
         self._fw_online = tk.BooleanVar(
             value=bool(self.settings.get("firmware_check_online", True)))
         ttk.Checkbutton(
-            tab, text="Im Firmware-Dialog online nach Updates suchen",
+            tab, text=t("Im Firmware-Dialog online nach Updates suchen"),
             variable=self._fw_online, command=self._save_firmware).pack(anchor=tk.W)
 
         self._fw_track = tk.BooleanVar(
             value=bool(self.settings.get("firmware_prefer_track", True)))
         ttk.Checkbutton(
-            tab, text="Vorschlag in der Hauptversion der Kamera belassen (LTS-treu)",
+            tab, text=t("Vorschlag in der Hauptversion der Kamera belassen (LTS-treu)"),
             variable=self._fw_track, command=self._save_firmware).pack(anchor=tk.W)
 
         row2 = ttk.Frame(tab)
         row2.pack(fill=tk.X, pady=(6, 0))
-        ttk.Label(row2, text="Firmware-Verzeichnis:").pack(side=tk.LEFT)
+        ttk.Label(row2, text=t("Firmware-Verzeichnis:")).pack(side=tk.LEFT)
         self._fw_url = tk.StringVar(value=self.settings.get("firmware_repo_url", "") or "")
         entry = ttk.Entry(row2, textvariable=self._fw_url, width=42)
         entry.pack(side=tk.LEFT, padx=6)
@@ -405,7 +429,7 @@ class SettingsDialog(tk.Toplevel):
 
         row3 = ttk.Frame(tab)
         row3.pack(fill=tk.X, pady=(6, 0))
-        self._fw_cache_btn = ttk.Button(row3, text="Firmware-Cache leeren",
+        self._fw_cache_btn = ttk.Button(row3, text=t("Firmware-Cache leeren"),
                                         command=self._clear_fw_cache)
         self._fw_cache_btn.pack(side=tk.LEFT)
         self._fw_cache_lbl = ttk.Label(row3, text="")
@@ -414,12 +438,12 @@ class SettingsDialog(tk.Toplevel):
 
         ttk.Label(
             tab, justify=tk.LEFT, wraplength=460,
-            text="Die Suche liest das öffentliche Firmware-Verzeichnis des Herstellers "
-                 "(Axis: ftp.axis.com) und vergleicht die dort liegenden Versionen mit "
-                 "der Firmware der Kameras. Heruntergeladene Dateien landen in einem "
-                 "Cache und werden dem Modell wie eine selbst gewählte Datei zugewiesen. "
-                 "Leeres Verzeichnisfeld = Vorgabe des Plugins; hier lässt sich ein "
-                 "interner Spiegel eintragen.").pack(anchor=tk.W, pady=(8, 0))
+            text=t("Die Suche liest das öffentliche Firmware-Verzeichnis des Herstellers "
+                   "(Axis: ftp.axis.com) und vergleicht die dort liegenden Versionen mit "
+                   "der Firmware der Kameras. Heruntergeladene Dateien landen in einem "
+                   "Cache und werden dem Modell wie eine selbst gewählte Datei zugewiesen. "
+                   "Leeres Verzeichnisfeld = Vorgabe des Plugins; hier lässt sich ein "
+                   "interner Spiegel eintragen.")).pack(anchor=tk.W, pady=(8, 0))
 
         self._update_fw_state()
         return tab
@@ -435,7 +459,8 @@ class SettingsDialog(tk.Toplevel):
         except OSError:
             size = 0
         self._fw_cache_lbl.config(
-            text="leer" if not size else f"{size / (1024 * 1024):.0f} MB belegt")
+            text=t("leer") if not size
+            else t("{mb:.0f} MB belegt", mb=size / (1024 * 1024)))
 
     def _clear_fw_cache(self):
         for plugin in self._repo_plugins():
@@ -466,9 +491,9 @@ class SettingsDialog(tk.Toplevel):
         # Sicherung darunter ist herstellerneutral und immer da.
         self._import_creds_var = tk.BooleanVar(value=True)
         if self.registry.get("axis") is not None:
-            ttk.Label(tab, text="Import aus AXIS Device Manager",
+            ttk.Label(tab, text=t("Import aus AXIS Device Manager"),
                       font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
-            ttk.Label(tab, justify=tk.LEFT, text=(
+            ttk.Label(tab, justify=tk.LEFT, text=t(
                 "Übernimmt Geräte und Gruppen aus einer AXIS-Device-Manager-Export-"
                 "datei (JSON, Format 1.x und 2.x). Vorhandene Gruppen gleichen Namens "
                 "werden ergänzt, Geräte anhand ihrer MAC/Seriennummer zusammengeführt.\n"
@@ -476,26 +501,26 @@ class SettingsDialog(tk.Toplevel):
                 "übernommen (dazu muss er entsperrt sein).")
             ).pack(anchor=tk.W, pady=(2, 8), fill=tk.X)
 
-            ttk.Checkbutton(tab, text="Zugangsdaten in den Tresor übernehmen",
+            ttk.Checkbutton(tab, text=t("Zugangsdaten in den Tresor übernehmen"),
                             variable=self._import_creds_var).pack(anchor=tk.W)
 
-            ttk.Button(tab, text="Export-Datei wählen und importieren…",
+            ttk.Button(tab, text=t("Export-Datei wählen und importieren…"),
                        command=self._run_import).pack(anchor=tk.W, pady=(8, 6))
 
         # --- Sicherung (Daten + Tresor) als eine verschlüsselte Datei ---------
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
-        ttk.Label(tab, text="Sicherung (Daten + Passwort-Tresor)",
+        ttk.Label(tab, text=t("Sicherung (Daten + Passwort-Tresor)"),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
-        ttk.Label(tab, justify=tk.LEFT, text=(
+        ttk.Label(tab, justify=tk.LEFT, text=t(
             "Sichert Gruppen, Geräte und den Passwort-Tresor in EINE verschlüsselte "
             "Datei (.kkmbackup, mit Backup-Passwort, plattformübergreifend). "
             "Wiederherstellen überschreibt die aktuellen Daten.")
         ).pack(anchor=tk.W, pady=(2, 8), fill=tk.X)
         brow = ttk.Frame(tab)
         brow.pack(anchor=tk.W, pady=(0, 6))
-        ttk.Button(brow, text="Sicherung exportieren…",
+        ttk.Button(brow, text=t("Sicherung exportieren…"),
                    command=self._run_backup_export).pack(side=tk.LEFT)
-        ttk.Button(brow, text="Sicherung wiederherstellen…",
+        ttk.Button(brow, text=t("Sicherung wiederherstellen…"),
                    command=self._run_backup_restore).pack(side=tk.LEFT, padx=6)
 
         logframe = ttk.Frame(tab)
@@ -520,8 +545,8 @@ class SettingsDialog(tk.Toplevel):
 
     def _run_import(self):
         path = filedialog.askopenfilename(
-            parent=self, title="AXIS-Device-Manager-Export wählen",
-            filetypes=[("AXIS-Export (JSON)", "*.json"), ("Alle Dateien", "*.*")])
+            parent=self, title=t("AXIS-Device-Manager-Export wählen"),
+            filetypes=[(t("AXIS-Export (JSON)"), "*.json"), (t("Alle Dateien"), "*.*")])
         if not path:
             return
         # Import-Parser erst hier laden (zieht das axis-Paket / zeroconf nach).
@@ -529,16 +554,16 @@ class SettingsDialog(tk.Toplevel):
         try:
             result = parse_export(path)
         except AdmImportError as exc:
-            messagebox.showerror("Import", str(exc), parent=self)
+            messagebox.showerror(t("Import"), str(exc), parent=self)
             return
 
-        summary = (f"Datei-Format {result.version}\n"
-                   f"  Geräte: {result.n_cameras}\n"
-                   f"  Gruppen: {result.n_groups}\n"
-                   f"  Zugangsdaten: {result.n_credentials}")
+        summary = (t("Datei-Format {version}", version=result.version) + "\n"
+                   + t("  Geräte: {n}", n=result.n_cameras) + "\n"
+                   + t("  Gruppen: {n}", n=result.n_groups) + "\n"
+                   + t("  Zugangsdaten: {n}", n=result.n_credentials))
         if not messagebox.askyesno(
-                "Import bestätigen",
-                summary + "\n\nJetzt importieren?", parent=self):
+                t("Import bestätigen"),
+                summary + "\n\n" + t("Jetzt importieren?"), parent=self):
             return
 
         # Zugangsdaten -> Tresor entsperren (wenn gewünscht und vorhanden)
@@ -546,12 +571,12 @@ class SettingsDialog(tk.Toplevel):
         store_creds = False
         if want_creds:
             if ensure_vault_unlocked(self, self.vault,
-                                     "Zum Übernehmen der Zugangsdaten"):
+                                     t("Zum Übernehmen der Zugangsdaten")):
                 store_creds = True
             elif not messagebox.askyesno(
-                    "Import",
-                    "Der Tresor ist gesperrt. Ohne Übernahme der Zugangsdaten "
-                    "fortfahren?", parent=self):
+                    t("Import"),
+                    t("Der Tresor ist gesperrt. Ohne Übernahme der Zugangsdaten "
+                      "fortfahren?"), parent=self):
                 return
 
         self._apply_import(result, store_creds)
@@ -564,11 +589,11 @@ class SettingsDialog(tk.Toplevel):
         return self.store.create_group(name).id
 
     def _apply_import(self, result, store_creds):
-        self._log_import(f"— Import gestartet (Format {result.version}) —")
+        self._log_import(t("— Import gestartet (Format {version}) —", version=result.version))
         # 1) Geräte in den Roster (merge erhält vorhandene Firmware/Modell)
         for cam in result.cameras:
             self.store.remember(cam)
-        self._log_import(f"Geräte übernommen: {result.n_cameras}")
+        self._log_import(t("Geräte übernommen: {n}", n=result.n_cameras))
 
         # 2) Gruppen anlegen/ergänzen und Mitglieder zuweisen
         groups_new = 0
@@ -579,28 +604,29 @@ class SettingsDialog(tk.Toplevel):
             if not existed:
                 groups_new += 1
             self.store.assign(gid, keys)
-        self._log_import(f"Gruppen: {result.n_groups} verarbeitet "
-                         f"({groups_new} neu, {result.n_groups - groups_new} ergänzt)")
+        self._log_import(t("Gruppen: {n} verarbeitet ({new} neu, {merged} ergänzt)",
+                           n=result.n_groups, new=groups_new,
+                           merged=result.n_groups - groups_new))
 
         # 3) Zugangsdaten in den Tresor (ein Schreibvorgang)
         if store_creds:
             try:
                 n = self.vault.set_many(result.credentials)
-                self._log_import(f"Zugangsdaten im Tresor gespeichert: {n}")
+                self._log_import(t("Zugangsdaten im Tresor gespeichert: {n}", n=n))
             except VaultError as exc:
-                self._log_import(f"Zugangsdaten NICHT gespeichert: {exc}")
+                self._log_import(t("Zugangsdaten NICHT gespeichert: {err}", err=exc))
         elif result.n_credentials:
-            self._log_import("Zugangsdaten übersprungen.")
+            self._log_import(t("Zugangsdaten übersprungen."))
 
         self.store.save()
         for w in result.warnings:
-            self._log_import("Hinweis: " + w)
-        self._log_import("— Fertig —")
+            self._log_import(t("Hinweis: ") + w)
+        self._log_import(t("— Fertig —"))
         self.data_changed = True
         messagebox.showinfo(
-            "Import",
-            f"Import abgeschlossen:\n{result.n_cameras} Geräte, "
-            f"{result.n_groups} Gruppen.", parent=self)
+            t("Import"),
+            t("Import abgeschlossen:\n{cams} Geräte, {groups} Gruppen.",
+              cams=result.n_cameras, groups=result.n_groups), parent=self)
 
     # ------------------------------------------------------------- backup (7z-Ersatz)
     def _config_dir(self) -> str:
@@ -609,62 +635,62 @@ class SettingsDialog(tk.Toplevel):
 
     def _ask_new_password(self, title: str) -> str | None:
         """Backup-Passwort zweimal abfragen (Bestätigung). None bei Abbruch."""
-        pw = simpledialog.askstring(title, "Backup-Passwort:", show="*", parent=self)
+        pw = simpledialog.askstring(title, t("Backup-Passwort:"), show="*", parent=self)
         if not pw:
             if pw == "":
-                messagebox.showinfo(title, "Kein Passwort eingegeben — abgebrochen.",
+                messagebox.showinfo(title, t("Kein Passwort eingegeben — abgebrochen."),
                                     parent=self)
             return None
-        again = simpledialog.askstring(title, "Passwort wiederholen:", show="*",
+        again = simpledialog.askstring(title, t("Passwort wiederholen:"), show="*",
                                        parent=self)
         if again != pw:
-            messagebox.showerror(title, "Die Passwörter stimmen nicht überein.",
+            messagebox.showerror(title, t("Die Passwörter stimmen nicht überein."),
                                  parent=self)
             return None
         return pw
 
     def _run_backup_export(self):
         path = filedialog.asksaveasfilename(
-            parent=self, title="Sicherung speichern",
+            parent=self, title=t("Sicherung speichern"),
             defaultextension=".kkmbackup",
-            filetypes=[("KKM-Sicherung", "*.kkmbackup"), ("Alle Dateien", "*.*")])
+            filetypes=[(t("KKM-Sicherung"), "*.kkmbackup"), (t("Alle Dateien"), "*.*")])
         if not path:
             return
-        pw = self._ask_new_password("Sicherung exportieren")
+        pw = self._ask_new_password(t("Sicherung exportieren"))
         if pw is None:
             return
         try:
             included = create_backup(path, pw, self._config_dir())
         except BackupError as exc:
-            messagebox.showerror("Sicherung", str(exc), parent=self)
+            messagebox.showerror(t("Sicherung"), str(exc), parent=self)
             return
-        self._log_import(f"Sicherung exportiert: {os.path.basename(path)} "
-                         f"({', '.join(included)})")
+        self._log_import(t("Sicherung exportiert: {file} ({parts})",
+                           file=os.path.basename(path), parts=", ".join(included)))
         messagebox.showinfo(
-            "Sicherung",
-            "Sicherung erstellt:\n" + path + "\n\nEnthalten: "
-            + ", ".join(included) + "\n\nBewahre die Datei und das Backup-Passwort "
-            "sicher auf.", parent=self)
+            t("Sicherung"),
+            t("Sicherung erstellt:\n{path}\n\nEnthalten: {parts}\n\n"
+              "Bewahre die Datei und das Backup-Passwort sicher auf.",
+              path=path, parts=", ".join(included)), parent=self)
 
     def _run_backup_restore(self):
         if not messagebox.askyesno(
-                "Sicherung wiederherstellen",
-                "Die aktuellen Gruppen, Geräte und der Passwort-Tresor werden durch "
-                "den Inhalt der Sicherung ERSETZT.\n\nFortfahren?", parent=self):
+                t("Sicherung wiederherstellen"),
+                t("Die aktuellen Gruppen, Geräte und der Passwort-Tresor werden durch "
+                  "den Inhalt der Sicherung ERSETZT.\n\nFortfahren?"), parent=self):
             return
         path = filedialog.askopenfilename(
-            parent=self, title="Sicherung wählen",
-            filetypes=[("KKM-Sicherung", "*.kkmbackup"), ("Alle Dateien", "*.*")])
+            parent=self, title=t("Sicherung wählen"),
+            filetypes=[(t("KKM-Sicherung"), "*.kkmbackup"), (t("Alle Dateien"), "*.*")])
         if not path:
             return
-        pw = simpledialog.askstring("Sicherung wiederherstellen",
-                                    "Backup-Passwort:", show="*", parent=self)
+        pw = simpledialog.askstring(t("Sicherung wiederherstellen"),
+                                    t("Backup-Passwort:"), show="*", parent=self)
         if not pw:
             return
         try:
             restored = restore_backup(path, pw, self._config_dir())
         except BackupError as exc:
-            messagebox.showerror("Sicherung", str(exc), parent=self)
+            messagebox.showerror(t("Sicherung"), str(exc), parent=self)
             return
 
         # In-Memory-Objekte an die neuen Dateien angleichen (sonst würde ein späterer
@@ -686,15 +712,17 @@ class SettingsDialog(tk.Toplevel):
             self.theme_mode = new_theme
         self.data_changed = True
 
-        self._log_import(f"Sicherung wiederhergestellt: {', '.join(restored)}")
+        self._log_import(t("Sicherung wiederhergestellt: {parts}",
+                           parts=", ".join(restored)))
         note = ""
         if "vault.enc" in restored:
-            note = ("\n\nDer Tresor ist jetzt gesperrt — mit dem Master-Passwort "
-                    "aus der Sicherung entsperren.")
+            note = "\n\n" + t("Der Tresor ist jetzt gesperrt — mit dem Master-Passwort "
+                              "aus der Sicherung entsperren.")
         messagebox.showinfo(
-            "Sicherung",
-            "Wiederherstellung abgeschlossen (" + ", ".join(restored) + ")." + note
-            + "\n\nHinweis: Bei geänderter Plugin-Auswahl das Programm neu starten.",
+            t("Sicherung"),
+            t("Wiederherstellung abgeschlossen ({parts}).", parts=", ".join(restored))
+            + note + "\n\n"
+            + t("Hinweis: Bei geänderter Plugin-Auswahl das Programm neu starten."),
             parent=self)
 
     # -------------------------------------------------------------------- über
@@ -703,17 +731,17 @@ class SettingsDialog(tk.Toplevel):
 
         ttk.Label(tab, text=APP_NAME.replace("_", " "),
                   font=("TkDefaultFont", 12, "bold")).pack(anchor=tk.W)
-        ttk.Label(tab, text=f"Version {__version__}").pack(anchor=tk.W, pady=(0, 2))
-        ttk.Label(tab, text="Erstellt von Mirik · GPL-3.0-or-later").pack(anchor=tk.W)
+        ttk.Label(tab, text=t("Version {v}", v=__version__)).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(tab, text=t("Erstellt von Mirik · GPL-3.0-or-later")).pack(anchor=tk.W)
 
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
-        ttk.Label(tab, text="Verwendete Komponenten",
+        ttk.Label(tab, text=t("Verwendete Komponenten"),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 4))
 
         try:
             tcltk = self.tk.call("info", "patchlevel")
         except tk.TclError:
-            tcltk = "unbekannt"
+            tcltk = t("unbekannt")
         components = [
             ("Python", platform.python_version()),
             ("Tcl/Tk", str(tcltk)),
@@ -731,12 +759,12 @@ class SettingsDialog(tk.Toplevel):
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
         from kkm.gui import theme
         from kkm.gui.dialogs.disclaimer import DISCLAIMER_TEXT
-        ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=DISCLAIMER_TEXT,
+        ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=t(DISCLAIMER_TEXT),
                   foreground=theme.CURRENT.get("warn", "#c0392b"),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
 
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
-        ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=(
+        ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=t(
             "Dieses Programm wurde mit Unterstützung von künstlicher Intelligenz "
             "(Claude von Anthropic) entwickelt.")).pack(anchor=tk.W)
         return tab

@@ -47,7 +47,7 @@ from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Capability, camera_key, get_first_ip, version_tuple
+from kkm.core import Capability, camera_key, get_first_ip, version_tuple, t
 from kkm.gui.widgets import add_scrollbars
 from .base import ActionDialog
 
@@ -104,8 +104,8 @@ class FirmwareDialog(ActionDialog):
 
         ttk.Label(
             parent,
-            text="Pro Modell eine Firmware-Datei zuweisen — von Hand oder über die "
-                 "Update-Suche. Modellzeilen lassen sich aufklappen.",
+            text=t("Pro Modell eine Firmware-Datei zuweisen — von Hand oder über die "
+                   "Update-Suche. Modellzeilen lassen sich aufklappen."),
             wraplength=620, justify=tk.LEFT,
         ).pack(anchor=tk.W, pady=(0, 4))
 
@@ -120,11 +120,11 @@ class FirmwareDialog(ActionDialog):
         cols = ("count", "current", "online", "file")
         self.tree = ttk.Treeview(tree_box, columns=cols, show="tree headings",
                                  height=rows, selectmode="browse")
-        self.tree.heading("#0", text="Modell / Kamera")
-        self.tree.heading("count", text="Kameras")
-        self.tree.heading("current", text="Aktuelle Firmware")
-        self.tree.heading("online", text="Verfügbar (online)")
-        self.tree.heading("file", text="Neue Firmware-Datei")
+        self.tree.heading("#0", text=t("Modell / Kamera"))
+        self.tree.heading("count", text=t("Kameras"))
+        self.tree.heading("current", text=t("Aktuelle Firmware"))
+        self.tree.heading("online", text=t("Verfügbar (online)"))
+        self.tree.heading("file", text=t("Neue Firmware-Datei"))
         self.tree.column("#0", width=200, minwidth=140)
         self.tree.column("count", width=60, anchor=tk.CENTER, minwidth=50)
         self.tree.column("current", width=120, anchor=tk.CENTER, minwidth=90)
@@ -136,7 +136,7 @@ class FirmwareDialog(ActionDialog):
         for model, cams in sorted(self._by_model.items()):
             fws = sorted({(c.get("_firmware") or "").strip()
                           for c in cams if (c.get("_firmware") or "").strip()})
-            summary = fws[0] if len(fws) == 1 else ("verschieden" if fws else "—")
+            summary = fws[0] if len(fws) == 1 else (t("verschieden") if fws else "—")
             self.tree.insert("", "end", iid=model, text=model, open=False,
                              values=(len(cams), summary, "—", "—"))
             for cam in cams:
@@ -152,26 +152,26 @@ class FirmwareDialog(ActionDialog):
 
         row = ttk.Frame(parent)
         row.pack(fill=tk.X, pady=6)
-        ttk.Button(row, text="Firmware-Datei für Modell wählen…",
+        ttk.Button(row, text=t("Firmware-Datei für Modell wählen…"),
                    command=self._choose_for_model).pack(side=tk.LEFT)
-        ttk.Button(row, text="Zuweisung entfernen",
+        ttk.Button(row, text=t("Zuweisung entfernen"),
                    command=self._clear_for_model).pack(side=tk.LEFT, padx=6)
 
         self._build_repo_row(parent)
 
         self._factory = tk.BooleanVar(value=False)
         ttk.Checkbutton(
-            parent, text="Werkseinstellungen beim Update (factory default)",
+            parent, text=t("Werkseinstellungen beim Update (factory default)"),
             variable=self._factory).pack(anchor=tk.W)
 
         from kkm.gui import theme
         row = ttk.Frame(parent)
         row.pack(fill=tk.X, pady=(4, 0))
-        ttk.Button(row, text="Firmware aufspielen",
+        ttk.Button(row, text=t("Firmware aufspielen"),
                    command=self._do_upgrade).pack(side=tk.LEFT)
         ttk.Label(
             row,
-            text="Achtung: Die Firmware muss zum Modell passen — die Kameras starten neu.",
+            text=t("Achtung: Die Firmware muss zum Modell passen — die Kameras starten neu."),
             foreground=theme.CURRENT["warn"], wraplength=460, justify=tk.LEFT,
         ).pack(side=tk.LEFT, padx=8)
 
@@ -200,13 +200,13 @@ class FirmwareDialog(ActionDialog):
             return
         row = ttk.Frame(parent)
         row.pack(fill=tk.X, pady=(0, 4))
-        self._btn_check = ttk.Button(row, text="Nach Updates suchen",
+        self._btn_check = ttk.Button(row, text=t("Nach Updates suchen"),
                                      command=self._check_updates)
         self._btn_check.pack(side=tk.LEFT)
-        self._btn_get = ttk.Button(row, text="Update herunterladen und zuweisen",
+        self._btn_get = ttk.Button(row, text=t("Update herunterladen und zuweisen"),
                                    command=self._download_updates, state=tk.DISABLED)
         self._btn_get.pack(side=tk.LEFT, padx=6)
-        self._btn_pick = ttk.Button(row, text="Version wählen…",
+        self._btn_pick = ttk.Button(row, text=t("Version wählen…"),
                                     command=self._pick_version, state=tk.DISABLED)
         self._btn_pick.pack(side=tk.LEFT)
 
@@ -246,7 +246,7 @@ class FirmwareDialog(ActionDialog):
         prefer_track = bool(settings.get("firmware_prefer_track", True)) if settings else True
         models = sorted(self._by_model)
         self._repo_set_busy(True)
-        self._repo_status.config(text="Suche nach Updates …")
+        self._repo_status.config(text=t("Suche nach Updates …"))
         for model in models:
             self.tree.set(model, "online", "…")
 
@@ -273,10 +273,10 @@ class FirmwareDialog(ActionDialog):
             return "—"
         pick = self._pick_by_model.get(model)
         if pick:
-            return f"{pick} (gewählt)"
+            return t("{version} (gewählt)", version=pick)
         if info.recommended:
             return f"{info.recommended} ↑"
-        return f"{info.latest or '?'} (aktuell)"
+        return t("{version} (aktuell)", version=info.latest or '?')
 
     def _pending_version(self, model: str) -> str:
         """Version, die für dieses Modell geladen werden soll ('' = nichts zu tun)."""
@@ -290,13 +290,13 @@ class FirmwareDialog(ActionDialog):
         Active-Track oder bewusst eine ältere Version)."""
         model = self._selected_model()
         if not model:
-            messagebox.showinfo(self.title_text, "Bitte zuerst ein Modell auswählen.",
+            messagebox.showinfo(t(self.title_text), t("Bitte zuerst ein Modell auswählen."),
                                 parent=self)
             return
         info = self._info_by_model.get(model)
         if info is None or not info.versions:
-            messagebox.showinfo(self.title_text,
-                                "Für dieses Modell liegt kein Suchergebnis vor.",
+            messagebox.showinfo(t(self.title_text),
+                                t("Für dieses Modell liegt kein Suchergebnis vor."),
                                 parent=self)
             return
         version = _VersionPicker(self, model, info,
@@ -316,9 +316,9 @@ class FirmwareDialog(ActionDialog):
         todo = [(m, self._pending_version(m)) for m in models if self._pending_version(m)]
         if not todo:
             messagebox.showinfo(
-                self.title_text,
-                "Kein Update zum Herunterladen — entweder sind die Kameras aktuell "
-                "oder es wurde noch nicht gesucht.", parent=self)
+                t(self.title_text),
+                t("Kein Update zum Herunterladen — entweder sind die Kameras aktuell "
+                  "oder es wurde noch nicht gesucht."), parent=self)
             return
 
         self._cancel.clear()
@@ -332,7 +332,8 @@ class FirmwareDialog(ActionDialog):
                     rel = plugin.firmware_release(model, version)
                     self._repo_q.put((
                         "status", None,
-                        f"Lade {rel.filename} ({rel.version}, {_mb(rel.size)}) …"))
+                        t("Lade {file} ({version}, {size}) …",
+                          file=rel.filename, version=rel.version, size=_mb(rel.size))))
 
                     last = [0.0]
 
@@ -363,11 +364,12 @@ class FirmwareDialog(ActionDialog):
                     self._pick_by_model.pop(model, None)
                     self.tree.set(model, "online", self._online_text(model))
                     if payload.recommended:
-                        self._q.put(("line", f"↑ {model}: {payload.current or '?'} → "
-                                             f"{payload.recommended} verfügbar"))
+                        self._q.put(("line", "↑ " + t("{model}: {current} → {new} verfügbar",
+                                             model=model, current=payload.current or '?',
+                                             new=payload.recommended)))
                     else:
-                        self._q.put(("line", f"✓ {model}: aktuell "
-                                             f"({payload.latest or '?'})"))
+                        self._q.put(("line", "✓ " + t("{model}: aktuell ({version})",
+                                             model=model, version=payload.latest or '?')))
                 elif kind == "fail":
                     if model and self.tree.exists(model):
                         self.tree.set(model, "online", "?")
@@ -382,8 +384,8 @@ class FirmwareDialog(ActionDialog):
                     self._pick_by_model[model] = version
                     self.tree.set(model, "file", os.path.basename(path))
                     self.tree.set(model, "online", self._online_text(model))
-                    self._q.put(("line", f"✓ {model}: {version} heruntergeladen "
-                                         "und zugewiesen"))
+                    self._q.put(("line", "✓ " + t("{model}: {version} heruntergeladen und zugewiesen",
+                                         model=model, version=version)))
                 elif kind == "checked":
                     self._repo_set_busy(False)
                     self._repo_status.config(text="")
@@ -406,11 +408,11 @@ class FirmwareDialog(ActionDialog):
     def _choose_for_model(self):
         model = self._selected_model()
         if not model:
-            messagebox.showinfo(self.title_text, "Bitte zuerst ein Modell auswählen.", parent=self)
+            messagebox.showinfo(t(self.title_text), t("Bitte zuerst ein Modell auswählen."), parent=self)
             return
         path = filedialog.askopenfilename(
-            parent=self, title=f"Firmware für {model}",
-            filetypes=[("Firmware", "*.bin"), ("Alle Dateien", "*.*")])
+            parent=self, title=t("Firmware für {model}", model=model),
+            filetypes=[(t("Firmware"), "*.bin"), (t("Alle Dateien"), "*.*")])
         if not path:
             return
         self._fw_by_model[model] = path
@@ -425,20 +427,21 @@ class FirmwareDialog(ActionDialog):
     # ------------------------------------------------------------------ upgrade
     def _do_upgrade(self):
         if not self._fw_by_model:
-            messagebox.showinfo(self.title_text,
-                                "Bitte mindestens einem Modell eine Firmware zuweisen.", parent=self)
+            messagebox.showinfo(t(self.title_text),
+                                t("Bitte mindestens einem Modell eine Firmware zuweisen."), parent=self)
             return
         assigned = sum(len(self._by_model[m]) for m in self._fw_by_model)
         skipped = len(self.cameras) - assigned
-        lines = [f"• {m}: {os.path.basename(p)} ({len(self._by_model[m])} Kamera(s))"
+        lines = [t("• {model}: {file} ({n} Kamera(s))",
+                   model=m, file=os.path.basename(p), n=len(self._by_model[m]))
                  for m, p in sorted(self._fw_by_model.items())]
-        msg = ("Firmware-Update für:\n" + "\n".join(lines))
+        msg = (t("Firmware-Update für:\n") + "\n".join(lines))
         if skipped:
-            msg += f"\n\n{skipped} Kamera(s) ohne Zuweisung werden übersprungen."
+            msg += "\n\n" + t("{n} Kamera(s) ohne Zuweisung werden übersprungen.", n=skipped)
         if self._factory.get():
-            msg += "\n\nMit Werkseinstellungen (factory default)."
-        msg += "\n\nDer Vorgang dauert einige Minuten. Fortfahren?"
-        if not messagebox.askyesno(self.title_text, msg, parent=self):
+            msg += "\n\n" + t("Mit Werkseinstellungen (factory default).")
+        msg += "\n\n" + t("Der Vorgang dauert einige Minuten. Fortfahren?")
+        if not messagebox.askyesno(t(self.title_text), msg, parent=self):
             return
 
         fw_by_model = dict(self._fw_by_model)
@@ -451,7 +454,7 @@ class FirmwareDialog(ActionDialog):
             model = _model_of(camera)
             path = fw_by_model.get(model)
             if not path:
-                raise RuntimeError("übersprungen (keine Firmware für dieses Modell)")
+                raise RuntimeError(t("übersprungen (keine Firmware für dieses Modell)"))
             fname = os.path.basename(path)
             key = camera_key(camera)
             name = camera.get("Name", "?")
@@ -471,32 +474,32 @@ class FirmwareDialog(ActionDialog):
 
             if factory:
                 # factory-default beim Update -> Kamera kommt werksneu zurück.
-                msg = f"… {name} ({ip}): warte auf Neustart (Werkszustand)…"
+                msg = "… " + t("{name} ({ip}): warte auf Neustart (Werkszustand)…", name=name, ip=ip)
                 if self.poll_until(lambda: plugin.is_unconfigured(camera, probe),
                                    REBOOT_TIMEOUT, REBOOT_INTERVAL, start_msg=msg):
                     self._reset_all_keys.append(key)
                     self._reset_factory_keys.append(key)
                     self._success_q.put((key, "werksneu"))
-                    return (f"Firmware {fname} aufgespielt — Kamera werksneu "
-                            "(Erstkonfiguration erforderlich)")
-                return (f"Firmware {fname} aufgespielt — Kamera nicht rechtzeitig "
-                        "zurück (später prüfen)")
+                    return t("Firmware {file} aufgespielt — Kamera werksneu "
+                             "(Erstkonfiguration erforderlich)", file=fname)
+                return t("Firmware {file} aufgespielt — Kamera nicht rechtzeitig "
+                         "zurück (später prüfen)", file=fname)
 
             # Normalfall: auf den Reboot-Zyklus warten und neue Firmware auslesen.
             info = self._wait_reboot_and_info(plugin, camera, probe, old_fw, name, ip)
             if info is not None:
                 self._fw_updates[key] = info
                 self._success_q.put((key, info.get("firmware") or "?"))
-                return (f"Firmware {fname} aufgespielt — Kamera wieder erreichbar, "
-                        f"Version {info.get('firmware') or '?'}")
-            return (f"Firmware {fname} aufgespielt — Kamera nicht rechtzeitig "
-                    "zurück (Version später prüfen)")
+                return t("Firmware {file} aufgespielt — Kamera wieder erreichbar, "
+                         "Version {version}", file=fname, version=info.get('firmware') or '?')
+            return t("Firmware {file} aufgespielt — Kamera nicht rechtzeitig "
+                     "zurück (Version später prüfen)", file=fname)
 
         # Parallel-Modus aus den Einstellungen (neuer Reiter „Firmwareupdates").
         settings = getattr(self.master, "settings", None)
         parallel = bool(settings.get("firmware_parallel", True)) if settings else True
         max_workers = int(settings.get("firmware_max_parallel", 4)) if settings else 4
-        self.run_per_camera(op, done_msg="Firmware-Update abgeschlossen.",
+        self.run_per_camera(op, done_msg=t("Firmware-Update abgeschlossen."),
                             parallel=parallel, max_workers=max_workers)
 
     def _wait_reboot_and_info(self, plugin, camera, creds, old_fw, name, ip,
@@ -511,8 +514,8 @@ class FirmwareDialog(ActionDialog):
         (Reboot beobachtet) und wieder antwortet — oder wenn sich die
         **Firmware-Version geändert** hat (falls das Gerät den Neustart intern
         durchläuft, ohne dass wir das Offline-Fenster sehen)."""
-        self._q.put(("line", f"… {name} ({ip}): warte auf Neustart "
-                             "und lese neue Firmware…"))
+        self._q.put(("line", "… " + t("{name} ({ip}): warte auf Neustart und lese neue Firmware…",
+                             name=name, ip=ip)))
         deadline = time.time() + timeout
         went_down = False
         time.sleep(interval)
@@ -585,14 +588,15 @@ class _VersionPicker(tk.Toplevel):
 
     def __init__(self, parent, model, info, preselect=None):
         super().__init__(parent)
-        self.title(f"Version wählen — {model}")
+        self.title(t("Version wählen — {model}", model=model))
         self.transient(parent)
         self.result: str | None = None
 
         frame = ttk.Frame(self, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
-        ttk.Label(frame, text=f"Kameras dieses Modells: {info.current or 'unbekannt'} — "
-                              f"vorgeschlagen: {info.recommended or 'kein Update'}",
+        ttk.Label(frame, text=t("Kameras dieses Modells: {current} — vorgeschlagen: {rec}",
+                                current=info.current or t('unbekannt'),
+                                rec=info.recommended or t('kein Update')),
                   wraplength=360, justify=tk.LEFT).pack(anchor=tk.W, pady=(0, 6))
 
         box = ttk.Frame(frame)
@@ -608,11 +612,11 @@ class _VersionPicker(tk.Toplevel):
         for i, ver in enumerate(self._versions):
             marks = []
             if ver == info.latest:
-                marks.append("neueste")
+                marks.append(t("neueste"))
             if ver == info.recommended:
-                marks.append("Vorschlag")
+                marks.append(t("Vorschlag"))
             if ver == info.current:
-                marks.append("installiert")
+                marks.append(t("installiert"))
             self._list.insert(tk.END, f"{ver}  ({', '.join(marks)})" if marks else ver)
             if ver == want:
                 self._list.selection_set(i)
@@ -620,8 +624,8 @@ class _VersionPicker(tk.Toplevel):
 
         row = ttk.Frame(frame)
         row.pack(fill=tk.X, pady=(8, 0))
-        ttk.Button(row, text="Übernehmen", command=self._ok).pack(side=tk.LEFT)
-        ttk.Button(row, text="Abbrechen", command=self.destroy).pack(side=tk.LEFT, padx=6)
+        ttk.Button(row, text=t("Übernehmen"), command=self._ok).pack(side=tk.LEFT)
+        ttk.Button(row, text=t("Abbrechen"), command=self.destroy).pack(side=tk.LEFT, padx=6)
         self._list.bind("<Double-Button-1>", lambda _e: self._ok())
 
         self.grab_set()

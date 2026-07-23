@@ -33,6 +33,12 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
+try:
+    from kkm.core import t                 # Uebersetzung, wenn in KKM eingebettet
+except Exception:                          # eigenstaendig lauffaehig (stdlib-only)
+    def t(s, /, **kw):
+        return s.format(**kw) if kw else s
+
 # Axis-Geraete haben meist selbstsignierte Zertifikate -> Zertifikatspruefung aus.
 _SSL_CONTEXT = ssl._create_unverified_context()
 
@@ -86,12 +92,12 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
-        raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}")
+            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+        raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
     except urllib.error.URLError as exc:
-        raise VapixConnectError(f"Nicht erreichbar: {exc.reason}")
+        raise VapixConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
     except (TimeoutError, OSError) as exc:
-        raise VapixConnectError(f"Verbindungsfehler: {exc}")
+        raise VapixConnectError(t("Verbindungsfehler: {err}", err=exc))
 
 
 def _request_auto(ip, username, password, path, scheme="auto", port=None, timeout=10, auth=True):
@@ -124,12 +130,12 @@ def _post_form(ip, username, password, path, fields, scheme, port, timeout):
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
-        raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}")
+            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+        raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
     except urllib.error.URLError as exc:
-        raise VapixConnectError(f"Nicht erreichbar: {exc.reason}")
+        raise VapixConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
     except (TimeoutError, OSError) as exc:
-        raise VapixConnectError(f"Verbindungsfehler: {exc}")
+        raise VapixConnectError(t("Verbindungsfehler: {err}", err=exc))
 
 
 def _post_form_auto(ip, username, password, path, fields, scheme="auto", port=None, timeout=30):
@@ -186,22 +192,22 @@ def _post_json(ip, username, password, path, obj, scheme, port, timeout):
             text = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
+            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         # AXIS-JSON-APIs liefern die eigentliche Ursache oft im Fehler-Body mit --
         # unbedingt anzeigen (z. B. bei 500 vom VMD4-control.cgi).
         detail = _http_error_detail(exc)
-        raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}"
+        raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason)
                          + (f" — {detail}" if detail else ""))
     except urllib.error.URLError as exc:
-        raise VapixConnectError(f"Nicht erreichbar: {exc.reason}")
+        raise VapixConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
     except (TimeoutError, OSError) as exc:
-        raise VapixConnectError(f"Verbindungsfehler: {exc}")
+        raise VapixConnectError(t("Verbindungsfehler: {err}", err=exc))
     if not text.strip():
         return {}
     try:
         return json.loads(text)
     except ValueError:
-        raise VapixError(f"Unerwartete Antwort: {text.strip()[:200]}")
+        raise VapixError(t("Unerwartete Antwort: {body}", body=text.strip()[:200]))
 
 
 def _post_json_auto(ip, username, password, path, obj, scheme="auto", port=None, timeout=30):
@@ -362,7 +368,7 @@ def _basic_device_info(ip, username, password, scheme="auto", port=None, timeout
             return data.get("data", {}).get("propertyList", {}) or {}
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
+                raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
             continue  # Endpunkt nicht vorhanden o. Ae. -> naechstes Schema
         except (urllib.error.URLError, TimeoutError, OSError, ValueError):
             continue
@@ -434,7 +440,7 @@ def _update_params(ip, username, password, params, scheme, port, timeout):
     text = _request_auto(ip, username, password, path, scheme, port, timeout)
     # Erfolgreiche Updates antworten mit "OK"; Fehler beginnen mit "# Error".
     if "OK" not in text:
-        raise VapixError(f"Geraet meldete: {text.strip() or '(leere Antwort)'}")
+        raise VapixError(t("Geraet meldete: {body}", body=text.strip() or t("(leere Antwort)")))
     return text.strip()
 
 
@@ -481,8 +487,8 @@ def factory_default(ip, username, password, keep_ip=True,
                       scheme, port, timeout)
     except VapixError:
         pass   # Reboot kappt die Verbindung -> erwartet, kein Fehler
-    return "auf Werkseinstellungen zurückgesetzt" + (
-        " (IP erhalten)" if keep_ip else " (inkl. IP)")
+    return t("auf Werkseinstellungen zurückgesetzt") + (
+        t(" (IP erhalten)") if keep_ip else t(" (inkl. IP)"))
 
 
 def next_ip(ip_str, step=1):
@@ -537,8 +543,8 @@ def add_user(ip, username, password, new_user, new_password, role="viewer",
     text = _request_auto(ip, username, password, path, scheme, port, timeout,
                          auth=authenticate)
     if "Error" in text:
-        raise VapixError(f"Geraet meldete: {text.strip()}")
-    return f"Benutzer '{new_user}' angelegt ({role})"
+        raise VapixError(t("Geraet meldete: {body}", body=text.strip()))
+    return t("Benutzer '{user}' angelegt ({role})", user=new_user, role=role)
 
 
 def set_user_password(ip, username, password, target_user, new_password,
@@ -549,8 +555,8 @@ def set_user_password(ip, username, password, target_user, new_password,
     text = _request_auto(ip, username, password, path, scheme, port, timeout,
                          auth=authenticate)
     if "Error" in text:
-        raise VapixError(f"Geraet meldete: {text.strip()}")
-    return f"Passwort von '{target_user}' geaendert"
+        raise VapixError(t("Geraet meldete: {body}", body=text.strip()))
+    return t("Passwort von '{user}' geaendert", user=target_user)
 
 
 def add_or_set_user(ip, username, password, new_user, new_password, role="viewer",
@@ -574,7 +580,7 @@ def add_or_set_user(ip, username, password, new_user, new_password, role="viewer
                     raise  # ohne Anmeldung kein Update-Fallback (moderne Geraete)
                 return (set_user_password(ip, usr, pwd, new_user, new_password,
                                           scheme, port, timeout, authenticate=auth)
-                        + " (vorhandener Benutzer, Passwort gesetzt)")
+                        + t(" (vorhandener Benutzer, Passwort gesetzt)"))
         except VapixError as exc:
             last = exc
     raise last if last is not None else VapixError("kein Zugang moeglich")
@@ -632,14 +638,14 @@ def _onvif_post(ip, username, password, inner, scheme, port, timeout):
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
+            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         detail = exc.read().decode("utf-8", errors="replace")
         reason = _extract_soap_fault(detail) or f"HTTP {exc.code}: {exc.reason}"
-        raise VapixError(f"ONVIF-Fehler: {reason}")
+        raise VapixError(t("ONVIF-Fehler: {reason}", reason=reason))
     except urllib.error.URLError as exc:
-        raise VapixConnectError(f"Nicht erreichbar: {exc.reason}")
+        raise VapixConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
     except (TimeoutError, OSError) as exc:
-        raise VapixConnectError(f"Verbindungsfehler: {exc}")
+        raise VapixConnectError(t("Verbindungsfehler: {err}", err=exc))
 
 
 def _onvif_post_auto(ip, username, password, inner, scheme, port, timeout):
@@ -656,7 +662,7 @@ def _onvif_post_auto(ip, username, password, inner, scheme, port, timeout):
 def _check_onvif_response(text):
     """Wirft VapixError, wenn die SOAP-Antwort einen Fault enthaelt."""
     if "Fault" in text:
-        raise VapixError(f"ONVIF-Fehler: {_extract_soap_fault(text) or text.strip()}")
+        raise VapixError(t("ONVIF-Fehler: {reason}", reason=_extract_soap_fault(text) or text.strip()))
 
 
 def add_onvif_user(ip, username, password, new_user, new_password,
@@ -671,7 +677,7 @@ def add_onvif_user(ip, username, password, new_user, new_password,
     )
     _check_onvif_response(
         _onvif_post_auto(ip, username, password, inner, scheme, port, timeout))
-    return f"ONVIF-Benutzer '{new_user}' angelegt ({level})"
+    return t("ONVIF-Benutzer '{user}' angelegt ({level})", user=new_user, level=level)
 
 
 def set_onvif_user_password(ip, username, password, target_user, new_password,
@@ -686,7 +692,7 @@ def set_onvif_user_password(ip, username, password, target_user, new_password,
     )
     _check_onvif_response(
         _onvif_post_auto(ip, username, password, inner, scheme, port, timeout))
-    return f"ONVIF-Passwort von '{target_user}' geaendert"
+    return t("ONVIF-Passwort von '{user}' geaendert", user=target_user)
 
 
 def parse_user_list(path, onvif=False):
@@ -708,7 +714,7 @@ def parse_user_list(path, onvif=False):
         with open(path, newline="", encoding="utf-8-sig") as f:
             rows = list(csv.reader(f))
     except OSError as exc:
-        raise VapixError(f"Datei nicht lesbar: {exc}")
+        raise VapixError(t("Datei nicht lesbar: {err}", err=exc))
     if onvif:
         valid = {lvl.lower(): lvl for lvl in ONVIF_LEVELS}
         default = "User"
@@ -724,14 +730,14 @@ def parse_user_list(path, onvif=False):
         if not name or name.startswith("#"):
             continue
         if len(row) < 2 or not row[1]:
-            errors.append(f"Zeile {num}: Passwort fehlt")
+            errors.append(t("Zeile {num}: Passwort fehlt", num=num))
             continue
         password = row[1]
         role_raw = row[2].strip() if len(row) >= 3 else ""
         if role_raw:
             role = valid.get(role_raw.lower())
             if role is None:
-                errors.append(f"Zeile {num}: ungueltige Rolle/Stufe '{role_raw}'")
+                errors.append(t("Zeile {num}: ungueltige Rolle/Stufe '{role}'", num=num, role=role_raw))
                 continue
         else:
             role = default
@@ -739,7 +745,7 @@ def parse_user_list(path, onvif=False):
     if errors:
         raise VapixError("; ".join(errors))
     if not users:
-        raise VapixError("Keine Benutzer in der Datei gefunden.")
+        raise VapixError(t("Keine Benutzer in der Datei gefunden."))
     return users
 
 
@@ -795,15 +801,15 @@ def _parse_fw_response(resp):
     except ValueError:
         # kein JSON -> grobe Heuristik
         if re.search(r"error|fail", resp, re.IGNORECASE):
-            raise VapixError(f"Geraet meldete: {resp.strip()[:200]}")
-        return "Firmware-Upgrade gestartet"
+            raise VapixError(t("Geraet meldete: {body}", body=resp.strip()[:200]))
+        return t("Firmware-Upgrade gestartet")
     if isinstance(obj, dict) and obj.get("error"):
         err = obj["error"]
-        raise VapixError(f"Fehler {err.get('code', '?')}: {err.get('message', err)}")
+        raise VapixError(t("Fehler {code}: {message}", code=err.get('code', '?'), message=err.get('message', err)))
     version = ""
     if isinstance(obj, dict):
         version = obj.get("data", {}).get("firmwareVersion", "")
-    return "Firmware aktualisiert" + (f" auf {version}" if version else "")
+    return t("Firmware aktualisiert") + (t(" auf {version}", version=version) if version else "")
 
 
 def _resolve_scheme(ip, username, password, scheme, port, timeout):
@@ -856,10 +862,10 @@ def _modern_upgrade(ip, username, password, filename, data, factory_default,
                                parts, scheme, port, timeout)
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
-        raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}")
+            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+        raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
     except (urllib.error.URLError, TimeoutError, OSError):
-        return "Firmware hochgeladen - Geraet startet neu (bitte Status pruefen)"
+        return t("Firmware hochgeladen - Geraet startet neu (bitte Status pruefen)")
     return _parse_fw_response(resp)
 
 
@@ -875,13 +881,13 @@ def _legacy_upgrade(ip, username, password, filename, data, scheme, port, timeou
                                parts, scheme, port, timeout)
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
-        raise VapixError(f"HTTP-Fehler {exc.code}: {exc.reason}")
+            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+        raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
     except (urllib.error.URLError, TimeoutError, OSError):
-        return "Firmware hochgeladen (Legacy) - Verbindung getrennt, Geraet flasht/startet neu (bitte pruefen)"
+        return t("Firmware hochgeladen (Legacy) - Verbindung getrennt, Geraet flasht/startet neu (bitte pruefen)")
     if re.search(r"error|fail", resp, re.IGNORECASE):
-        raise VapixError(f"Geraet meldete: {resp.strip()[:200]}")
-    return "Firmware hochgeladen (Legacy) - Geraet startet neu"
+        raise VapixError(t("Geraet meldete: {body}", body=resp.strip()[:200]))
+    return t("Firmware hochgeladen (Legacy) - Geraet startet neu")
 
 
 def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
@@ -899,7 +905,7 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
 
     sc = _resolve_scheme(ip, username, password, scheme, port, timeout=15)
     if sc is None:
-        raise VapixError("Kamera nicht erreichbar.")
+        raise VapixError(t("Kamera nicht erreichbar."))
     if _has_firmware_api(ip, username, password, sc, port, timeout=15):
         return _modern_upgrade(ip, username, password, filename, data,
                                factory_default, sc, port, timeout)
@@ -919,9 +925,9 @@ def parse_adm_config(path):
         with open(path, "rb") as f:
             root = ET.fromstring(f.read())
     except (OSError, ET.ParseError) as exc:
-        raise VapixError(f"Datei nicht lesbar/kein gueltiges XML: {exc}")
+        raise VapixError(t("Datei nicht lesbar/kein gueltiges XML: {err}", err=exc))
     if root.tag != "AcmDeviceParameterExport":
-        raise VapixError("Keine ADM-Konfigurationsdatei (AcmDeviceParameterExport).")
+        raise VapixError(t("Keine ADM-Konfigurationsdatei (AcmDeviceParameterExport)."))
 
     params = {}
     for p in root.findall("./ParameterList/Parameter"):
@@ -945,7 +951,7 @@ def parse_adm_config(path):
         try:
             vmd4 = json.loads(vmd4_text)
         except ValueError as exc:
-            raise VapixError(f"Vmd4-Konfiguration ist kein gueltiges JSON: {exc}")
+            raise VapixError(t("Vmd4-Konfiguration ist kein gueltiges JSON: {err}", err=exc))
     return {
         "model": root.findtext("Model") or "",
         "firmware": root.findtext("FirmwareVersion") or "",
@@ -1014,7 +1020,7 @@ def _sp_update(ip, username, password, sid, profile, scheme, port, timeout):
     text = _post_form(ip, username, password, "/axis-cgi/param.cgi",
                       fields, scheme, port, timeout)
     if re.search(r"#\s*Error|failed", text, re.IGNORECASE):
-        raise VapixError(f"Profil '{profile['name']}': {text.strip()[:120]}")
+        raise VapixError(t("Profil '{name}': {body}", name=profile['name'], body=text.strip()[:120]))
 
 
 def _sp_add(ip, username, password, profile, scheme, port, timeout):
@@ -1030,7 +1036,7 @@ def _sp_add(ip, username, password, profile, scheme, port, timeout):
     text = _post_form(ip, username, password, "/axis-cgi/param.cgi",
                       fields, scheme, port, timeout)
     if re.search(r"#\s*Error|failed", text, re.IGNORECASE):
-        raise VapixError(f"Profil '{profile['name']}': {text.strip()[:120]}")
+        raise VapixError(t("Profil '{name}': {body}", name=profile['name'], body=text.strip()[:120]))
 
 
 def apply_stream_profiles(ip, username, password, profiles, scheme, port, timeout):
@@ -1096,15 +1102,15 @@ def _ensure_vmd_running(ip, username, password, scheme, port, timeout):
     try:
         _app_control(ip, username, password, "start", VMD4_PACKAGE, scheme, port, timeout)
     except VapixError as exc:
-        raise VapixError(
+        raise VapixError(t(
             "VMD4-Anwendung ist nicht aktiv und liess sich nicht starten "
-            f"({exc}). Ist 'AXIS Video Motion Detection' auf der Kamera installiert?")
+            "({err}). Ist 'AXIS Video Motion Detection' auf der Kamera installiert?", err=exc))
     for _ in range(8):                     # App braucht nach dem Start einen Moment
         time.sleep(1)
         if _vmd4_ping(ip, username, password, scheme, port, timeout):
             return
-    raise VapixError("VMD4-Anwendung wurde gestartet, antwortet aber nicht "
-                     "rechtzeitig — bitte erneut versuchen.")
+    raise VapixError(t("VMD4-Anwendung wurde gestartet, antwortet aber nicht "
+                     "rechtzeitig — bitte erneut versuchen."))
 
 
 def _vmd4_api_version(ip, username, password, scheme, port, timeout):
@@ -1147,7 +1153,7 @@ def apply_vmd4_config(ip, username, password, vmd4, scheme="auto", port=None, ti
     err = data.get("error") if isinstance(data, dict) else None
     if err:
         detail = err.get("message") if isinstance(err, dict) else err
-        raise VapixError(f"VMD4 lehnte die Konfiguration ab: {detail}")
+        raise VapixError(t("VMD4 lehnte die Konfiguration ab: {detail}", detail=detail))
     return True
 
 
@@ -1170,20 +1176,20 @@ def apply_adm_config(ip, username, password, config, scheme="auto", port=None,
     params = {name: value for name, value in config.get("parameters", {}).items()
               if selected_params is None or name in selected_params}
     count = apply_parameters(ip, username, password, params, sc, port, timeout)
-    msg = f"{count} Parameter angewendet"
+    msg = t("{count} Parameter angewendet", count=count)
     profiles = [p for p in config.get("profiles", [])
                 if selected_profiles is None or p.get("name") in selected_profiles]
     if with_profiles and profiles:
         created, updated, failed = apply_stream_profiles(
             ip, username, password, profiles, sc, port, timeout)
-        msg += (f"; Profile: {created} angelegt, {updated} ueberschrieben, "
-                f"{failed} fehlgeschlagen")
+        msg += t("; Profile: {created} angelegt, {updated} ueberschrieben, {failed} fehlgeschlagen",
+                 created=created, updated=updated, failed=failed)
     if with_vmd4 and config.get("vmd4") is not None:
         try:
             apply_vmd4_config(ip, username, password, config["vmd4"], sc, port, timeout)
-            msg += "; Bewegungserkennung (VMD4) angewendet"
+            msg += t("; Bewegungserkennung (VMD4) angewendet")
         except VapixError as exc:
-            raise VapixError(f"{msg}; Bewegungserkennung (VMD4) fehlgeschlagen: {exc}")
+            raise VapixError(t("{msg}; Bewegungserkennung (VMD4) fehlgeschlagen: {err}", msg=msg, err=exc))
     return msg
 
 
@@ -1308,5 +1314,5 @@ def write_adm_config(path, config, selected_params=None, with_profiles=True,
     try:
         tree.write(path, encoding="utf-8", xml_declaration=True)
     except OSError as exc:
-        raise VapixError(f"Datei nicht schreibbar: {exc}")
+        raise VapixError(t("Datei nicht schreibbar: {err}", err=exc))
     return len(names)

@@ -42,6 +42,7 @@ from __future__ import annotations
 import base64
 import json
 
+from kkm.core import t
 from kkm.core.groups import camera_key
 
 
@@ -121,21 +122,21 @@ def parse_export(path: str) -> AdmImportResult:
         with open(path, encoding="utf-8-sig") as fh:   # Exporte tragen ein BOM
             raw = json.load(fh)
     except OSError as exc:
-        raise AdmImportError(f"Datei nicht lesbar: {exc}") from exc
+        raise AdmImportError(t("Datei nicht lesbar: {err}", err=exc)) from exc
     except ValueError as exc:
-        raise AdmImportError(f"Keine gültige JSON-Datei: {exc}") from exc
+        raise AdmImportError(t("Keine gültige JSON-Datei: {err}", err=exc)) from exc
 
     if not isinstance(raw, dict) or "data" not in raw:
-        raise AdmImportError("Kein AXIS-Device-Manager-Export ('data' fehlt).")
+        raise AdmImportError(t("Kein AXIS-Device-Manager-Export ('data' fehlt)."))
     if raw.get("encrypted"):
-        raise AdmImportError("Verschlüsselte Exporte werden nicht unterstützt.")
+        raise AdmImportError(t("Verschlüsselte Exporte werden nicht unterstützt."))
 
     mayor = raw.get("fileFormatVersionMayor")
     minor = raw.get("fileFormatVersionMinor")
     device_data = (raw.get("data") or {}).get("deviceData") or {}
     devices = device_data.get("devices")
     if not isinstance(devices, list):
-        raise AdmImportError("Unerwartete Struktur (deviceData.devices fehlt).")
+        raise AdmImportError(t("Unerwartete Struktur (deviceData.devices fehlt)."))
 
     res = AdmImportResult()
     res.version = f"{mayor}.{minor}"
@@ -149,7 +150,7 @@ def parse_export(path: str) -> AdmImportResult:
         cam = _device_to_camera(dev)
         key = camera_key(cam)
         if not key:
-            res.warnings.append("Gerät ohne MAC/Identität übersprungen.")
+            res.warnings.append(t("Gerät ohne MAC/Identität übersprungen."))
             continue
         did = dev.get("id")
         if did is not None:
@@ -168,8 +169,8 @@ def parse_export(path: str) -> AdmImportResult:
     elif mayor == 2 or "deviceTags" in device_data:
         _parse_groups_v2(device_data, id_to_key, res)
     else:
-        res.warnings.append(
-            f"Unbekanntes Gruppenformat (Version {res.version}) — nur Geräte importiert.")
+        res.warnings.append(t(
+            "Unbekanntes Gruppenformat (Version {version}) — nur Geräte importiert.", version=res.version))
     return res
 
 
@@ -181,8 +182,8 @@ def _add_member(groups: dict[str, list[str]], name: str, key: str) -> None:
 
 def _parse_groups_v1(device_data: dict, id_to_key: dict, res: AdmImportResult) -> None:
     """Format 1.x: Tag-Tabelle + Verknüpfungstabelle über IDs auflösen."""
-    tag_names = {t.get("id"): t.get("name")
-                 for t in device_data.get("deviceTag", []) if isinstance(t, dict)}
+    tag_names = {tag.get("id"): tag.get("name")
+                 for tag in device_data.get("deviceTag", []) if isinstance(tag, dict)}
     groups: dict[str, list[str]] = {}
     dangling = 0
     for rel in device_data.get("deviceTagRelation", []):
@@ -196,7 +197,7 @@ def _parse_groups_v1(device_data: dict, id_to_key: dict, res: AdmImportResult) -
         _add_member(groups, name, key)
     res.groups = groups
     if dangling:
-        res.warnings.append(f"{dangling} Gruppenzuordnung(en) ohne passendes Gerät/Tag übersprungen.")
+        res.warnings.append(t("{dangling} Gruppenzuordnung(en) ohne passendes Gerät/Tag übersprungen.", dangling=dangling))
 
 
 def _parse_groups_v2(device_data: dict, id_to_key: dict, res: AdmImportResult) -> None:
@@ -218,4 +219,4 @@ def _parse_groups_v2(device_data: dict, id_to_key: dict, res: AdmImportResult) -
                 dangling += 1
     res.groups = groups
     if dangling:
-        res.warnings.append(f"{dangling} Gruppen-Geräteverweis(e) ohne passendes Gerät übersprungen.")
+        res.warnings.append(t("{dangling} Gruppen-Geräteverweis(e) ohne passendes Gerät übersprungen.", dangling=dangling))

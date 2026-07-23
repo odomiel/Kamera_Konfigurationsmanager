@@ -34,6 +34,7 @@ from __future__ import annotations
 
 from kkm.core.camera import get_first_ip
 from kkm.core.plugins import VendorPlugin, Credentials, Capability
+from kkm.core.i18n import t
 from kkm.plugins.onvif import soap   # ONVIF-Benutzer laufen ueber den Standard-Client
 from . import isapi
 from . import discovery
@@ -71,7 +72,7 @@ class HikvisionPlugin(VendorPlugin):
         die Anmeldung ist uhrzeitabhaengig)."""
         ip = self.ip_of(camera)
         if not ip:
-            raise soap.OnvifError("Kamera hat keine IP-Adresse.")
+            raise soap.OnvifError(t("Kamera hat keine IP-Adresse."))
         scheme = creds.scheme if creds.scheme in ("http", "https") else "http"
         url = soap.device_url(ip, scheme, creds.port)
         offset = soap.time_offset(url, timeout=min(creds.timeout, 5))

@@ -33,7 +33,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Capability
+from kkm.core import Capability, t
 from .base import ActionDialog
 
 
@@ -46,9 +46,9 @@ class OnvifDialog(ActionDialog):
 
         modes = ttk.Frame(parent)
         modes.pack(fill=tk.X)
-        for val, text in (("add", "Benutzer anlegen"),
-                          ("setpw", "Passwort ändern"),
-                          ("import", "Stapel-Import aus Datei")):
+        for val, text in (("add", t("Benutzer anlegen")),
+                          ("setpw", t("Passwort ändern")),
+                          ("import", t("Stapel-Import aus Datei"))):
             ttk.Radiobutton(modes, text=text, value=val, variable=self._mode,
                             command=self._update_visibility).pack(side=tk.LEFT, padx=(0, 12))
 
@@ -63,13 +63,13 @@ class OnvifDialog(ActionDialog):
 
         # --- single user (add / setpw) ---
         self._single = ttk.Frame(self._dynamic)
-        ttk.Label(self._single, text="Benutzername:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self._single, text=t("Benutzername:")).grid(row=0, column=0, sticky=tk.W, pady=2)
         ttk.Entry(self._single, textvariable=self.user_name, width=22).grid(
             row=0, column=1, sticky=tk.W, padx=4, pady=2)
-        ttk.Label(self._single, text="Passwort:").grid(row=1, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self._single, text=t("Passwort:")).grid(row=1, column=0, sticky=tk.W, pady=2)
         ttk.Entry(self._single, textvariable=self.user_pw, width=22, show="*").grid(
             row=1, column=1, sticky=tk.W, padx=4, pady=2)
-        ttk.Label(self._single, text="Stufe:").grid(row=2, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self._single, text=t("Stufe:")).grid(row=2, column=0, sticky=tk.W, pady=2)
         self._level_box = ttk.Combobox(self._single, textvariable=self.level, width=19,
                                        state="readonly", values=self.plugin0().ONVIF_LEVELS)
         self._level_box.grid(row=2, column=1, sticky=tk.W, padx=4, pady=2)
@@ -79,15 +79,15 @@ class OnvifDialog(ActionDialog):
         row = ttk.Frame(self._importf)
         row.pack(fill=tk.X)
         ttk.Entry(row, textvariable=self.import_path).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ttk.Button(row, text="Datei…", command=self._choose_list).pack(side=tk.LEFT, padx=4)
+        ttk.Button(row, text=t("Datei…"), command=self._choose_list).pack(side=tk.LEFT, padx=4)
         self._import_info = ttk.Label(
-            self._importf, text="Format: Name,Passwort[,Stufe] — eine Zeile je Benutzer.")
+            self._importf, text=t("Format: Name,Passwort[,Stufe] — eine Zeile je Benutzer."))
         self._import_info.pack(anchor=tk.W, pady=(4, 0))
 
         ttk.Checkbutton(
-            parent, text="Passwort im Tresor speichern (nur wenn entsperrt)",
+            parent, text=t("Passwort im Tresor speichern (nur wenn entsperrt)"),
             variable=self.store_vault).pack(anchor=tk.W, pady=(8, 2))
-        ttk.Button(parent, text="Ausführen", command=self._apply).pack(anchor=tk.W)
+        ttk.Button(parent, text=t("Ausführen"), command=self._apply).pack(anchor=tk.W)
 
         self._update_visibility()
 
@@ -103,18 +103,18 @@ class OnvifDialog(ActionDialog):
     # ------------------------------------------------------------------ import
     def _choose_list(self):
         path = filedialog.askopenfilename(
-            parent=self, title="ONVIF-Benutzerliste wählen",
-            filetypes=[("Textliste/CSV", "*.txt *.csv"), ("Alle Dateien", "*.*")])
+            parent=self, title=t("ONVIF-Benutzerliste wählen"),
+            filetypes=[(t("Textliste/CSV"), "*.txt *.csv"), (t("Alle Dateien"), "*.*")])
         if not path:
             return
         self.import_path.set(path)
         try:
             users = self.plugin0().parse_user_list(path, onvif=True)
-            self._import_info.config(text=f"{len(users)} Benutzer in der Datei: "
+            self._import_info.config(text=t("{n} Benutzer in der Datei: ", n=len(users))
                                           + ", ".join(u["name"] for u in users[:6])
                                           + (" …" if len(users) > 6 else ""))
         except Exception as exc:  # noqa: BLE001
-            self._import_info.config(text=f"Ungültig: {exc}")
+            self._import_info.config(text=t("Ungültig: {err}", err=exc))
             self.import_path.set("")
 
     # ------------------------------------------------------------------- apply
@@ -126,7 +126,7 @@ class OnvifDialog(ActionDialog):
         name = self.user_name.get().strip()
         pw = self.user_pw.get()
         if not name or not pw:
-            messagebox.showinfo(self.title_text, "Bitte Benutzername und Passwort angeben.", parent=self)
+            messagebox.showinfo(t(self.title_text), t("Bitte Benutzername und Passwort angeben."), parent=self)
             return
         level = self.level.get()
 
@@ -134,24 +134,24 @@ class OnvifDialog(ActionDialog):
             def op(plugin, camera, creds):
                 msg = plugin.set_onvif_user_password(camera, creds, name, pw, level=level)
                 self._maybe_store(camera, name, pw)
-                return msg or f"ONVIF-Passwort von '{name}' geändert"
-            self.run_per_camera(op, done_msg="Passwortänderung abgeschlossen.")
+                return msg or t("ONVIF-Passwort von '{name}' geändert", name=name)
+            self.run_per_camera(op, done_msg=t("Passwortänderung abgeschlossen."))
         else:
             def op(plugin, camera, creds):
                 msg = plugin.add_onvif_user(camera, creds, name, pw, level=level)
                 self._maybe_store(camera, name, pw)
-                return msg or f"ONVIF-Benutzer '{name}' angelegt"
-            self.run_per_camera(op, done_msg="Anlegen abgeschlossen.")
+                return msg or t("ONVIF-Benutzer '{name}' angelegt", name=name)
+            self.run_per_camera(op, done_msg=t("Anlegen abgeschlossen."))
 
     def _apply_import(self):
         path = self.import_path.get().strip()
         if not path:
-            messagebox.showinfo(self.title_text, "Bitte zuerst eine Benutzerliste wählen.", parent=self)
+            messagebox.showinfo(t(self.title_text), t("Bitte zuerst eine Benutzerliste wählen."), parent=self)
             return
         try:
             users = self.plugin0().parse_user_list(path, onvif=True)  # validate once
         except Exception as exc:  # noqa: BLE001
-            messagebox.showerror(self.title_text, str(exc), parent=self)
+            messagebox.showerror(t(self.title_text), str(exc), parent=self)
             return
 
         def op(plugin, camera, creds):
@@ -165,7 +165,7 @@ class OnvifDialog(ActionDialog):
                 except Exception:  # noqa: BLE001
                     fail += 1
             if fail:
-                raise RuntimeError(f"{ok} angelegt, {fail} fehlgeschlagen")
-            return f"{ok} ONVIF-Benutzer angelegt"
+                raise RuntimeError(t("{ok} angelegt, {fail} fehlgeschlagen", ok=ok, fail=fail))
+            return t("{n} ONVIF-Benutzer angelegt", n=ok)
 
-        self.run_per_camera(op, done_msg="Stapel-Import abgeschlossen.")
+        self.run_per_camera(op, done_msg=t("Stapel-Import abgeschlossen."))

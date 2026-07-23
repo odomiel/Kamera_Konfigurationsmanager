@@ -24,8 +24,10 @@ from .groups import (GroupStore, Group, ALL_CAMERAS_ID, UNGROUPED_ID,
                      VIRTUAL_GROUP_IDS, camera_key)
 from .vault import PasswordVault, VaultLocked, VaultError
 from .settings import AppSettings
+from .i18n import t, set_language, get_language, language_label, LANGUAGES
 
 __all__ = [
+    "t", "set_language", "get_language", "language_label", "LANGUAGES",
     "VendorPlugin", "PluginRegistry", "Credentials", "Capability",
     "FirmwareInfo", "FirmwareRelease",
     "FIELD_NAMES", "get_first_ip", "next_ip", "version_tuple", "export_results",

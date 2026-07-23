@@ -26,10 +26,12 @@ from __future__ import annotations
 
 from tkinter import simpledialog, messagebox
 
-from kkm.core import VaultError
+from kkm.core import VaultError, t
 
 
-def ensure_vault_unlocked(parent, vault, reason: str = "Zum Speichern der Passwörter") -> bool:
+def ensure_vault_unlocked(parent, vault, reason: str | None = None) -> bool:
+    if reason is None:
+        reason = t("Zum Speichern der Passwörter")
     if vault is None:
         return False
     if not vault.is_locked:
@@ -37,40 +39,40 @@ def ensure_vault_unlocked(parent, vault, reason: str = "Zum Speichern der Passw�
 
     if not vault.exists:
         if not messagebox.askyesno(
-                "Passwort-Tresor",
-                f"{reason} muss der Tresor zuerst angelegt werden.\n"
-                "Jetzt ein Master-Passwort festlegen?", parent=parent):
+                t("Passwort-Tresor"),
+                t("{reason} muss der Tresor zuerst angelegt werden.\n"
+                  "Jetzt ein Master-Passwort festlegen?", reason=reason), parent=parent):
             return False
-        pw1 = simpledialog.askstring("Tresor anlegen", "Master-Passwort:",
+        pw1 = simpledialog.askstring(t("Tresor anlegen"), t("Master-Passwort:"),
                                      show="*", parent=parent)
         if not pw1:
             return False
-        pw2 = simpledialog.askstring("Tresor anlegen", "Master-Passwort wiederholen:",
+        pw2 = simpledialog.askstring(t("Tresor anlegen"), t("Master-Passwort wiederholen:"),
                                      show="*", parent=parent)
         if pw1 != pw2:
-            messagebox.showerror("Tresor", "Die Passwörter stimmen nicht überein.",
+            messagebox.showerror(t("Tresor"), t("Die Passwörter stimmen nicht überein."),
                                  parent=parent)
             return False
         try:
             vault.create(pw1)
         except VaultError as exc:
-            messagebox.showerror("Tresor", str(exc), parent=parent)
+            messagebox.showerror(t("Tresor"), str(exc), parent=parent)
             return False
         return True
 
     # existiert, aber gesperrt
     if not messagebox.askyesno(
-            "Passwort-Tresor",
-            f"{reason} muss der Tresor entsperrt werden.\nJetzt entsperren?",
+            t("Passwort-Tresor"),
+            t("{reason} muss der Tresor entsperrt werden.\nJetzt entsperren?", reason=reason),
             parent=parent):
         return False
-    pw = simpledialog.askstring("Tresor entsperren", "Master-Passwort:",
+    pw = simpledialog.askstring(t("Tresor entsperren"), t("Master-Passwort:"),
                                 show="*", parent=parent)
     if not pw:
         return False
     try:
         vault.unlock(pw)
     except VaultError as exc:
-        messagebox.showerror("Tresor", str(exc), parent=parent)
+        messagebox.showerror(t("Tresor"), str(exc), parent=parent)
         return False
     return True

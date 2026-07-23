@@ -48,6 +48,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
+from kkm.core import t
 from kkm.core.camera import version_tuple
 from kkm.core.groups import config_dir
 
@@ -109,9 +110,9 @@ def _ssl_context() -> ssl.SSLContext:
                 return ctx
             except (OSError, ssl.SSLError):
                 continue
-    raise RepoError("Kein Zertifikatsspeicher gefunden — HTTPS-Verbindung zum "
+    raise RepoError(t("Kein Zertifikatsspeicher gefunden — HTTPS-Verbindung zum "
                     "Firmware-Verzeichnis nicht pruefbar. SSL_CERT_FILE setzen "
-                    "oder die Firmware von Hand zuweisen.")
+                    "oder die Firmware von Hand zuweisen."))
 
 
 def _urlopen(req, timeout: int = TIMEOUT):
@@ -125,7 +126,7 @@ def _get(url: str, timeout: int = TIMEOUT) -> bytes:
     except urllib.error.HTTPError as exc:
         raise RepoError(f"{url}: HTTP {exc.code}") from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        raise RepoError(f"{url} nicht erreichbar: {exc}") from exc
+        raise RepoError(t("{url} nicht erreichbar: {err}", url=url, err=exc)) from exc
 
 
 def _base(base_url: str | None = None) -> str:
@@ -206,8 +207,8 @@ def model_index(base_url: str | None = None, refresh: bool = False) -> list[str]
     raw = _get(_base(base_url))
     models = [m.decode("utf-8", "replace") for m in _DIR_RE.findall(raw)]
     if not models:
-        raise RepoError("Firmware-Verzeichnis lieferte keine Modelle "
-                        "(Aufbau der Seite geaendert?).")
+        raise RepoError(t("Firmware-Verzeichnis lieferte keine Modelle "
+                        "(Aufbau der Seite geaendert?)."))
     _save_index_cache(models)
     return models
 
@@ -231,7 +232,7 @@ def resolve_model(model: str, base_url: str | None = None) -> str:
     """
     wanted = _normalize(model)
     if not wanted:
-        raise RepoError("Kein Modellname bekannt.")
+        raise RepoError(t("Kein Modellname bekannt."))
     models = model_index(base_url)
     by_norm = {_normalize(m): m for m in models}
     if wanted in by_norm:
@@ -241,9 +242,9 @@ def resolve_model(model: str, base_url: str | None = None) -> str:
     if len(hits) == 1:
         return hits[0]
     if len(hits) > 1:
-        raise RepoError(f"Modell „{model}“ ist im Firmware-Verzeichnis nicht "
-                        f"eindeutig ({', '.join(sorted(hits)[:4])} …).")
-    raise RepoError(f"Modell „{model}“ im Firmware-Verzeichnis nicht gefunden.")
+        raise RepoError(t("Modell „{model}“ ist im Firmware-Verzeichnis nicht eindeutig ({hits} …).",
+                        model=model, hits=', '.join(sorted(hits)[:4])))
+    raise RepoError(t("Modell „{model}“ im Firmware-Verzeichnis nicht gefunden.", model=model))
 
 
 # ------------------------------------------------------- Versionen je Modell
@@ -382,9 +383,9 @@ def download(rel: Release, progress=None, cancelled=None) -> str:
                     if progress:
                         progress(done, total)
     except urllib.error.HTTPError as exc:
-        raise RepoError(f"Download fehlgeschlagen: HTTP {exc.code}") from exc
+        raise RepoError(t("Download fehlgeschlagen: HTTP {code}", code=exc.code)) from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        raise RepoError(f"Download fehlgeschlagen: {exc}") from exc
+        raise RepoError(t("Download fehlgeschlagen: {err}", err=exc)) from exc
 
     if rel.size and os.path.getsize(part) != rel.size:
         raise RepoError("Download unvollstaendig (Groesse weicht ab).")

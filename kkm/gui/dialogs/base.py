@@ -38,11 +38,14 @@ import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox
 
-from kkm.core import Credentials, camera_key, get_first_ip
+from kkm.core import Credentials, camera_key, get_first_ip, t
 from .vault_access import ensure_vault_unlocked
 
 
 class ActionDialog(tk.Toplevel):
+    #: German source string used as message id — translated at display time via
+    #: ``t()`` because class attributes are evaluated at import (before the active
+    #: language is known). Subclasses override with their own German title.
     title_text = "Aktion"
     #: Zeilen des Ergebnis-Logs. Dialoge mit viel eigenem Inhalt (Firmware) setzen
     #: das kleiner, damit sie auf kleine Bildschirme passen.
@@ -50,7 +53,7 @@ class ActionDialog(tk.Toplevel):
 
     def __init__(self, parent, cameras: list[dict], registry, vault=None):
         super().__init__(parent)
-        self.title(self.title_text)
+        self.title(t(self.title_text))
         self.transient(parent)
         self.cameras = cameras
         self.registry = registry
@@ -61,7 +64,7 @@ class ActionDialog(tk.Toplevel):
         outer = ttk.Frame(self, padding=10)
         outer.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(outer, text=f"{len(cameras)} Kamera(s) ausgewählt",
+        ttk.Label(outer, text=t("{n} Kamera(s) ausgewählt", n=len(cameras)),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W)
 
         self._build_credentials(outer)
@@ -71,7 +74,7 @@ class ActionDialog(tk.Toplevel):
         self.build_body(body)
 
         # --- result log ---
-        logframe = ttk.LabelFrame(outer, text="Ergebnis", padding=6)
+        logframe = ttk.LabelFrame(outer, text=t("Ergebnis"), padding=6)
         logframe.pack(fill=tk.BOTH, expand=True, pady=(6, 0))
         self.log = tk.Text(logframe, height=self.log_height, state=tk.DISABLED,
                            wrap=tk.WORD)
@@ -96,17 +99,17 @@ class ActionDialog(tk.Toplevel):
         """Fenster-Schließen: bei laufendem Durchlauf zuerst rückfragen (der
         Worker-Thread selbst läuft als Daemon im Hintergrund weiter)."""
         if self._busy and not messagebox.askyesno(
-                self.title_text,
-                "Ein Vorgang läuft noch. Dialog trotzdem schließen?\n"
-                "(Die laufenden Kamera-Zugriffe werden im Hintergrund beendet, "
-                "ihre Ergebnisse sind dann aber nicht mehr sichtbar.)",
+                t(self.title_text),
+                t("Ein Vorgang läuft noch. Dialog trotzdem schließen?\n"
+                  "(Die laufenden Kamera-Zugriffe werden im Hintergrund beendet, "
+                  "ihre Ergebnisse sind dann aber nicht mehr sichtbar.)"),
                 parent=self):
             return
         self.destroy()
 
     # ------------------------------------------------------------ credentials
     def _build_credentials(self, parent):
-        cred = ttk.LabelFrame(parent, text="Zugangsdaten", padding=8)
+        cred = ttk.LabelFrame(parent, text=t("Zugangsdaten"), padding=8)
         cred.pack(fill=tk.X, pady=(8, 4))
         self.user_var = tk.StringVar(value="root")
         self.pass_var = tk.StringVar()
@@ -114,18 +117,18 @@ class ActionDialog(tk.Toplevel):
         self.port_var = tk.StringVar()
         self.timeout_var = tk.IntVar(value=10)
 
-        ttk.Label(cred, text="Benutzer:").grid(row=0, column=0, sticky=tk.W, padx=4, pady=2)
+        ttk.Label(cred, text=t("Benutzer:")).grid(row=0, column=0, sticky=tk.W, padx=4, pady=2)
         self._user_entry = ttk.Entry(cred, textvariable=self.user_var, width=18)
         self._user_entry.grid(row=0, column=1, padx=4, pady=2)
-        ttk.Label(cred, text="Passwort:").grid(row=0, column=2, sticky=tk.W, padx=4, pady=2)
+        ttk.Label(cred, text=t("Passwort:")).grid(row=0, column=2, sticky=tk.W, padx=4, pady=2)
         self._pass_entry = ttk.Entry(cred, textvariable=self.pass_var, width=18, show="*")
         self._pass_entry.grid(row=0, column=3, padx=4, pady=2)
-        ttk.Label(cred, text="Verbindung:").grid(row=1, column=0, sticky=tk.W, padx=4, pady=2)
+        ttk.Label(cred, text=t("Verbindung:")).grid(row=1, column=0, sticky=tk.W, padx=4, pady=2)
         ttk.Combobox(cred, textvariable=self.scheme_var, width=15, state="readonly",
                      values=("auto", "https", "http")).grid(row=1, column=1, padx=4, pady=2)
-        ttk.Label(cred, text="Port (optional):").grid(row=1, column=2, sticky=tk.W, padx=4, pady=2)
+        ttk.Label(cred, text=t("Port (optional):")).grid(row=1, column=2, sticky=tk.W, padx=4, pady=2)
         ttk.Entry(cred, textvariable=self.port_var, width=18).grid(row=1, column=3, padx=4, pady=2)
-        ttk.Label(cred, text="Timeout (s):").grid(row=2, column=0, sticky=tk.W, padx=4, pady=2)
+        ttk.Label(cred, text=t("Timeout (s):")).grid(row=2, column=0, sticky=tk.W, padx=4, pady=2)
         ttk.Spinbox(cred, from_=2, to=120, width=6, textvariable=self.timeout_var).grid(
             row=2, column=1, sticky=tk.W, padx=4, pady=2)
 
@@ -135,7 +138,7 @@ class ActionDialog(tk.Toplevel):
         self.use_vault_var = tk.BooleanVar(value=self.vault is not None)
         self._vault_chk = ttk.Checkbutton(
             cred, variable=self.use_vault_var, command=self._on_use_vault_toggle,
-            text="Zugangsdaten aus Tresor verwenden — Felder oben nur als Rückfall")
+            text=t("Zugangsdaten aus Tresor verwenden — Felder oben nur als Rückfall"))
         self._vault_chk.grid(row=3, column=0, columnspan=4, sticky=tk.W, padx=4, pady=(6, 2))
         if self.vault is None:
             self._vault_chk.state(["disabled"])
@@ -226,7 +229,7 @@ class ActionDialog(tk.Toplevel):
             cache[key] = (username, password)
 
     # ------------------------------------------------------------- background run
-    def run_per_camera(self, op, done_msg="Fertig.", parallel=False, max_workers=4):
+    def run_per_camera(self, op, done_msg=None, parallel=False, max_workers=4):
         """Run ``op(plugin, camera, creds)`` for each camera in a worker thread.
 
         ``op`` returns a short status string on success or raises on failure; each
@@ -238,6 +241,8 @@ class ActionDialog(tk.Toplevel):
         """
         if self._busy:
             return
+        if done_msg is None:
+            done_msg = t("Fertig.")
         self._parallel = parallel
         self._max_workers = max(1, int(max_workers))
         # Tresor wird gebraucht (zum Lesen der Passwörter und/oder zum Speichern),
@@ -246,13 +251,13 @@ class ActionDialog(tk.Toplevel):
         wants_read = self.use_vault_var.get()
         wants_store = self._wants_vault()
         if (wants_read or wants_store) and self.vault is not None and self.vault.is_locked:
-            reason = ("Zum Verwenden und Speichern der Passwörter" if wants_store
-                      else "Zum Verwenden der gespeicherten Passwörter")
+            reason = (t("Zum Verwenden und Speichern der Passwörter") if wants_store
+                      else t("Zum Verwenden der gespeicherten Passwörter"))
             if not ensure_vault_unlocked(self, self.vault, reason) and wants_store:
                 messagebox.showinfo(
-                    self.title_text,
-                    "Ohne Tresor werden die Passwörter nur für die laufende "
-                    "Sitzung gemerkt (beim Schließen verworfen).", parent=self)
+                    t(self.title_text),
+                    t("Ohne Tresor werden die Passwörter nur für die laufende "
+                      "Sitzung gemerkt (beim Schließen verworfen)."), parent=self)
         self._busy = True
         self.progress.start(12)
         self._log_clear()
@@ -264,7 +269,7 @@ class ActionDialog(tk.Toplevel):
         name = cam.get("Name", "?")
         plugin = self.plugin_for(cam)
         if plugin is None:
-            self._q.put(("line", f"✗ {name} ({ip}): kein Plugin"))
+            self._q.put(("line", f"✗ {name} ({ip}): " + t("kein Plugin")))
             return
         try:
             msg = op(plugin, cam, self.creds_for(cam))

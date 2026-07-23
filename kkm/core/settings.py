@@ -43,6 +43,7 @@ DEFAULTS = {
     "firmware_repo_url": "",     # leer -> Vorgabe des Plugins (interner Spiegel möglich)
     "start_maximized": False,    # Hauptfenster beim Start maximiert öffnen
     "disclaimer_accepted": False, # Haftungshinweis dauerhaft bestätigt (nicht wieder zeigen)
+    "language": "de",            # UI-Sprache: "de" | "en" (wirkt beim nächsten Start)
 }
 
 

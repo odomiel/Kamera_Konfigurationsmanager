@@ -47,6 +47,12 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
+try:
+    from kkm.core import t                 # Uebersetzung, wenn in KKM eingebettet
+except Exception:                          # eigenstaendig lauffaehig (stdlib-only)
+    def t(s, /, **kw):
+        return s.format(**kw) if kw else s
+
 DEVICE_PATH = "/onvif/device_service"
 DEFAULT_PORTS = {"http": 80, "https": 443}
 
@@ -166,19 +172,19 @@ def call(url: str, body: str, username: str = "", password: str = "",
         except ET.ParseError:
             reason = ""
         if exc.code == 401:
-            raise OnvifError("Authentifizierung fehlgeschlagen — ONVIF-Benutzer/"
-                             "Passwort falsch, oder die Uhr der Kamera weicht ab.")
-        raise OnvifError(reason or f"HTTP {exc.code}: {exc.reason}") from exc
+            raise OnvifError(t("Authentifizierung fehlgeschlagen — ONVIF-Benutzer/"
+                             "Passwort falsch, oder die Uhr der Kamera weicht ab."))
+        raise OnvifError(reason or t("HTTP {code}: {reason}", code=exc.code, reason=exc.reason)) from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        raise OnvifError(f"Nicht erreichbar: {exc}") from exc
+        raise OnvifError(t("Nicht erreichbar: {err}", err=exc)) from exc
 
     try:
         root = ET.fromstring(raw)
     except ET.ParseError as exc:
-        raise OnvifError(f"Unlesbare Antwort: {exc}") from exc
+        raise OnvifError(t("Unlesbare Antwort: {err}", err=exc)) from exc
     reason = _fault(root)
     if reason:
-        raise OnvifError(f"ONVIF-Fehler: {reason}")
+        raise OnvifError(t("ONVIF-Fehler: {reason}", reason=reason))
     return root
 
 
@@ -239,7 +245,7 @@ def create_user(url, username, password, offset, new_user, new_password,
             f"<tt:UserLevel>{_escape(level)}</tt:UserLevel>"
             "</tds:User></tds:CreateUsers>")
     call(url, body, username, password, offset, timeout)
-    return f"ONVIF-Benutzer '{new_user}' angelegt ({level})"
+    return t("ONVIF-Benutzer '{user}' angelegt ({level})", user=new_user, level=level)
 
 
 def set_user(url, username, password, offset, target_user, new_password,
@@ -250,7 +256,7 @@ def set_user(url, username, password, offset, target_user, new_password,
             f"<tt:UserLevel>{_escape(level)}</tt:UserLevel>"
             "</tds:User></tds:SetUser>")
     call(url, body, username, password, offset, timeout)
-    return f"ONVIF-Passwort von '{target_user}' geändert"
+    return t("ONVIF-Passwort von '{user}' geändert", user=target_user)
 
 
 def network_interfaces(url, username, password, offset, timeout=10) -> list[dict]:
@@ -282,7 +288,7 @@ def _prefix_len(mask: str) -> int:
     try:
         return ipaddress.IPv4Network(f"0.0.0.0/{mask}").prefixlen
     except ValueError as exc:
-        raise OnvifError(f"Ungültige Subnetzmaske: {mask}") from exc
+        raise OnvifError(t("Ungültige Subnetzmaske: {mask}", mask=mask)) from exc
 
 
 def set_static_ip(url, username, password, offset, token, new_ip, mask,
@@ -304,8 +310,8 @@ def set_static_ip(url, username, password, offset, token, new_ip, mask,
                    f"<tds:IPv4Address>{_escape(gateway)}</tds:IPv4Address>"
                    "</tds:SetNetworkDefaultGateway>")
         call(url, gw_body, username, password, offset, timeout)
-    msg = f"IP auf {new_ip}/{prefix} gesetzt"
-    return msg + (" — Neustart nötig" if reboot else "")
+    msg = t("IP auf {ip}/{prefix} gesetzt", ip=new_ip, prefix=prefix)
+    return msg + (t(" — Neustart nötig") if reboot else "")
 
 
 def set_dhcp(url, username, password, offset, token, timeout=10) -> str:
@@ -316,7 +322,7 @@ def set_dhcp(url, username, password, offset, token, timeout=10) -> str:
             "</tds:NetworkInterface></tds:SetNetworkInterfaces>")
     root = call(url, body, username, password, offset, timeout)
     reboot = _text(root, "RebootNeeded").lower() == "true"
-    return "auf DHCP umgestellt" + (" — Neustart nötig" if reboot else "")
+    return t("auf DHCP umgestellt") + (t(" — Neustart nötig") if reboot else "")
 
 
 def factory_default(url, username, password, offset, hard=False, timeout=10) -> str:
@@ -325,4 +331,4 @@ def factory_default(url, username, password, offset, hard=False, timeout=10) -> 
     body = f"<tds:SetSystemFactoryDefault><tds:FactoryDefault>{kind}" \
            "</tds:FactoryDefault></tds:SetSystemFactoryDefault>"
     call(url, body, username, password, offset, timeout)
-    return f"auf Werkseinstellungen zurückgesetzt ({kind})"
+    return t("auf Werkseinstellungen zurückgesetzt ({kind})", kind=kind)

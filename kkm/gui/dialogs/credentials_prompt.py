@@ -28,11 +28,13 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from kkm.core import t
+
 
 class CredentialPromptDialog(tk.Toplevel):
     def __init__(self, parent, camera, remaining):
         super().__init__(parent)
-        self.title("Zugangsdaten benötigt")
+        self.title(t("Zugangsdaten benötigt"))
         self.transient(parent)
         self.grab_set()
         self.result = None
@@ -44,33 +46,33 @@ class CredentialPromptDialog(tk.Toplevel):
         frame = ttk.Frame(self, padding=12)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(frame, text=f"Zugangsdaten für: {name} ({ip})",
+        ttk.Label(frame, text=t("Zugangsdaten für: {name} ({ip})", name=name, ip=ip),
                   font=("TkDefaultFont", 10, "bold")).grid(
             row=0, column=0, columnspan=2, sticky=tk.W)
-        ttk.Label(frame, text=f"Noch {remaining} Kamera(s) ohne gespeicherte Zugangsdaten.").grid(
+        ttk.Label(frame, text=t("Noch {n} Kamera(s) ohne gespeicherte Zugangsdaten.", n=remaining)).grid(
             row=1, column=0, columnspan=2, sticky=tk.W, pady=(0, 8))
 
         self.user = tk.StringVar(value="root")
         self.pw = tk.StringVar()
         self.try_all = tk.BooleanVar(value=True)
 
-        ttk.Label(frame, text="Benutzer:").grid(row=2, column=0, sticky=tk.W, pady=2)
+        ttk.Label(frame, text=t("Benutzer:")).grid(row=2, column=0, sticky=tk.W, pady=2)
         ttk.Entry(frame, textvariable=self.user, width=24).grid(
             row=2, column=1, sticky=tk.W, padx=4, pady=2)
-        ttk.Label(frame, text="Passwort:").grid(row=3, column=0, sticky=tk.W, pady=2)
+        ttk.Label(frame, text=t("Passwort:")).grid(row=3, column=0, sticky=tk.W, pady=2)
         pw_entry = ttk.Entry(frame, textvariable=self.pw, width=24, show="*")
         pw_entry.grid(row=3, column=1, sticky=tk.W, padx=4, pady=2)
 
         ttk.Checkbutton(
             frame,
-            text="Dieses Passwort bei allen Kameras mit unbekannten Zugangsdaten ausprobieren",
+            text=t("Dieses Passwort bei allen Kameras mit unbekannten Zugangsdaten ausprobieren"),
             variable=self.try_all).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(8, 4))
 
         btns = ttk.Frame(frame)
         btns.grid(row=5, column=0, columnspan=2, sticky=tk.E, pady=(8, 0))
-        ttk.Button(btns, text="Anwenden", command=self._apply).pack(side=tk.RIGHT)
-        ttk.Button(btns, text="Überspringen", command=self._skip).pack(side=tk.RIGHT, padx=6)
-        ttk.Button(btns, text="Abbrechen", command=self._cancel).pack(side=tk.RIGHT)
+        ttk.Button(btns, text=t("Anwenden"), command=self._apply).pack(side=tk.RIGHT)
+        ttk.Button(btns, text=t("Überspringen"), command=self._skip).pack(side=tk.RIGHT, padx=6)
+        ttk.Button(btns, text=t("Abbrechen"), command=self._cancel).pack(side=tk.RIGHT)
 
         pw_entry.focus_set()
         self.bind("<Return>", lambda _e: self._apply())

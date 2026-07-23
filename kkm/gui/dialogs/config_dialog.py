@@ -44,7 +44,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Capability, camera_key
+from kkm.core import Capability, camera_key, t
 from kkm.core import get_first_ip
 from .base import ActionDialog
 from .vault_access import ensure_vault_unlocked
@@ -59,28 +59,28 @@ class ConfigDialog(ActionDialog):
         self._read_q: queue.Queue = queue.Queue()
 
         # --- Import ---
-        imp = ttk.LabelFrame(parent, text="Importieren (auf alle ausgewählten Kameras)",
+        imp = ttk.LabelFrame(parent, text=t("Importieren (auf alle ausgewählten Kameras)"),
                              padding=8)
         imp.pack(fill=tk.X, pady=(0, 6))
         row = ttk.Frame(imp)
         row.pack(fill=tk.X)
         ttk.Entry(row, textvariable=self._cfg_path).pack(
             side=tk.LEFT, fill=tk.X, expand=True)
-        ttk.Button(row, text="Datei…", command=self._choose_cfg).pack(side=tk.LEFT, padx=4)
-        self._cfg_info = ttk.Label(imp, text="Keine Datei gewählt.")
+        ttk.Button(row, text=t("Datei…"), command=self._choose_cfg).pack(side=tk.LEFT, padx=4)
+        self._cfg_info = ttk.Label(imp, text=t("Keine Datei gewählt."))
         self._cfg_info.pack(anchor=tk.W, pady=(4, 0))
-        ttk.Button(imp, text="Importieren", command=self._do_import).pack(
+        ttk.Button(imp, text=t("Importieren"), command=self._do_import).pack(
             anchor=tk.W, pady=(6, 0))
 
         # --- Export ---
-        exp = ttk.LabelFrame(parent, text="Exportieren (von der ersten ausgewählten Kamera)",
+        exp = ttk.LabelFrame(parent, text=t("Exportieren (von der ersten ausgewählten Kamera)"),
                              padding=8)
         exp.pack(fill=tk.X)
         ttk.Label(
             exp,
-            text="Liest die Konfiguration aus und speichert ausgewählte Parameter als .cfg.",
+            text=t("Liest die Konfiguration aus und speichert ausgewählte Parameter als .cfg."),
         ).pack(anchor=tk.W)
-        ttk.Button(exp, text="Konfiguration auslesen…", command=self._do_export_read).pack(
+        ttk.Button(exp, text=t("Konfiguration auslesen…"), command=self._do_export_read).pack(
             anchor=tk.W, pady=(6, 0))
 
         # --- Werkseinstellungen (Reset) — nur wenn das Plugin es unterstützt ---
@@ -92,16 +92,16 @@ class ConfigDialog(ActionDialog):
             self._reset_factory_keys: list[str] = []
             self._reset_mode = tk.StringVar(value="keep")
             rst = ttk.LabelFrame(
-                parent, text="Werkseinstellungen (auf alle ausgewählten Kameras)",
+                parent, text=t("Werkseinstellungen (auf alle ausgewählten Kameras)"),
                 padding=8)
             rst.pack(fill=tk.X, pady=(6, 0))
-            ttk.Label(rst, text="Setzt die Kamera(s) zurück; sie starten danach neu.").pack(
+            ttk.Label(rst, text=t("Setzt die Kamera(s) zurück; sie starten danach neu.")).pack(
                 anchor=tk.W)
-            ttk.Radiobutton(rst, text="Werksreset mit Erhalt der IP-Adresse",
+            ttk.Radiobutton(rst, text=t("Werksreset mit Erhalt der IP-Adresse"),
                             value="keep", variable=self._reset_mode).pack(anchor=tk.W)
-            ttk.Radiobutton(rst, text="Kompletter Werksreset (inkl. IP-Adresse)",
+            ttk.Radiobutton(rst, text=t("Kompletter Werksreset (inkl. IP-Adresse)"),
                             value="full", variable=self._reset_mode).pack(anchor=tk.W)
-            ttk.Button(rst, text="Auf Werkseinstellungen zurücksetzen",
+            ttk.Button(rst, text=t("Auf Werkseinstellungen zurücksetzen"),
                        command=self._do_factory_reset).pack(anchor=tk.W, pady=(6, 0))
 
         self.after(120, self._check_read)
@@ -109,13 +109,13 @@ class ConfigDialog(ActionDialog):
     # ------------------------------------------------------------- factory reset
     def _do_factory_reset(self):
         keep_ip = self._reset_mode.get() == "keep"
-        mode = ("mit Erhalt der IP-Adresse" if keep_ip
-                else "inkl. IP-Adresse — kompletter Reset")
+        mode = (t("mit Erhalt der IP-Adresse") if keep_ip
+                else t("inkl. IP-Adresse — kompletter Reset"))
         if not messagebox.askyesno(
-                self.title_text,
-                f"{len(self.cameras)} Kamera(s) auf Werkseinstellungen zurücksetzen "
-                f"({mode})?\n\nDie Kameras starten danach neu. Diese Aktion kann "
-                "nicht rückgängig gemacht werden.", parent=self):
+                t(self.title_text),
+                t("{n} Kamera(s) auf Werkseinstellungen zurücksetzen ({mode})?\n\n"
+                  "Die Kameras starten danach neu. Diese Aktion kann "
+                  "nicht rückgängig gemacht werden.", n=len(self.cameras), mode=mode), parent=self):
             return
         self._reset_all_keys.clear()
         self._reset_factory_keys.clear()
@@ -126,18 +126,18 @@ class ConfigDialog(ActionDialog):
             self._reset_all_keys.append(key)   # Zugangsdaten sind jetzt ungültig
             if not keep_ip:
                 # IP ändert sich -> nicht am alten Ziel pollbar. Nur Hinweis.
-                return ("Reset ausgelöst — Kamera startet neu und ist danach unter "
-                        "Standard-/DHCP-Adresse erreichbar (bitte neu suchen).")
+                return t("Reset ausgelöst — Kamera startet neu und ist danach unter "
+                         "Standard-/DHCP-Adresse erreichbar (bitte neu suchen).")
             # keep_ip: warten, bis die Kamera neu gestartet und wieder erreichbar
             # UND im Werkszustand (Erstkonfiguration) ist.
             if self._wait_until_factory(plugin, camera, creds):
                 self._reset_factory_keys.append(key)
-                return ("Werksreset erfolgreich — Kamera wieder erreichbar, "
-                        "Erstkonfiguration erforderlich.")
-            return ("Reset ausgelöst, aber Kamera kam im Zeitfenster nicht "
-                    "erreichbar/werksneu zurück — später erneut suchen.")
+                return t("Werksreset erfolgreich — Kamera wieder erreichbar, "
+                         "Erstkonfiguration erforderlich.")
+            return t("Reset ausgelöst, aber Kamera kam im Zeitfenster nicht "
+                     "erreichbar/werksneu zurück — später erneut suchen.")
 
-        self.run_per_camera(op, done_msg="Werksreset abgeschlossen.")
+        self.run_per_camera(op, done_msg=t("Werksreset abgeschlossen."))
 
     def _wait_until_factory(self, plugin, camera, creds,
                             timeout=180, interval=5) -> bool:
@@ -146,7 +146,8 @@ class ConfigDialog(ActionDialog):
         sobald der Werkszustand bestätigt ist."""
         name = camera.get("Name", "?")
         ip = get_first_ip(camera) or "?"
-        msg = f"… {name} ({ip}): warte auf Neustart und Erstkonfigurationsmodus…"
+        msg = "… " + t("{name} ({ip}): warte auf Neustart und Erstkonfigurationsmodus…",
+                       name=name, ip=ip)
         return bool(self.poll_until(
             lambda: plugin.is_unconfigured(camera, creds),
             timeout, interval, start_msg=msg))
@@ -166,65 +167,64 @@ class ConfigDialog(ActionDialog):
     # ----------------------------------------------------------------- import
     def _choose_cfg(self):
         path = filedialog.askopenfilename(
-            parent=self, title="ADM-Konfiguration wählen",
-            filetypes=[("Axis ADM-Konfiguration", "*.cfg"), ("Alle Dateien", "*.*")])
+            parent=self, title=t("ADM-Konfiguration wählen"),
+            filetypes=[(t("Axis ADM-Konfiguration"), "*.cfg"), (t("Alle Dateien"), "*.*")])
         if not path:
             return
         self._cfg_path.set(path)
         try:
             cfg = self.plugin0().parse_config_file(path)
-            info = (f"Modell: {cfg.get('model') or '?'} · "
-                    f"Firmware: {cfg.get('firmware') or '?'} · "
-                    f"{len(cfg.get('parameters', {}))} Parameter · "
-                    f"{len(cfg.get('profiles', []))} Stream-Profile")
+            info = t("Modell: {model} · Firmware: {fw} · {np} Parameter · {ns} Stream-Profile",
+                     model=cfg.get('model') or '?', fw=cfg.get('firmware') or '?',
+                     np=len(cfg.get('parameters', {})), ns=len(cfg.get('profiles', [])))
             if cfg.get("vmd4") is not None:
-                info += " · Bewegungserkennung (VMD4)"
+                info += " · " + t("Bewegungserkennung (VMD4)")
             self._cfg_info.config(text=info)
         except Exception as exc:  # noqa: BLE001 - Dateifehler des Plugins anzeigen
-            self._cfg_info.config(text=f"Ungültig: {exc}")
+            self._cfg_info.config(text=t("Ungültig: {err}", err=exc))
             self._cfg_path.set("")
 
     def _do_import(self):
         path = self._cfg_path.get().strip()
         if not path:
-            messagebox.showinfo(self.title_text, "Bitte zuerst eine .cfg-Datei wählen.", parent=self)
+            messagebox.showinfo(t(self.title_text), t("Bitte zuerst eine .cfg-Datei wählen."), parent=self)
             return
         try:
             # Einmal vorab lesen: validiert die Datei und liefert zugleich, was
             # drinsteht — daraus baut sich die Auswahl unten auf.
             config = self.plugin0().parse_config_file(path)
         except Exception as exc:  # noqa: BLE001
-            messagebox.showerror(self.title_text, str(exc), parent=self)
+            messagebox.showerror(t(self.title_text), str(exc), parent=self)
             return
 
         dlg = ConfigSelectDialog(
-            self, config, title="Einstellungen für den Import auswählen",
-            ok_text="Importieren", verb="importieren")
+            self, config, title=t("Einstellungen für den Import auswählen"),
+            ok_text=t("Importieren"), verb=t("importieren"))
         self.wait_window(dlg)
         if dlg.result is None:
             return
         params, profiles, with_vmd4 = dlg.result
         if not params and not profiles and not with_vmd4:
-            messagebox.showinfo(self.title_text,
-                                "Nichts ausgewählt — es gibt nichts zu importieren.",
+            messagebox.showinfo(t(self.title_text),
+                                t("Nichts ausgewählt — es gibt nichts zu importieren."),
                                 parent=self)
             return
 
-        vmd_note = " + Bewegungserkennung" if with_vmd4 and config.get("vmd4") else ""
+        vmd_note = (" + " + t("Bewegungserkennung")) if with_vmd4 and config.get("vmd4") else ""
         if not messagebox.askyesno(
-                self.title_text,
-                f"{len(params)} Parameter, {len(profiles)} Stream-Profil(e){vmd_note} "
-                f"auf {len(self.cameras)} Kamera(s) anwenden?", parent=self):
+                t(self.title_text),
+                t("{np} Parameter, {ns} Stream-Profil(e){vmd} auf {nc} Kamera(s) anwenden?",
+                  np=len(params), ns=len(profiles), vmd=vmd_note, nc=len(self.cameras)), parent=self):
             return
 
         def op(plugin, camera, creds):
             res = plugin.import_config(camera, creds, path, selected_params=params,
                                        selected_profiles=profiles, with_vmd4=with_vmd4)
             if isinstance(res, int):
-                return f"angewendet ({res} Parameter)"
-            return str(res) if res else "angewendet"
+                return t("angewendet ({n} Parameter)", n=res)
+            return str(res) if res else t("angewendet")
 
-        self.run_per_camera(op, done_msg="Import abgeschlossen.")
+        self.run_per_camera(op, done_msg=t("Import abgeschlossen."))
 
     # ----------------------------------------------------------------- export
     def _do_export_read(self):
@@ -233,18 +233,18 @@ class ConfigDialog(ActionDialog):
         camera = self.cameras[0]
         plugin = self.plugin_for(camera)
         if plugin is None:
-            messagebox.showerror(self.title_text, "Kein Plugin für diese Kamera.", parent=self)
+            messagebox.showerror(t(self.title_text), t("Kein Plugin für diese Kamera."), parent=self)
             return
         # Zugangsdaten aus dem Tresor gewünscht, aber gesperrt -> anbieten zu
         # entsperren, damit das Passwort fürs Auslesen zur Verfügung steht.
         if self.use_vault_var.get() and self.vault is not None and self.vault.is_locked:
             ensure_vault_unlocked(self, self.vault,
-                                  "Zum Verwenden der gespeicherten Passwörter")
+                                  t("Zum Verwenden der gespeicherten Passwörter"))
         self._busy = True
         self.progress.start(12)
         self._log_clear()
-        self._log_line(f"Lese Konfiguration von {camera.get('Name','?')} "
-                       f"({get_first_ip(camera)}) …")
+        self._log_line(t("Lese Konfiguration von {name} ({ip}) …",
+                         name=camera.get('Name', '?'), ip=get_first_ip(camera)))
         creds = self.creds_for(camera)
         threading.Thread(target=self._worker_read, args=(plugin, camera, creds),
                          daemon=True).start()
@@ -262,12 +262,12 @@ class ConfigDialog(ActionDialog):
             self.progress.stop()
             self._busy = False
             if kind == "err":
-                self._log_line(f"✗ Auslesen fehlgeschlagen: {payload}")
+                self._log_line("✗ " + t("Auslesen fehlgeschlagen: {err}", err=payload))
             else:
-                vmd_note = " + Bewegungserkennung (VMD4)" if payload.get("vmd4") else ""
+                vmd_note = (" + " + t("Bewegungserkennung (VMD4)")) if payload.get("vmd4") else ""
                 self._log_line(
-                    f"✓ Ausgelesen: {len(payload.get('parameters', {}))} Parameter"
-                    f"{vmd_note}")
+                    "✓ " + t("Ausgelesen: {n} Parameter", n=len(payload.get('parameters', {})))
+                    + vmd_note)
                 self._open_param_select(payload)
         except queue.Empty:
             pass
@@ -275,16 +275,16 @@ class ConfigDialog(ActionDialog):
 
     def _open_param_select(self, config: dict):
         dlg = ConfigSelectDialog(self, config,
-                                 title="Einstellungen für den Export auswählen",
-                                 ok_text="Speichern…", verb="exportieren")
+                                 title=t("Einstellungen für den Export auswählen"),
+                                 ok_text=t("Speichern…"), verb=t("exportieren"))
         self.wait_window(dlg)
         if dlg.result is None:
             return
         selected, profiles, with_vmd4 = dlg.result
         path = filedialog.asksaveasfilename(
-            parent=self, title="Als ADM-Konfiguration speichern",
+            parent=self, title=t("Als ADM-Konfiguration speichern"),
             defaultextension=".cfg",
-            filetypes=[("Axis ADM-Konfiguration", "*.cfg")])
+            filetypes=[(t("Axis ADM-Konfiguration"), "*.cfg")])
         if not path:
             return
         try:
@@ -292,12 +292,12 @@ class ConfigDialog(ActionDialog):
                                              with_profiles=bool(profiles),
                                              selected_profiles=profiles,
                                              with_vmd4=with_vmd4)
-            extra = " + Bewegungserkennung" if with_vmd4 and config.get("vmd4") else ""
+            extra = (" + " + t("Bewegungserkennung")) if with_vmd4 and config.get("vmd4") else ""
             self._log_line(
-                f"✓ Gespeichert: {path} ({len(selected)} Parameter, "
-                f"{len(profiles)} Profil(e){extra})")
+                "✓ " + t("Gespeichert: {path} ({np} Parameter, {ns} Profil(e){extra})",
+                         path=path, np=len(selected), ns=len(profiles), extra=extra))
         except Exception as exc:  # noqa: BLE001
-            messagebox.showerror(self.title_text, f"Speichern fehlgeschlagen: {exc}", parent=self)
+            messagebox.showerror(t(self.title_text), t("Speichern fehlgeschlagen: {err}", err=exc), parent=self)
 
 
 class ConfigSelectDialog(tk.Toplevel):
@@ -340,40 +340,40 @@ class ConfigSelectDialog(tk.Toplevel):
 
         model = config.get("model") or "?"
         firmware = config.get("firmware") or "?"
-        ttk.Label(outer, text=f"Quelle: {model} · Firmware {firmware}").pack(anchor=tk.W)
+        ttk.Label(outer, text=t("Quelle: {model} · Firmware {fw}", model=model, fw=firmware)).pack(anchor=tk.W)
 
         # --- Parameter ---
         top = ttk.Frame(outer)
         top.pack(fill=tk.X, pady=(6, 0))
-        ttk.Label(top, text="Filter:").pack(side=tk.LEFT)
+        ttk.Label(top, text=t("Filter:")).pack(side=tk.LEFT)
         self._filter = tk.StringVar()
         self._filter.trace_add("write", lambda *_: self._refresh())
         ttk.Entry(top, textvariable=self._filter, width=30).pack(side=tk.LEFT, padx=4)
-        ttk.Button(top, text="Alle", command=self._select_all).pack(side=tk.RIGHT)
-        ttk.Button(top, text="Keine", command=self._select_none).pack(side=tk.RIGHT, padx=4)
+        ttk.Button(top, text=t("Alle"), command=self._select_all).pack(side=tk.RIGHT)
+        ttk.Button(top, text=t("Keine"), command=self._select_none).pack(side=tk.RIGHT, padx=4)
         self._only_selected = tk.BooleanVar(value=False)
-        ttk.Checkbutton(top, text="Nur Ausgewählte anzeigen",
+        ttk.Checkbutton(top, text=t("Nur Ausgewählte anzeigen"),
                         variable=self._only_selected,
                         command=self._refresh).pack(side=tk.RIGHT, padx=4)
 
         self.tree = ttk.Treeview(outer, columns=("value",), show="tree headings",
                                  selectmode="none", height=14)
-        self.tree.heading("#0", text="Parameter")
-        self.tree.heading("value", text="Wert")
+        self.tree.heading("#0", text=t("Parameter"))
+        self.tree.heading("value", text=t("Wert"))
         self.tree.column("#0", width=380)
         self.tree.column("value", width=240)
         self.tree.pack(fill=tk.BOTH, expand=True, pady=6)
         self.tree.bind("<Button-1>", self._toggle)
 
         # --- Stream-Profile (einzeln an-/abwählbar) ---
-        prof_frame = ttk.LabelFrame(outer, text=f"Stream-Profile ({verb})", padding=6)
+        prof_frame = ttk.LabelFrame(outer, text=t("Stream-Profile ({verb})", verb=verb), padding=6)
         prof_frame.pack(fill=tk.X)
         if self._profiles:
             self.prof_tree = ttk.Treeview(prof_frame, columns=("desc",),
                                           show="tree headings", selectmode="none",
                                           height=min(4, len(self._profiles)))
-            self.prof_tree.heading("#0", text="Profil")
-            self.prof_tree.heading("desc", text="Beschreibung")
+            self.prof_tree.heading("#0", text=t("Profil"))
+            self.prof_tree.heading("desc", text=t("Beschreibung"))
             self.prof_tree.column("#0", width=200)
             self.prof_tree.column("desc", width=380)
             self.prof_tree.pack(fill=tk.X)
@@ -381,17 +381,17 @@ class ConfigSelectDialog(tk.Toplevel):
             self._refresh_profiles()
         else:
             self.prof_tree = None
-            ttk.Label(prof_frame, text="Keine Stream-Profile enthalten.").pack(anchor=tk.W)
+            ttk.Label(prof_frame, text=t("Keine Stream-Profile enthalten.")).pack(anchor=tk.W)
 
         # --- Bewegungserkennung (VMD4) — nur, wenn die Konfiguration eine enthält ---
         has_vmd4 = config.get("vmd4") is not None
         self._with_vmd4 = tk.BooleanVar(value=has_vmd4)
         vmd4_chk = ttk.Checkbutton(
-            outer, text=f"Bewegungserkennung (VMD4) {verb}", variable=self._with_vmd4)
+            outer, text=t("Bewegungserkennung (VMD4) {verb}", verb=verb), variable=self._with_vmd4)
         vmd4_chk.pack(anchor=tk.W, pady=(6, 0))
         if not has_vmd4:
             vmd4_chk.state(["disabled"])
-            ttk.Label(outer, text="(keine Bewegungserkennung enthalten)").pack(anchor=tk.W)
+            ttk.Label(outer, text=t("(keine Bewegungserkennung enthalten)")).pack(anchor=tk.W)
 
         self._count_lbl = ttk.Label(outer)
         self._count_lbl.pack(anchor=tk.W, pady=(6, 0))
@@ -399,16 +399,17 @@ class ConfigSelectDialog(tk.Toplevel):
         btns = ttk.Frame(outer)
         btns.pack(fill=tk.X, pady=(8, 0))
         ttk.Button(btns, text=ok_text, command=self._ok).pack(side=tk.RIGHT)
-        ttk.Button(btns, text="Abbrechen", command=self.destroy).pack(side=tk.RIGHT, padx=6)
+        ttk.Button(btns, text=t("Abbrechen"), command=self.destroy).pack(side=tk.RIGHT, padx=6)
 
         self._refresh()
 
     # ------------------------------------------------------------------ Parameter
     def _update_count(self):
-        text = f"Ausgewählt: {len(self._selected)} von {len(self._all)} Parametern"
+        text = t("Ausgewählt: {n} von {total} Parametern",
+                 n=len(self._selected), total=len(self._all))
         if self._profiles:
-            text += (f" · {len(self._sel_profiles)} von {len(self._profiles)} "
-                     "Stream-Profilen")
+            text += t(" · {n} von {total} Stream-Profilen",
+                      n=len(self._sel_profiles), total=len(self._profiles))
         self._count_lbl.config(text=text)
 
     @staticmethod

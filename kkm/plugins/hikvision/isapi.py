@@ -42,6 +42,12 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
+try:
+    from kkm.core import t                 # Uebersetzung, wenn in KKM eingebettet
+except Exception:                          # eigenstaendig lauffaehig (stdlib-only)
+    def t(s, /, **kw):
+        return s.format(**kw) if kw else s
+
 # Hikvision-Geraete nutzen selbstsignierte Zertifikate -> Pruefung aus (wie Axis).
 _SSL_CONTEXT = ssl._create_unverified_context()
 
@@ -98,22 +104,22 @@ def _isapi_error(body: str) -> str:
     status = _text(root, "statusString") or _text(root, "lockStatus")
     if "lock" in sub or "lock" in status.lower():
         mins = _text(root, "retryLockTime") or _text(root, "lockTime")
-        extra = f" (noch {mins} s gesperrt)" if mins else ""
-        return ("Konto wegen zu vieler Fehlversuche gesperrt" + extra +
-                " — bitte warten, nicht erneut versuchen.")
+        extra = t(" (noch {mins} s gesperrt)", mins=mins) if mins else ""
+        return (t("Konto wegen zu vieler Fehlversuche gesperrt") + extra +
+                t(" — bitte warten, nicht erneut versuchen."))
     # Der subStatusCode ist oft aussagekraeftiger als der statusString (dieses
     # STD-CGI-OEM meldet z. B. beim Firmware-Upload einer modellfremden Datei den
     # generischen statusString „Invalid XML Content", der wahre Grund steht im
     # subStatusCode „badDevType"). Bekannte Codes klar uebersetzen.
     known = {
-        "baddevtype": "Firmware passt nicht zu diesem Gerätemodell (falscher Gerätetyp).",
-        "badlanguage": "Firmware hat die falsche Sprachvariante für dieses Gerät.",
-        "badversion": "Firmware-Version wird von diesem Gerät nicht akzeptiert.",
-        "notsupport": "Vom Gerät nicht unterstützt.",
+        "baddevtype": t("Firmware passt nicht zu diesem Gerätemodell (falscher Gerätetyp)."),
+        "badlanguage": t("Firmware hat die falsche Sprachvariante für dieses Gerät."),
+        "badversion": t("Firmware-Version wird von diesem Gerät nicht akzeptiert."),
+        "notsupport": t("Vom Gerät nicht unterstützt."),
     }
     if sub in known:
         return known[sub]
-    return status or sub or "unbekannter ISAPI-Fehler"
+    return status or sub or t("unbekannter ISAPI-Fehler")
 
 
 def _check_status(text: str) -> str:
@@ -136,10 +142,10 @@ def _check_status(text: str) -> str:
     status = _text(root, "statusString")
     sub = _text(root, "subStatusCode").lower()
     if "reboot" in status.lower() or "reboot" in sub:
-        return "Neustart nötig, damit die Änderung wirksam wird"
+        return t("Neustart nötig, damit die Änderung wirksam wird")
     if code == "1" or status.lower() == "ok" or sub == "ok":
         return ""
-    raise IsapiError(f"Geraet meldete: {_isapi_error(text)}")
+    raise IsapiError(t("Geraet meldete: {body}", body=_isapi_error(text)))
 
 
 # ------------------------------------------------------------------- HTTP
@@ -176,17 +182,17 @@ def _request(ip, username, password, path, method="GET", body=None,
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise IsapiError("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
-                             "falsch, oder die Uhr der Kamera weicht ab).")
+            raise IsapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
+                             "falsch, oder die Uhr der Kamera weicht ab)."))
         try:
             detail = _isapi_error(exc.read().decode("utf-8", errors="replace"))
         except Exception:  # noqa: BLE001 - Body evtl. nicht lesbar
             detail = ""
-        raise IsapiError(f"ISAPI-Fehler {exc.code}: {detail or exc.reason}")
+        raise IsapiError(t("ISAPI-Fehler {code}: {detail}", code=exc.code, detail=detail or exc.reason))
     except urllib.error.URLError as exc:
-        raise IsapiConnectError(f"Nicht erreichbar: {exc.reason}")
+        raise IsapiConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
     except (TimeoutError, OSError) as exc:
-        raise IsapiConnectError(f"Verbindungsfehler: {exc}")
+        raise IsapiConnectError(t("Verbindungsfehler: {err}", err=exc))
 
 
 def _request_auto(ip, username, password, path, method="GET", body=None,
@@ -239,7 +245,7 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
     try:
         root = ET.fromstring(text)
     except ET.ParseError as exc:
-        raise IsapiError(f"Unlesbare deviceInfo-Antwort: {exc}")
+        raise IsapiError(t("Unlesbare deviceInfo-Antwort: {err}", err=exc))
     return {
         "model": _text(root, "model") or "?",
         "serial": _text(root, "serialNumber") or "?",
@@ -346,7 +352,7 @@ def set_static_ip(ip, username, password, new_ip, subnet_mask, gateway,
         gw = ET.SubElement(root, _q(ns, "DefaultGateway"))
     _set_child(gw, ns, "ipAddress", gateway)
     hint = _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout)
-    return f"feste IP {new_ip} gesetzt" + (f" — {hint}" if hint else "")
+    return t("feste IP {ip} gesetzt", ip=new_ip) + (f" — {hint}" if hint else "")
 
 
 def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
@@ -355,7 +361,7 @@ def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
     root, ns = _read_ip_object(ip, username, password, iface, scheme, port, timeout)
     _set_child(root, ns, "addressingType", "dynamic")
     hint = _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout)
-    return "auf DHCP umgestellt" + (f" — {hint}" if hint else "")
+    return t("auf DHCP umgestellt") + (f" — {hint}" if hint else "")
 
 
 # --------------------------------------------------------------------- users
@@ -394,7 +400,7 @@ def add_user(ip, username, password, new_user, new_password, role="viewer",
                          method="POST", body=body, scheme=scheme, port=port,
                          timeout=timeout)
     _check_status(text)
-    return f"Benutzer '{new_user}' angelegt ({role})"
+    return t("Benutzer '{user}' angelegt ({role})", user=new_user, role=role)
 
 
 def set_user_password(ip, username, password, target_user, new_password,
@@ -404,7 +410,7 @@ def set_user_password(ip, username, password, target_user, new_password,
     users = _users(ip, username, password, scheme, port, timeout)
     match = next((u for u in users if u["name"] == target_user), None)
     if match is None or not match["id"]:
-        raise IsapiError(f"Benutzer '{target_user}' nicht gefunden.")
+        raise IsapiError(t("Benutzer '{user}' nicht gefunden.", user=target_user))
     body = ('<?xml version="1.0" encoding="UTF-8"?>'
             '<User xmlns="http://www.hikvision.com/ver20/XMLSchema">'
             f"<id>{_xml_escape(match['id'])}</id>"
@@ -414,7 +420,7 @@ def set_user_password(ip, username, password, target_user, new_password,
     text = _request_auto(ip, username, password, path, method="PUT", body=body,
                          scheme=scheme, port=port, timeout=timeout)
     _check_status(text)
-    return f"Passwort von '{target_user}' geaendert"
+    return t("Passwort von '{user}' geaendert", user=target_user)
 
 
 # ----------------------------------------------------------------- firmware
@@ -434,9 +440,9 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
                              method="PUT", body=data, scheme=scheme, port=port,
                              timeout=timeout, content_type="application/octet-stream")
     except IsapiConnectError:
-        return "Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu"
+        return t("Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu")
     _check_status(text)
-    return "Firmware aufgespielt — Geraet startet neu"
+    return t("Firmware aufgespielt — Geraet startet neu")
 
 
 # ------------------------------------------------------------- factory reset
@@ -451,5 +457,5 @@ def factory_reset(ip, username, password, keep_ip=True, scheme="auto", port=None
                       scheme=scheme, port=port, timeout=timeout)
     except IsapiConnectError:
         pass   # Reboot kappt die Verbindung -> erwartet
-    return "auf Werkseinstellungen zurueckgesetzt" + (
-        " (IP erhalten)" if keep_ip else " (inkl. IP)")
+    return t("auf Werkseinstellungen zurueckgesetzt") + (
+        t(" (IP erhalten)") if keep_ip else t(" (inkl. IP)"))

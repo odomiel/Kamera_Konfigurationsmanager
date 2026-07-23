@@ -41,6 +41,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+try:
+    from kkm.core import t                 # Uebersetzung, wenn in KKM eingebettet
+except Exception:                          # eigenstaendig lauffaehig (stdlib-only)
+    def t(s, /, **kw):
+        return s.format(**kw) if kw else s
+
 # Dahua-Geraete nutzen selbstsignierte Zertifikate -> Pruefung aus (wie Axis/Hikvision).
 _SSL_CONTEXT = ssl._create_unverified_context()
 
@@ -89,12 +95,12 @@ def _dahua_error(body: str) -> str:
     damit der Aufrufer nicht weiter retry-t (was die Sperre verlaengert)."""
     low = body.lower()
     if "lock" in low or "blocked" in low:
-        return ("Konto wegen zu vieler Fehlversuche gesperrt — bitte warten, "
-                "nicht erneut versuchen.")
+        return t("Konto wegen zu vieler Fehlversuche gesperrt — bitte warten, "
+                 "nicht erneut versuchen.")
     m = re.search(r"error\s*:?\s*(.+)", body, re.IGNORECASE)
     if m:
         return m.group(1).strip()[:200]
-    return body.strip()[:200] or "unbekannter Dahua-Fehler"
+    return body.strip()[:200] or t("unbekannter Dahua-Fehler")
 
 
 # ------------------------------------------------------------------- HTTP
@@ -122,17 +128,17 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise DahuaError("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
-                             "falsch, oder die Uhr der Kamera weicht ab).")
+            raise DahuaError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
+                             "falsch, oder die Uhr der Kamera weicht ab)."))
         try:
             detail = _dahua_error(exc.read().decode("utf-8", errors="replace"))
         except Exception:  # noqa: BLE001 - Body evtl. nicht lesbar
             detail = ""
-        raise DahuaError(f"Dahua-Fehler {exc.code}: {detail or exc.reason}")
+        raise DahuaError(t("Dahua-Fehler {code}: {detail}", code=exc.code, detail=detail or exc.reason))
     except urllib.error.URLError as exc:
-        raise DahuaConnectError(f"Nicht erreichbar: {exc.reason}")
+        raise DahuaConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
     except (TimeoutError, OSError) as exc:
-        raise DahuaConnectError(f"Verbindungsfehler: {exc}")
+        raise DahuaConnectError(t("Verbindungsfehler: {err}", err=exc))
 
 
 def _request_auto(ip, username, password, path, scheme="auto", port=None, timeout=10,
@@ -151,7 +157,7 @@ def _check_ok(text: str) -> None:
     """Dahua antwortet auf erfolgreiche Schreib-Aktionen mit ``OK``; alles andere
     (``Error``, leere/abweichende Antwort) ist ein Fehler."""
     if "OK" not in text and "ok" not in text.lower():
-        raise DahuaError(f"Geraet meldete: {_dahua_error(text)}")
+        raise DahuaError(t("Geraet meldete: {body}", body=_dahua_error(text)))
 
 
 # --------------------------------------------------------------- status/info
@@ -237,7 +243,7 @@ def set_static_ip(ip, username, password, new_ip, subnet_mask, gateway,
                          f"{CGI}/configManager.cgi?action=setConfig&{query}",
                          scheme=scheme, port=port, timeout=timeout)
     _check_ok(text)
-    return f"feste IP {new_ip} gesetzt"
+    return t("feste IP {ip} gesetzt", ip=new_ip)
 
 
 def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
@@ -247,7 +253,7 @@ def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
         f"{CGI}/configManager.cgi?action=setConfig&Network.eth0.DhcpEnable=true",
         scheme=scheme, port=port, timeout=timeout)
     _check_ok(text)
-    return "auf DHCP umgestellt"
+    return t("auf DHCP umgestellt")
 
 
 # --------------------------------------------------------------------- users
@@ -273,7 +279,7 @@ def add_user(ip, username, password, new_user, new_password, role="viewer",
                          f"{CGI}/userManager.cgi?action=addUser&{query}",
                          scheme=scheme, port=port, timeout=timeout)
     _check_ok(text)
-    return f"Benutzer '{new_user}' angelegt ({role})"
+    return t("Benutzer '{user}' angelegt ({role})", user=new_user, role=role)
 
 
 def set_user_password(ip, username, password, target_user, new_password,
@@ -285,7 +291,7 @@ def set_user_password(ip, username, password, target_user, new_password,
                          f"{CGI}/userManager.cgi?action=modifyUser&{query}",
                          scheme=scheme, port=port, timeout=timeout)
     _check_ok(text)
-    return f"Passwort von '{target_user}' geaendert"
+    return t("Passwort von '{user}' geaendert", user=target_user)
 
 
 # ----------------------------------------------------------------- firmware
@@ -332,17 +338,17 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
             with _opener(host_port, username, password).open(req, timeout=timeout) as resp:
                 text = resp.read().decode("utf-8", errors="replace")
             _check_ok(text)
-            return "Firmware aufgespielt — Geraet startet neu"
+            return t("Firmware aufgespielt — Geraet startet neu")
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise DahuaError("Authentifizierung fehlgeschlagen (Benutzer/Passwort?).")
-            raise DahuaError(f"Dahua-Fehler {exc.code}: {exc.reason}")
+                raise DahuaError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise DahuaError(t("Dahua-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last_conn_err = exc            # Reboot kappt die Verbindung -> erwartet
             continue
     if last_conn_err is not None:
-        return "Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu"
-    raise DahuaConnectError("Kamera nicht erreichbar.")
+        return t("Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu")
+    raise DahuaConnectError(t("Kamera nicht erreichbar."))
 
 
 # ------------------------------------------------------------- factory reset
@@ -367,5 +373,5 @@ def factory_reset(ip, username, password, keep_ip=True, scheme="auto", port=None
                       scheme=scheme, port=port, timeout=min(timeout, 10))
     except DahuaError:
         pass
-    return "auf Werkseinstellungen zurueckgesetzt" + (
-        " (IP erhalten)" if keep_ip else " (inkl. IP)")
+    return t("auf Werkseinstellungen zurueckgesetzt") + (
+        t(" (IP erhalten)") if keep_ip else t(" (inkl. IP)"))

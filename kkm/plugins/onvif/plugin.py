@@ -45,6 +45,7 @@ from __future__ import annotations
 
 from kkm.core.camera import get_first_ip
 from kkm.core.plugins import VendorPlugin, Credentials, Capability
+from kkm.core.i18n import t
 from . import discovery
 from . import soap
 
@@ -75,7 +76,7 @@ class OnvifPlugin(VendorPlugin):
         creds = creds or Credentials()
         ip = get_first_ip(camera)
         if not ip:
-            raise soap.OnvifError("Kamera hat keine IP-Adresse.")
+            raise soap.OnvifError(t("Kamera hat keine IP-Adresse."))
         scheme = creds.scheme if creds.scheme in ("http", "https") else "http"
         return soap.device_url(ip, scheme, creds.port,
                                xaddr=camera.get("_onvif_xaddr", ""))
@@ -90,7 +91,7 @@ class OnvifPlugin(VendorPlugin):
         ifaces = soap.network_interfaces(url, creds.username, creds.password, offset,
                                          creds.timeout)
         if not ifaces:
-            raise soap.OnvifError("Keine Netzwerkschnittstelle gemeldet.")
+            raise soap.OnvifError(t("Keine Netzwerkschnittstelle gemeldet."))
         return ifaces[0]["token"]
 
     # --- discovery & status -------------------------------------------------

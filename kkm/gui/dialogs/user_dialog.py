@@ -39,7 +39,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Capability
+from kkm.core import Capability, t
 from .base import ActionDialog
 
 
@@ -52,9 +52,9 @@ class UserDialog(ActionDialog):
 
         modes = ttk.Frame(parent)
         modes.pack(fill=tk.X)
-        for val, text in (("add", "Benutzer anlegen"),
-                          ("setpw", "Passwort ändern"),
-                          ("import", "Stapel-Import aus Datei")):
+        for val, text in (("add", t("Benutzer anlegen")),
+                          ("setpw", t("Passwort ändern")),
+                          ("import", t("Stapel-Import aus Datei"))):
             ttk.Radiobutton(modes, text=text, value=val, variable=self._mode,
                             command=self._update_visibility).pack(side=tk.LEFT, padx=(0, 12))
 
@@ -73,19 +73,19 @@ class UserDialog(ActionDialog):
 
         # --- "add" / "setpw" frame (single user) ---
         self._single = ttk.Frame(self._dynamic)
-        ttk.Label(self._single, text="Benutzername:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self._single, text=t("Benutzername:")).grid(row=0, column=0, sticky=tk.W, pady=2)
         ttk.Entry(self._single, textvariable=self.user_name, width=22).grid(
             row=0, column=1, sticky=tk.W, padx=4, pady=2)
-        ttk.Label(self._single, text="Passwort:").grid(row=1, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self._single, text=t("Passwort:")).grid(row=1, column=0, sticky=tk.W, pady=2)
         ttk.Entry(self._single, textvariable=self.user_pw, width=22, show="*").grid(
             row=1, column=1, sticky=tk.W, padx=4, pady=2)
-        self._role_label = ttk.Label(self._single, text="Rolle:")
+        self._role_label = ttk.Label(self._single, text=t("Rolle:"))
         self._role_label.grid(row=2, column=0, sticky=tk.W, pady=2)
         self._role_box = ttk.Combobox(self._single, textvariable=self.role, width=19,
                                       state="readonly", values=self.plugin0().USER_ROLES)
         self._role_box.grid(row=2, column=1, sticky=tk.W, padx=4, pady=2)
         self._factory_cb = ttk.Checkbutton(
-            self._single, text="Auslieferungszustand (factory)", variable=self.factory)
+            self._single, text=t("Auslieferungszustand (factory)"), variable=self.factory)
         self._factory_cb.grid(row=3, column=0, columnspan=2, sticky=tk.W, pady=2)
 
         # --- "import" frame ---
@@ -93,18 +93,18 @@ class UserDialog(ActionDialog):
         row = ttk.Frame(self._importf)
         row.pack(fill=tk.X)
         ttk.Entry(row, textvariable=self.import_path).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ttk.Button(row, text="Datei…", command=self._choose_list).pack(side=tk.LEFT, padx=4)
+        ttk.Button(row, text=t("Datei…"), command=self._choose_list).pack(side=tk.LEFT, padx=4)
         self._import_info = ttk.Label(
-            self._importf, text="Format: Name,Passwort[,Rolle] — eine Zeile je Benutzer.")
+            self._importf, text=t("Format: Name,Passwort[,Rolle] — eine Zeile je Benutzer."))
         self._import_info.pack(anchor=tk.W, pady=(4, 0))
-        ttk.Checkbutton(self._importf, text="Auslieferungszustand (factory)",
+        ttk.Checkbutton(self._importf, text=t("Auslieferungszustand (factory)"),
                         variable=self.factory).pack(anchor=tk.W, pady=2)
 
         # --- vault + apply ---
         ttk.Checkbutton(
-            parent, text="Passwort im Tresor speichern (nur wenn entsperrt)",
+            parent, text=t("Passwort im Tresor speichern (nur wenn entsperrt)"),
             variable=self.store_vault).pack(anchor=tk.W, pady=(8, 2))
-        ttk.Button(parent, text="Ausführen", command=self._apply).pack(anchor=tk.W)
+        ttk.Button(parent, text=t("Ausführen"), command=self._apply).pack(anchor=tk.W)
 
         self._update_visibility()
 
@@ -123,18 +123,18 @@ class UserDialog(ActionDialog):
     # ------------------------------------------------------------------ import
     def _choose_list(self):
         path = filedialog.askopenfilename(
-            parent=self, title="Benutzerliste wählen",
-            filetypes=[("Textliste/CSV", "*.txt *.csv"), ("Alle Dateien", "*.*")])
+            parent=self, title=t("Benutzerliste wählen"),
+            filetypes=[(t("Textliste/CSV"), "*.txt *.csv"), (t("Alle Dateien"), "*.*")])
         if not path:
             return
         self.import_path.set(path)
         try:
             users = self.plugin0().parse_user_list(path, onvif=False)
-            self._import_info.config(text=f"{len(users)} Benutzer in der Datei: "
+            self._import_info.config(text=t("{n} Benutzer in der Datei: ", n=len(users))
                                           + ", ".join(u["name"] for u in users[:6])
                                           + (" …" if len(users) > 6 else ""))
         except Exception as exc:  # noqa: BLE001
-            self._import_info.config(text=f"Ungültig: {exc}")
+            self._import_info.config(text=t("Ungültig: {err}", err=exc))
             self.import_path.set("")
 
     # ------------------------------------------------------------------- apply
@@ -151,7 +151,7 @@ class UserDialog(ActionDialog):
         name = self.user_name.get().strip()
         pw = self.user_pw.get()
         if not name or not pw:
-            messagebox.showinfo(self.title_text, "Bitte Benutzername und Passwort angeben.", parent=self)
+            messagebox.showinfo(t(self.title_text), t("Bitte Benutzername und Passwort angeben."), parent=self)
             return
         role = self.role.get()
         factory = self.factory.get()
@@ -159,33 +159,33 @@ class UserDialog(ActionDialog):
         def op(plugin, camera, creds):
             msg = plugin.add_user(camera, creds, name, pw, role=role, factory=factory)
             self._maybe_store(camera, name, pw)
-            return msg or f"Benutzer '{name}' angelegt"
+            return msg or t("Benutzer '{name}' angelegt", name=name)
 
-        self.run_per_camera(op, done_msg="Anlegen abgeschlossen.")
+        self.run_per_camera(op, done_msg=t("Anlegen abgeschlossen."))
 
     def _apply_setpw(self):
         name = self.user_name.get().strip()
         pw = self.user_pw.get()
         if not name or not pw:
-            messagebox.showinfo(self.title_text, "Bitte Benutzername und neues Passwort angeben.", parent=self)
+            messagebox.showinfo(t(self.title_text), t("Bitte Benutzername und neues Passwort angeben."), parent=self)
             return
 
         def op(plugin, camera, creds):
             msg = plugin.set_user_password(camera, creds, name, pw)
             self._maybe_store(camera, name, pw)
-            return msg or f"Passwort von '{name}' geändert"
+            return msg or t("Passwort von '{name}' geändert", name=name)
 
-        self.run_per_camera(op, done_msg="Passwortänderung abgeschlossen.")
+        self.run_per_camera(op, done_msg=t("Passwortänderung abgeschlossen."))
 
     def _apply_import(self):
         path = self.import_path.get().strip()
         if not path:
-            messagebox.showinfo(self.title_text, "Bitte zuerst eine Benutzerliste wählen.", parent=self)
+            messagebox.showinfo(t(self.title_text), t("Bitte zuerst eine Benutzerliste wählen."), parent=self)
             return
         try:
             users = self.plugin0().parse_user_list(path, onvif=False)  # validate once
         except Exception as exc:  # noqa: BLE001
-            messagebox.showerror(self.title_text, str(exc), parent=self)
+            messagebox.showerror(t(self.title_text), str(exc), parent=self)
             return
         factory = self.factory.get()
 
@@ -200,7 +200,7 @@ class UserDialog(ActionDialog):
                 except Exception:  # noqa: BLE001 - counted, details omitted per camera
                     fail += 1
             if fail:
-                raise RuntimeError(f"{ok} angelegt, {fail} fehlgeschlagen")
-            return f"{ok} Benutzer angelegt"
+                raise RuntimeError(t("{ok} angelegt, {fail} fehlgeschlagen", ok=ok, fail=fail))
+            return t("{n} Benutzer angelegt", n=ok)
 
-        self.run_per_camera(op, done_msg="Stapel-Import abgeschlossen.")
+        self.run_per_camera(op, done_msg=t("Stapel-Import abgeschlossen."))

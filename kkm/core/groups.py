@@ -35,6 +35,8 @@ import sys
 import uuid
 from dataclasses import dataclass, field, fields, asdict
 
+from .i18n import t
+
 ALL_CAMERAS_ID = "all"
 ALL_CAMERAS_NAME = "Alle Kameras"
 # Zweite virtuelle, nicht löschbare Gruppe: alle Kameras im Roster, die (noch)
@@ -136,6 +138,11 @@ class GroupStore:
             self.groups[UNGROUPED_ID] = Group(
                 id=UNGROUPED_ID, name=UNGROUPED_NAME, deletable=False
             )
+        # Anzeigenamen der virtuellen Gruppen in die aktive UI-Sprache bringen
+        # (immer neu setzen, damit ein persistierter Name in alter Sprache nicht
+        # hängen bleibt; der Vergleich in der GUI läuft über die IDs, nicht die Namen).
+        self.groups[ALL_CAMERAS_ID].name = t(ALL_CAMERAS_NAME)
+        self.groups[UNGROUPED_ID].name = t(UNGROUPED_NAME)
         self._rebuild_index()
 
     def _rebuild_index(self) -> None:

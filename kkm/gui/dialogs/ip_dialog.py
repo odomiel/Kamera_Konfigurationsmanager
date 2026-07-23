@@ -34,7 +34,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from kkm.core import Capability, camera_key
+from kkm.core import Capability, camera_key, t
 from kkm.core import next_ip, get_first_ip
 from .base import ActionDialog
 
@@ -55,9 +55,9 @@ class IpDialog(ActionDialog):
 
         modes = ttk.Frame(parent)
         modes.pack(fill=tk.X)
-        for val, text in (("dhcp", "Auf DHCP umstellen"),
-                          ("range", "Feste IP fortlaufend ab Start-IP"),
-                          ("each", "Pro Kamera einzeln")):
+        for val, text in (("dhcp", t("Auf DHCP umstellen")),
+                          ("range", t("Feste IP fortlaufend ab Start-IP")),
+                          ("each", t("Pro Kamera einzeln"))):
             ttk.Radiobutton(modes, text=text, value=val, variable=self._mode,
                             command=self._update_visibility).pack(anchor=tk.W)
 
@@ -66,21 +66,21 @@ class IpDialog(ActionDialog):
 
         # shared mask/gateway (range + each)
         self._shared = ttk.Frame(self._dynamic)
-        ttk.Label(self._shared, text="Subnetzmaske:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self._shared, text=t("Subnetzmaske:")).grid(row=0, column=0, sticky=tk.W, pady=2)
         ttk.Entry(self._shared, textvariable=self.mask, width=18).grid(
             row=0, column=1, sticky=tk.W, padx=4, pady=2)
-        ttk.Label(self._shared, text="Gateway (optional):").grid(
+        ttk.Label(self._shared, text=t("Gateway (optional):")).grid(
             row=0, column=2, sticky=tk.W, padx=4, pady=2)
         ttk.Entry(self._shared, textvariable=self.gateway, width=18).grid(
             row=0, column=3, sticky=tk.W, padx=4, pady=2)
 
         # range: start IP
         self._rangef = ttk.Frame(self._dynamic)
-        ttk.Label(self._rangef, text="Start-IP:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        ttk.Label(self._rangef, text=t("Start-IP:")).grid(row=0, column=0, sticky=tk.W, pady=2)
         ttk.Entry(self._rangef, textvariable=self.start_ip, width=18).grid(
             row=0, column=1, sticky=tk.W, padx=4, pady=2)
         ttk.Label(self._rangef,
-                  text="(wird fortlaufend in Tabellenreihenfolge vergeben)").grid(
+                  text=t("(wird fortlaufend in Tabellenreihenfolge vergeben)")).grid(
             row=0, column=2, columnspan=2, sticky=tk.W, padx=4)
 
         # each: one IP entry per camera
@@ -94,7 +94,7 @@ class IpDialog(ActionDialog):
             ttk.Entry(self._eachf, textvariable=var, width=18).grid(
                 row=idx, column=1, sticky=tk.W, padx=4, pady=1)
 
-        ttk.Button(parent, text="Anwenden", command=self._apply).pack(anchor=tk.W)
+        ttk.Button(parent, text=t("Anwenden"), command=self._apply).pack(anchor=tk.W)
         self._update_visibility()
 
     def _update_visibility(self):
@@ -115,15 +115,15 @@ class IpDialog(ActionDialog):
         if mode == "dhcp":
             self.run_per_camera(
                 lambda plugin, camera, creds: (plugin.set_dhcp(camera, creds)
-                                               or "auf DHCP umgestellt"),
-                done_msg="DHCP-Umstellung abgeschlossen.")
+                                               or t("auf DHCP umgestellt")),
+                done_msg=t("DHCP-Umstellung abgeschlossen."))
             return
 
         # Static: compute + validate target IPs up front.
         mask = self.mask.get().strip()
         gateway = self.gateway.get().strip()
         if not mask:
-            messagebox.showinfo(self.title_text, "Bitte eine Subnetzmaske angeben.", parent=self)
+            messagebox.showinfo(t(self.title_text), t("Bitte eine Subnetzmaske angeben."), parent=self)
             return
 
         targets: dict[str, str] = {}
@@ -131,7 +131,7 @@ class IpDialog(ActionDialog):
             if mode == "range":
                 start = self.start_ip.get().strip()
                 if not start:
-                    messagebox.showinfo(self.title_text, "Bitte eine Start-IP angeben.", parent=self)
+                    messagebox.showinfo(t(self.title_text), t("Bitte eine Start-IP angeben."), parent=self)
                     return
                 ip = next_ip(start, 0)   # validiert die Start-IP
                 for cam in self.cameras:
@@ -146,18 +146,18 @@ class IpDialog(ActionDialog):
                     key = camera_key(cam)
                     ip = self._ip_vars[key].get().strip()
                     if not ip:
-                        raise ValueError(f"{cam.get('Name', '?')}: keine IP angegeben")
+                        raise ValueError(t("{name}: keine IP angegeben", name=cam.get('Name', '?')))
                     next_ip(ip, 0)   # validate format (raises on bad input)
                     targets[key] = ip
         except ValueError as exc:
-            messagebox.showerror(self.title_text, f"Ungültige Eingabe: {exc}", parent=self)
+            messagebox.showerror(t(self.title_text), t("Ungültige Eingabe: {err}", err=exc), parent=self)
             return
 
         # Confirm, since changing IPs may drop the current connection.
         if not messagebox.askyesno(
-                self.title_text,
-                f"{len(targets)} Kamera(s) auf feste IP umstellen?\n"
-                "Die Kameras sind danach ggf. unter neuer Adresse erreichbar.",
+                t(self.title_text),
+                t("{n} Kamera(s) auf feste IP umstellen?\n"
+                  "Die Kameras sind danach ggf. unter neuer Adresse erreichbar.", n=len(targets)),
                 parent=self):
             return
 
@@ -166,9 +166,9 @@ class IpDialog(ActionDialog):
             new_ip = targets[key]
             plugin.set_static_ip(camera, creds, new_ip, mask, gateway)
             self._applied_ips[key] = new_ip   # nur bei Erfolg (sonst raise davor)
-            return f"feste IP {new_ip} gesetzt"
+            return t("feste IP {ip} gesetzt", ip=new_ip)
 
-        self.run_per_camera(op, done_msg="IP-Umstellung abgeschlossen.")
+        self.run_per_camera(op, done_msg=t("IP-Umstellung abgeschlossen."))
 
     def _on_done(self):
         """Erfolgreich gesetzte feste IPs in die Kameraliste des Hauptfensters

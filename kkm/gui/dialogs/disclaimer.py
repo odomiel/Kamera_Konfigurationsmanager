@@ -27,6 +27,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from kkm.core import t
 from kkm.gui import theme
 
 #: Persistenz-Schlüssel in den AppSettings.
@@ -55,7 +56,7 @@ class DisclaimerDialog(tk.Toplevel):
     def __init__(self, parent, settings):
         super().__init__(parent)
         self.settings = settings
-        self.title("Haftungshinweis")
+        self.title(t("Haftungshinweis"))
         self.transient(parent)
         self.resizable(False, False)
 
@@ -64,17 +65,17 @@ class DisclaimerDialog(tk.Toplevel):
 
         ttk.Label(frame, text="⚠", font=("TkDefaultFont", 20)).grid(
             row=0, column=0, sticky=tk.N, padx=(0, 12))
-        ttk.Label(frame, text=DISCLAIMER_TEXT, wraplength=360, justify=tk.LEFT,
+        ttk.Label(frame, text=t(DISCLAIMER_TEXT), wraplength=360, justify=tk.LEFT,
                   foreground=theme.CURRENT.get("warn", "#c0392b"),
                   font=("TkDefaultFont", 10, "bold")).grid(
             row=0, column=1, sticky=tk.W)
 
         self._dont_show = tk.BooleanVar(value=False)
         ttk.Checkbutton(
-            frame, text="Ich weiß, was ich tue – nicht wieder anzeigen",
+            frame, text=t("Ich weiß, was ich tue – nicht wieder anzeigen"),
             variable=self._dont_show).grid(row=1, column=1, sticky=tk.W, pady=(14, 0))
 
-        ttk.Button(frame, text="OK", command=self._close).grid(
+        ttk.Button(frame, text=t("OK"), command=self._close).grid(
             row=2, column=1, sticky=tk.E, pady=(16, 0))
 
         self.protocol("WM_DELETE_WINDOW", self._close)

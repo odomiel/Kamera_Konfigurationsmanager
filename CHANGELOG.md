@@ -4,6 +4,28 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.23 — 2026-07-23
+
+- **Englische Übersetzung + Sprachauswahl.** Das Programm lässt sich jetzt auf
+  Englisch umstellen (Einstellungen → Darstellung → „Sprache / Language"). Die Wahl
+  wird in `settings.json` (`language`) gespeichert und **beim nächsten Programmstart**
+  übernommen — dieselbe Mechanik wie „Beim Start maximiert öffnen" (kein Live-Umbau
+  laufender Fenster). Übersetzt sind die gesamte Oberfläche (Hauptfenster, alle
+  Aktions- und Einstellungsdialoge, Haftungshinweis) **und** die im Ergebnis-Log
+  sichtbaren Plugin-Meldungen (Axis/VAPIX, Hikvision/ISAPI, Dahua, Hanwha/SUNAPI,
+  ONVIF, ADM-Import, Firmware-Suche).
+- **i18n-Schicht (`kkm/core/i18n.py` + `i18n_catalog.py`), stdlib-only.** Der
+  deutsche Quelltext ist zugleich die Message-ID: `t("Text")` liefert ohne Katalog
+  unverändert Deutsch zurück, im Englisch-Modus die Übersetzung, und fällt für fehlende
+  Schlüssel auf den deutschen Quelltext zurück (rein additiv). Platzhalter laufen über
+  benannte Felder (`t("… {ip} …", ip=…)`), sodass beide Sprachvarianten dieselbe
+  Signatur haben. Interne Kennungen (FIELD_NAMES-Schlüssel, Spalten-IDs, Einstellungs-
+  Keys, der Werkszustand-Marker) bleiben deutsch — nur Anzeige-Text geht durch `t()`,
+  damit Persistenz, Export und `.kkmbackup` unverändert kompatibel bleiben.
+- **Provenienz gewahrt:** die aus dem Axis_Kamera_Discovery-Tool verbatim übernommene
+  `vapix.py` (und die übrigen stdlib-only-Clients) importieren `t` defensiv mit einem
+  Fallback, bleiben also eigenständig ohne `kkm.core` lauffähig.
+
 ## 26.07.21b4 — 2026-07-21
 
 - **Hanwha: Auslieferungszustand erkennen.** Eine werksneue oder zurückgesetzte
