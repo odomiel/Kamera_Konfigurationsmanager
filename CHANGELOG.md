@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.23b2 — 2026-07-23
+
+- **i18n-Reihenfolge-Fix:** Die virtuellen Gruppennamen **„Alle Kameras"** und **„Ohne
+  Gruppe"** blieben trotz vorhandener Übersetzung deutsch, weil `GroupStore()` (dessen
+  Konstruktor `load()` aufruft und die Namen über `t()` übersetzt) in `MainWindow.__init__`
+  **vor** `set_language()` stand — zur Ladezeit war also noch Deutsch aktiv. `set_language()`
+  wird jetzt direkt nach dem Laden der Einstellungen und **vor** `GroupStore()` gesetzt;
+  damit erscheinen die Gruppennamen im Englisch-Modus als „All cameras" / „Ungrouped".
+
 ## 26.07.23b1 — 2026-07-23
 
 - **i18n-Nachtrag:** fünf über Variablen übergebene Beschriftungen fehlten im

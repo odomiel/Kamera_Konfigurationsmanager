@@ -118,11 +118,13 @@ class MainWindow(tk.Tk):
         self.title(f"{APP_NAME} {__version__}")
         self.geometry("1100x650")
 
-        self.store = GroupStore()
         self.settings = AppSettings()
         # UI-Sprache aus den Einstellungen setzen, bevor irgendein Text gebaut wird
         # (der Wechsel wirkt daher erst beim nächsten Start — wie "maximiert öffnen").
+        # MUSS vor GroupStore() stehen: dessen load() übersetzt die virtuellen
+        # Gruppennamen ("Alle Kameras"/"Ohne Gruppe") bereits über t().
         set_language(self.settings.get("language", "de"))
+        self.store = GroupStore()
         # Modernes Erscheinungsbild (Sun Valley) vor dem UI-Aufbau anwenden.
         self._theme = self.settings.get("theme", "dark")
         theme.apply_theme(self, self._theme)
