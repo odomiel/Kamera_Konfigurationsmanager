@@ -11,6 +11,10 @@ Unterstützt werden **Axis** (voller Funktionsumfang) und über ein generisches
 **ONVIF**-Plugin auch Kameras anderer Hersteller (siehe Abschnitt „Plugins: Axis und
 ONVIF"). Ein ausführliches **Benutzerhandbuch** liegt als `Benutzerhandbuch.pdf` bei.
 
+Die Oberfläche ist auf **Deutsch** und **Englisch** verfügbar (umschaltbar unter
+Einstellungen → „Darstellung"; wirkt beim nächsten Programmstart). Diese Hilfe selbst
+ist nur auf Deutsch verfügbar.
+
 ---
 
 ## Hauptfenster
@@ -283,7 +287,12 @@ grob falsch gestelltes Datum kann die Anmeldung aber trotzdem scheitern lassen.
 ## Einstellungen
 Mehrere Bereiche:
 - **Darstellung** — modernes Design **Dunkel** oder **Hell** (Sun Valley); die
-  Umschaltung wirkt sofort und wird gespeichert. Zusätzlich lässt sich
+  Umschaltung wirkt sofort und wird gespeichert. Über **„Sprache / Language"** lässt
+  sich die Programmsprache zwischen **Deutsch** und **English** umstellen; die Auswahl
+  wird gespeichert und wirkt **beim nächsten Programmstart** (nicht sofort — wie die
+  Maximiert-Option). Übersetzt sind die gesamte Oberfläche und die Ergebnismeldungen
+  der Aktionen; gerätespezifische Namen (eigene Gruppennamen, Modell-/Firmware-Werte)
+  bleiben unverändert. Zusätzlich lässt sich
   **„Beim Start maximiert öffnen"** aktivieren — das Hauptfenster öffnet dann beim
   nächsten Programmstart bildschirmfüllend.
 - **Tresor** — Passwort-Tresor anlegen, entsperren, sperren oder Master-Passwort

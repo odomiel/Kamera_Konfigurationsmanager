@@ -11,6 +11,10 @@ Alle Aktionen wirken immer auf die in der Geräteliste **markierten** Kameras, l
 Hintergrund und protokollieren ihr Ergebnis für **jede Kamera einzeln**. Das Fenster
 bleibt dabei bedienbar; nichts blockiert.
 
+Die Oberfläche ist auf **Deutsch** und **Englisch** verfügbar (umschaltbar in den
+Einstellungen → *Darstellung*, siehe Kapitel 12; die Umstellung wirkt beim nächsten Start).
+Dieses Handbuch selbst liegt nur auf Deutsch vor.
+
 Unterstützt werden zwei Gerätefamilien:
 
 - **Axis** — voller Funktionsumfang über die VAPIX-Schnittstelle.
@@ -325,7 +329,11 @@ grob falsch gestelltes Datum kann die Anmeldung aber trotzdem scheitern lassen.)
 ## 12 Einstellungen
 
 **Darstellung** — modernes Design **Dunkel** oder **Hell**; die Umschaltung wirkt sofort.
-Zusätzlich: *Beim Start maximiert öffnen*.
+**Sprache / Language** — die Programmsprache **Deutsch** oder **English**; die Auswahl wird
+gespeichert und wirkt **beim nächsten Programmstart** (nicht sofort — wie *Beim Start
+maximiert öffnen*). Übersetzt sind die gesamte Oberfläche und die Ergebnismeldungen der
+Aktionen; gerätespezifische Namen (eigene Gruppennamen, Modell-/Firmware-Angaben) bleiben
+unverändert. Zusätzlich: *Beim Start maximiert öffnen*.
 
 **Tresor** — siehe Kapitel 9.
 
