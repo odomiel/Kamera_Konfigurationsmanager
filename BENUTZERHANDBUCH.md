@@ -13,7 +13,8 @@ bleibt dabei bedienbar; nichts blockiert.
 
 Die Oberfläche ist auf **Deutsch** und **Englisch** verfügbar (umschaltbar in den
 Einstellungen → *Darstellung*, siehe Kapitel 12; die Umstellung wirkt beim nächsten Start).
-Dieses Handbuch selbst liegt nur auf Deutsch vor.
+Dieses Handbuch liegt auf Deutsch und Englisch vor (englisch: `BENUTZERHANDBUCH_EN.md` bzw.
+`User_Manual.pdf`).
 
 Unterstützt werden zwei Gerätefamilien:
 

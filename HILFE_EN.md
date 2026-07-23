@@ -9,7 +9,7 @@ background; the result per camera is logged.
 
 Supported are **Axis** (full feature set) and, via a generic **ONVIF** plugin, cameras
 from other manufacturers too (see the section "Plugins: Axis and ONVIF"). A detailed
-**user manual** is included as `Benutzerhandbuch.pdf` (German).
+**user manual** is included as `User_Manual.pdf`.
 
 The interface is available in **German** and **English** (switchable under Settings →
 "Appearance"; takes effect at the next program start). This help is shown in the

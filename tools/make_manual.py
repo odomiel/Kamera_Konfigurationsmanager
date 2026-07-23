@@ -49,9 +49,34 @@ from reportlab.platypus import (BaseDocTemplate, Frame, Image, KeepTogether,
 from reportlab.platypus.tableofcontents import TableOfContents
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "BENUTZERHANDBUCH.md")
-OUT = os.path.join(ROOT, "Benutzerhandbuch.pdf")
 ICON = os.path.join(ROOT, "assets", "Kamerakonfigurationsmanager.png")
+
+# Sprachvarianten: Aufruf `make_manual.py [de|en]` (Default de). Quelle/Ziel und die
+# festen Textbausteine (Titel, Kopfzeile, Untertitel, TOC-Überschrift) je Sprache.
+LANGS = {
+    "de": {
+        "src": os.path.join(ROOT, "BENUTZERHANDBUCH.md"),
+        "out": os.path.join(ROOT, "Benutzerhandbuch.pdf"),
+        "header": "Kamera_Konfigurationsmanager — Benutzerhandbuch",
+        "cover_title": "Benutzerhandbuch",
+        "tagline": "Netzwerkkameras finden und konfigurieren — Axis und ONVIF",
+        "version_line": "Programmversion {v}",
+        "date_line": "Stand: {d}",
+        "toc": "Inhalt",
+        "date_fmt": "%d.%m.%Y",
+    },
+    "en": {
+        "src": os.path.join(ROOT, "BENUTZERHANDBUCH_EN.md"),
+        "out": os.path.join(ROOT, "User_Manual.pdf"),
+        "header": "Kamera_Konfigurationsmanager — User Manual",
+        "cover_title": "User Manual",
+        "tagline": "Find and configure network cameras — Axis and ONVIF",
+        "version_line": "Program version {v}",
+        "date_line": "As of: {d}",
+        "toc": "Contents",
+        "date_fmt": "%Y-%m-%d",
+    },
+}
 
 ACCENT = colors.HexColor("#1E5FBF")     # Blau des Programm-Icons
 NOTE_BG = colors.HexColor("#EEF3FC")
@@ -278,12 +303,12 @@ class Manual:
 class ManualDoc(BaseDocTemplate):
     """Seitenrahmen + Kopf-/Fusszeile; meldet Ueberschriften ans Inhaltsverzeichnis."""
 
-    def __init__(self, path, version, **kw):
+    def __init__(self, path, version, strings, **kw):
         super().__init__(path, pagesize=A4, leftMargin=25 * mm, rightMargin=25 * mm,
                          topMargin=22 * mm, bottomMargin=20 * mm,
-                         title="Kamera_Konfigurationsmanager — Benutzerhandbuch",
-                         author="Mirik", **kw)
+                         title=strings["header"], author="Mirik", **kw)
         self.version = version
+        self.strings = strings
         frame = Frame(self.leftMargin, self.bottomMargin, self.width, self.height,
                       id="body")
         self.addPageTemplates([
@@ -295,8 +320,7 @@ class ManualDoc(BaseDocTemplate):
         canvas.saveState()
         canvas.setFont("KKM", 8)
         canvas.setFillColor(GREY)
-        canvas.drawString(self.leftMargin, A4[1] - 14 * mm,
-                          "Kamera_Konfigurationsmanager — Benutzerhandbuch")
+        canvas.drawString(self.leftMargin, A4[1] - 14 * mm, self.strings["header"])
         canvas.drawRightString(A4[0] - self.rightMargin, A4[1] - 14 * mm,
                                f"Version {self.version}")
         canvas.setStrokeColor(colors.HexColor("#DDDDDD"))
@@ -311,29 +335,29 @@ class ManualDoc(BaseDocTemplate):
             self.notify("TOCEntry", (level, flowable._toc_text, self.page))
 
 
-def title_page(styles, version) -> list:
+def title_page(styles, version, strings) -> list:
     story = []
     story.append(Spacer(1, 30 * mm))
     if os.path.exists(ICON):
         img = Image(ICON, width=34 * mm, height=34 * mm)
         img.hAlign = "CENTER"
         story += [img, Spacer(1, 12 * mm)]
-    story.append(Paragraph("Benutzerhandbuch", styles["title"]))
+    story.append(Paragraph(strings["cover_title"], styles["title"]))
     story.append(Paragraph("Kamera_Konfigurationsmanager", styles["subtitle"]))
     story.append(Spacer(1, 4 * mm))
-    story.append(Paragraph(
-        "Netzwerkkameras finden und konfigurieren — Axis und ONVIF",
-        styles["subtitle"]))
+    story.append(Paragraph(strings["tagline"], styles["subtitle"]))
     story.append(Spacer(1, 30 * mm))
     meta = ParagraphStyle("Meta", parent=styles["subtitle"], fontSize=10, leading=16)
-    story.append(Paragraph(f"Programmversion {version}", meta))
-    story.append(Paragraph(f"Stand: {date.today().strftime('%d.%m.%Y')}", meta))
+    story.append(Paragraph(strings["version_line"].format(v=version), meta))
+    story.append(Paragraph(
+        strings["date_line"].format(d=date.today().strftime(strings["date_fmt"])), meta))
     story.append(Paragraph("GPL-3.0-or-later", meta))
     story.append(PageBreak())
     return story
 
 
-def main():
+def main(lang="de"):
+    strings = LANGS[lang]
     register_fonts()
     styles = build_styles()
     version = app_version()
@@ -342,20 +366,23 @@ def main():
     toc.levelStyles = [styles["toc1"], styles["toc2"]]
 
     manual = Manual(styles)
-    manual.parse(open(SRC, encoding="utf-8").read())
+    manual.parse(open(strings["src"], encoding="utf-8").read())
 
-    story = title_page(styles, version)
-    story.append(Paragraph("Inhalt", styles["h1"]))
+    story = title_page(styles, version, strings)
+    story.append(Paragraph(strings["toc"], styles["h1"]))
     story.append(toc)
     story.append(PageBreak())
     story += manual.story
 
-    doc = ManualDoc(OUT, version)
+    doc = ManualDoc(strings["out"], version, strings)
     # Zweifacher Durchlauf: erst Seitenzahlen sammeln, dann das Inhaltsverzeichnis
     # damit fuellen (multiBuild erledigt beides).
     doc.multiBuild(story)
-    print(f">> {OUT} ({os.path.getsize(OUT) / 1024:.0f} KB)")
+    print(f">> {strings['out']} ({os.path.getsize(strings['out']) / 1024:.0f} KB)")
 
 
 if __name__ == "__main__":
-    main()
+    lang = sys.argv[1] if len(sys.argv) > 1 else "de"
+    if lang not in LANGS:
+        raise SystemExit(f"Sprache unbekannt: {lang!r} (erlaubt: {', '.join(LANGS)})")
+    main(lang)
