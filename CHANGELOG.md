@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.23b1 — 2026-07-23
+
+- **i18n-Nachtrag:** fünf über Variablen übergebene Beschriftungen fehlten im
+  englischen Katalog und blieben dadurch deutsch — die Toolbar-Buttons **Benutzer**
+  („Users"), **ONVIF-Benutzer** („ONVIF users") und **Konfiguration** („Configuration")
+  sowie die virtuellen Gruppennamen **„Alle Kameras"** („All cameras") und **„Ohne
+  Gruppe"** („Ungrouped"). Ursache: `t()` wird hier mit einer Variablen aufgerufen
+  (`t(label)`, `t(ALL_CAMERAS_NAME)`), sodass die AST-Extraktion die Message-ID nicht
+  als Literal sieht; die betroffenen Konstanten sind jetzt vollständig im Generator
+  erfasst (Katalog: 465 Einträge, per AST + dynamischer Liste geprüft).
+
 ## 26.07.23 — 2026-07-23
 
 - **Englische Übersetzung + Sprachauswahl.** Das Programm lässt sich jetzt auf
