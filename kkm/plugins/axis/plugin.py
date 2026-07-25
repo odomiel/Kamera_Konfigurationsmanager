@@ -163,11 +163,17 @@ class AxisPlugin(VendorPlugin):
     def firmware_updates(self, model, current="", prefer_track=True) -> FirmwareInfo:
         model_dir = firmware_repo.resolve_model(model, self.repo_url)
         vers = firmware_repo.versions(model_dir, self.repo_url)
-        latest = firmware_repo.latest_version(model_dir, self.repo_url) or (
-            vers[0] if vers else "")
-        # latest/ enthaelt gelegentlich eine Version ohne eigenen Versionsordner.
-        if latest and latest not in vers:
-            vers = firmware_repo.sort_versions(vers + [latest])
+        latest = firmware_repo.latest_version(model_dir, self.repo_url)
+        if latest:
+            # Axis' latest/ver.txt ist massgeblich: numerisch hoehere Versionsordner
+            # (z. B. ein noch nicht als "latest" freigegebener Patch) werden ignoriert
+            # — weder vorgeschlagen noch in der Auswahlliste gezeigt.
+            vers = [v for v in vers if not firmware_repo.is_newer(v, latest)]
+            # latest/ enthaelt gelegentlich eine Version ohne eigenen Versionsordner.
+            if latest not in vers:
+                vers = firmware_repo.sort_versions(vers + [latest])
+        else:
+            latest = vers[0] if vers else ""
         return FirmwareInfo(
             model=model_dir, current=current, versions=vers, latest=latest,
             recommended=firmware_repo.pick_recommended(vers, current, prefer_track) or "",

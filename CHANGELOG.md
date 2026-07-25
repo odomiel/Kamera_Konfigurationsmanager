@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.25 — 2026-07-25
+
+- **Firmware-Vorschlag: Axis' `latest/ver.txt` ist jetzt maßgeblich.** Der Axis-Repo
+  markiert eine Version als „latest"; gelegentlich liegt schon ein numerisch **höherer**
+  Versionsordner bereit (ein noch nicht als „latest" freigegebener Patch). Bisher konnte
+  dadurch der **Vorschlag** höher ausfallen als die als **neueste** markierte Version
+  (z. B. „neueste" 11.11.212, „Vorschlag" 11.11.220). `AxisPlugin.firmware_updates`
+  filtert nun alle Versionen heraus, die neuer als der `latest/ver.txt`-Stand sind — sie
+  werden weder vorgeschlagen noch in der Versionsauswahl gezeigt. Fällt `latest/ver.txt`
+  aus (unerreichbar), gilt wie bisher der höchste Versionsordner als neueste.
+
 ## 26.07.23b3 — 2026-07-23
 
 - **Englische In-App-Hilfe.** Der **„Help"-Button** zeigt im Englisch-Modus jetzt die
