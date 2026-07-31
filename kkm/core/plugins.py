@@ -107,6 +107,11 @@ class VendorPlugin(abc.ABC):
     #: Plugin-Manager kennzeichnet sie als „experimentell"; sie sind ab Werk aus.
     experimental: bool = False
 
+    #: True, wenn ``import_config_backup`` das Erhalten der Netzwerk-/IP-Einstellungen
+    #: unterstuetzt (Hanwha ``ExcludeSettings=Network``). Der Backup-Dialog blendet die
+    #: Checkbox „Netz behalten" nur dann ein. Standard: nicht unterstuetzt.
+    config_backup_keep_network: bool = False
+
     #: Rollen des Benutzer-Dialogs bzw. Stufen des ONVIF-Dialogs, hoechstes Recht
     #: zuerst. Die Dialoge lesen sie vom Plugin — sie sind herstellerabhaengig.
     USER_ROLES: tuple[str, ...] = ()

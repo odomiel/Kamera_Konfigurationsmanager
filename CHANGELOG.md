@@ -4,6 +4,24 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.31b4 — 2026-07-31
+
+- **Konfig-Backup jetzt auch für Hikvision.** Das Hikvision-Plugin meldet nun
+  `CONFIG_BACKUP` und nutzt dieselbe Aktion/Dialoge wie Hanwha. Export/Import laufen
+  über ISAPI `GET`/`PUT /ISAPI/System/configurationData` (opaker Blob,
+  `application/octet-stream`; wie beim Firmware-Upload). Neue ISAPI-Funktionen
+  `export_config`/`import_config` + Plugin-Methoden `export_config_backup`/
+  `import_config_backup`.
+  - **Noch nicht an Hardware verifiziert**, weil die Hikvision-Testkamera derzeit
+    uninitialisiert auf der Werks-IP (192.0.0.64, anderes Subnetz) steht. Import ist im
+    Dialog als ungetestet markiert; Plugin bleibt `experimental`. Hinweis: neuere
+    Hikvision-Firmware (≥ 5.5.x) verlangt beim Config-Ex-/Import teils einen „security
+    code".
+- **Backup-Dialog vendor-abhängig.** Die Option „Netzwerkeinstellungen (IP) beibehalten"
+  erscheint nur bei Plugins, die das können (neues Flag `config_backup_keep_network`;
+  Hanwha ja, Hikvision nein). Der Warnhinweis zum Einspielen ist jetzt herstellerneutral
+  formuliert (vorher „Wisenet").
+
 ## 26.07.31b3 — 2026-07-31
 
 - **Werksreset jetzt für alle Hersteller erreichbar (Rechtsklickmenü).** Der Werksreset

@@ -52,6 +52,7 @@ class HikvisionPlugin(VendorPlugin):
         Capability.USERS,
         Capability.ONVIF_USERS,
         Capability.FIRMWARE,
+        Capability.CONFIG_BACKUP,
         Capability.FACTORY_RESET,
     }
 
@@ -155,3 +156,16 @@ class HikvisionPlugin(VendorPlugin):
         ip = self.ip_of(camera)
         return isapi.factory_reset(ip, creds.username, creds.password,
                                    keep_ip=keep_ip, **self._conn(creds))
+
+    def import_config_backup(self, camera, creds: Credentials, backup_path,
+                             keep_network=False, progress=None):
+        # ISAPI-configurationData kennt keine "Netz behalten"-Option (der Blob umfasst
+        # die Netzwerkeinstellungen) -> keep_network wird hier nicht ausgewertet.
+        ip = self.ip_of(camera)
+        return isapi.import_config(ip, creds.username, creds.password,
+                                   backup_path, **self._conn(creds))
+
+    def export_config_backup(self, camera, creds: Credentials, out_path):
+        ip = self.ip_of(camera)
+        return isapi.export_config(ip, creds.username, creds.password,
+                                   out_path, **self._conn(creds))

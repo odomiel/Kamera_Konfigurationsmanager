@@ -52,6 +52,9 @@ class ConfigBackupDialog(ActionDialog):
         self._mode = tk.StringVar(value="import")
         self._path = tk.StringVar()
         self._keep_net = tk.BooleanVar(value=True)
+        # „Netz behalten" bietet nur an, wessen Plugin es unterstützt (Hanwha).
+        plugin0 = self.plugin0()
+        self._supports_keep_net = bool(getattr(plugin0, "config_backup_keep_network", False))
 
         modes = ttk.Frame(parent)
         modes.pack(fill=tk.X)
@@ -76,7 +79,6 @@ class ConfigBackupDialog(ActionDialog):
         self._keep_net_cb = ttk.Checkbutton(
             parent, text=t("Netzwerkeinstellungen (IP) der Zielkamera beibehalten"),
             variable=self._keep_net)
-        self._keep_net_cb.pack(anchor=tk.W, pady=(6, 0))
 
         self._hint = ttk.Label(parent, wraplength=440, justify=tk.LEFT)
         self._hint.pack(anchor=tk.W, pady=(8, 0))
@@ -92,7 +94,8 @@ class ConfigBackupDialog(ActionDialog):
     # ---------------------------------------------------------------- helpers
     def _update_visibility(self):
         if self._mode.get() == "import":
-            self._keep_net_cb.pack(anchor=tk.W, pady=(6, 0), before=self._hint)
+            if self._supports_keep_net:
+                self._keep_net_cb.pack(anchor=tk.W, pady=(6, 0), before=self._hint)
             self._file_label.config(text=t("Backup-Datei:"))
             self._hint.config(
                 text=t("Ein Backup enthält gerätespezifische Einstellungen (IP, Name, "
@@ -100,8 +103,8 @@ class ConfigBackupDialog(ActionDialog):
                        "Ganzes übernommen; die Kamera startet danach neu. Auf mehrere "
                        "Kameras gespielt, führt es zu Adress-/Identitätskonflikten."))
             self._warn.config(
-                text=t("Hinweis: Das Einspielen ist auf aktueller Wisenet-Firmware noch "
-                       "nicht verifiziert — die Kamera kann es mit einem Geräte-Fehler "
+                text=t("Hinweis: Das Einspielen ist noch nicht an echter Hardware "
+                       "verifiziert — die Kamera kann es mit einem Geräte-Fehler "
                        "ablehnen. Das Herunterladen von Backups ist getestet."))
             self._warn.pack(anchor=tk.W, pady=(6, 0), before=self._apply_btn)
         else:

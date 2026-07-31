@@ -459,3 +459,67 @@ def factory_reset(ip, username, password, keep_ip=True, scheme="auto", port=None
         pass   # Reboot kappt die Verbindung -> erwartet
     return t("auf Werkseinstellungen zurueckgesetzt") + (
         t(" (IP erhalten)") if keep_ip else t(" (inkl. IP)"))
+
+
+# ------------------------------------------------ Konfigurations-Backup (Blob)
+# Hikvisions ``configurationData`` ist ein opaker, geraete-/firmwaregebundener
+# Komplett-Blob (kein auswaehlbares Parameter-Template) -> Capability.CONFIG_BACKUP,
+# nicht CONFIG. Endpunkt wie bei Firmware: application/octet-stream, PUT startet neu.
+# Hinweis: Neuere Firmware (>= 5.5.x) verlangt beim Ex-/Import teils einen zuvor
+# gesetzten "security code"; die verifizierte Testkamera laeuft auf V5.4.5 (kein Code).
+_CONFIG_PATH = ISAPI + "/System/configurationData"
+
+
+def export_config(ip, username, password, out_path, scheme="auto", port=None,
+                  timeout=120):
+    """Laedt die Geraetekonfiguration (``GET /ISAPI/System/configurationData``) als
+    Binaerblob herunter und speichert sie unter *out_path*. Eine Fehlerantwort kommt
+    als kurzes XML (``ResponseStatus``) statt Blob -> IsapiError."""
+    schemes = ["https", "http"] if scheme == "auto" else [scheme]
+    last_conn = None
+    for sc in schemes:
+        p = port if port else DEFAULT_PORTS[sc]
+        host_port = f"{ip}:{p}"
+        url = f"{sc}://{host_port}{_CONFIG_PATH}"
+        try:
+            with _opener(host_port, username, password).open(url, timeout=timeout) as resp:
+                data = resp.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code == 401:
+                raise IsapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
+                                 "falsch, oder die Uhr der Kamera weicht ab)."))
+            try:
+                detail = _isapi_error(exc.read().decode("utf-8", errors="replace"))
+            except Exception:  # noqa: BLE001
+                detail = ""
+            raise IsapiError(t("ISAPI-Fehler {code}: {detail}", code=exc.code,
+                             detail=detail or exc.reason))
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_conn = exc
+            continue
+        # Fehler-XML statt Blob? (ResponseStatus beginnt mit '<')
+        if data[:64].lstrip()[:1] == b"<":
+            _check_status(data.decode("utf-8", errors="replace"))
+        with open(out_path, "wb") as fh:
+            fh.write(data)
+        return t("Backup gespeichert: {path} ({n} Bytes)", path=out_path, n=len(data))
+    raise IsapiConnectError(t("Kamera nicht erreichbar."))
+
+
+def import_config(ip, username, password, backup_path, scheme="auto", port=None,
+                  timeout=600):
+    """Spielt eine zuvor gesicherte Geraetekonfiguration ein
+    (``PUT /ISAPI/System/configurationData``, ``application/octet-stream``). Das Geraet
+    startet danach neu; ein Verbindungsabbruch ist erwartbar und wird als Erfolg
+    gewertet. Fehler stehen als ``ResponseStatus`` im Body -> IsapiError (z. B.
+    ``badXmlContent``/Modell- oder Firmware-Mismatch)."""
+    with open(backup_path, "rb") as fh:
+        data = fh.read()
+    try:
+        text = _request_auto(ip, username, password, _CONFIG_PATH, method="PUT",
+                             body=data, scheme=scheme, port=port, timeout=timeout,
+                             content_type="application/octet-stream")
+    except IsapiConnectError:
+        return t("Backup hochgeladen — Verbindung getrennt, Gerät startet neu")
+    _check_status(text)
+    return t("Backup eingespielt — Gerät startet neu")

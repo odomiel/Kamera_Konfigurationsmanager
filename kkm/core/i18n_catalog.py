@@ -217,7 +217,7 @@ EN: dict[str, str] = {
     'Hilfedatei (HILFE.md) nicht gefunden.': 'Help file (HILFE.md) not found.',
     'Hinweis: ': 'Note: ',
     'Hinweis: Bei geänderter Plugin-Auswahl das Programm neu starten.': 'Note: restart the program if the plugin selection was changed.',
-    'Hinweis: Das Einspielen ist auf aktueller Wisenet-Firmware noch nicht verifiziert — die Kamera kann es mit einem Geräte-Fehler ablehnen. Das Herunterladen von Backups ist getestet.': 'Note: Restoring is not yet verified on current Wisenet firmware — the camera may reject it with a device error. Downloading backups is tested.',
+    'Hinweis: Das Einspielen ist noch nicht an echter Hardware verifiziert — die Kamera kann es mit einem Geräte-Fehler ablehnen. Das Herunterladen von Backups ist getestet.': 'Note: Restoring is not yet verified on real hardware — the camera may reject it with a device error. Downloading backups is tested.',
     'Hinweis: Speichert das Master-Passwort gerätegebunden auf diesem Rechner. Bequem, aber weniger sicher — wer als dieser Benutzer Zugriff hat, kann den Tresor öffnen.': 'Note: stores the master password device-bound on this computer. Convenient, but less secure — anyone with access as this user can open the vault.',
     'IP auf {ip}/{prefix} gesetzt': 'IP set to {ip}/{prefix}',
     'IP-Adresse': 'IP address',
