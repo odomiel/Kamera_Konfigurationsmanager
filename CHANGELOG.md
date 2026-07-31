@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.31b7 — 2026-07-31
+
+- **Hanwha Config-Restore (Einspielen) gelöst und verifiziert.** Der frühere `Error
+  607` lag am **falschen Upload-Format**: die Wisenet-Firmware erwartet die Datei
+  **nicht** als Multipart, sondern die **rohen Bytes base64-kodiert** als
+  `application/x-www-form-urlencoded`-Body (ermittelt aus dem Web-UI-JavaScript
+  `configRestore` → `btoa(fileBytes)`). `sunapi.restore_config` sendet jetzt genau das;
+  an der QNO-6082R (V1.41.18) quittiert die Kamera mit `OK` und startet neu. Hanwha-
+  Import ist damit als verifiziert markiert (`config_backup_import_verified`), der
+  Warnhinweis „noch nicht verifiziert" entfällt. `ExcludeSettings=Network` (Option „Netz
+  behalten") bleibt bestehen.
+
 ## 26.07.31b6 — 2026-07-31
 
 - **Bugfix: Aktionen an Nicht-Axis-Kameras schlugen mit 401 fehl.** Der Zugangsdaten-

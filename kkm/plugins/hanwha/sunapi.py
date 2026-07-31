@@ -469,32 +469,21 @@ _RESTORE_CGI = "system.cgi?msubmenu=configrestore&action=control"
 
 def restore_config(ip, username, password, backup_path, keep_network=False,
                    scheme="auto", port=None, timeout=600):
-    """Spielt ein Config-Backup ein (``configrestore&action=control``),
-    multipart/form-data. Mit ``keep_network=True`` (``ExcludeSettings=Network``)
-    behaelt die Kamera ihre aktuelle IP/Netz-Konfiguration — wichtig, wenn ein Backup
-    auf eine *andere* Kamera gespielt wird. Das Geraet startet danach neu; ein
-    Verbindungsabbruch ist erwartbar und wird als Erfolg gewertet. ``NG``/``Error
-    Code`` im 200-Body (falsches Modell/beschaedigt) → SunapiError.
+    """Spielt ein Config-Backup ein (``configrestore&action=control``). Mit
+    ``keep_network=True`` (``ExcludeSettings=Network``) behaelt die Kamera ihre aktuelle
+    IP/Netz-Konfiguration — wichtig, wenn ein Backup auf eine *andere* Kamera gespielt
+    wird. Das Geraet startet danach neu; ein Verbindungsabbruch ist erwartbar und wird
+    als Erfolg gewertet. ``NG``/``Error Code`` im 200-Body → SunapiError.
 
-    **Noch nicht an Hardware verifiziert:** Auf der QNO-6082R (Firmware 1.41.18)
-    quittiert die Kamera diesen Upload mit ``NG / Error Code 607 / Unknown Error`` —
-    sowohl fuer ein per API exportiertes als auch fuer ein per Web-UI erzeugtes Backup,
-    unabhaengig von Feldname/``ExcludeSettings``/Passwort. Die Firmware nutzt beim
-    Restore offenbar einen eigenen (undokumentierten) Flow, den ``attributes.cgi`` nicht
-    abbildet. Der Export (:func:`export_config`) ist dagegen verifiziert."""
-    import os
+    **Format wie die Wisenet-Web-UI (an QNO-6082R V1.41.18 verifiziert):** die rohen
+    Datei-Bytes **base64-kodiert** als ``application/x-www-form-urlencoded``-Body — NICHT
+    multipart. Ein Multipart-Upload quittiert die Firmware sonst mit ``Error Code 607``.
+    (Ermittelt aus dem Web-UI-JavaScript ``/wmf/scripts/customs.js``: ``configRestore``
+    → ``btoa(fileBytes)`` + Content-Type ``application/x-www-form-urlencoded``.)"""
+    import base64
     with open(backup_path, "rb") as fh:
         data = fh.read()
-    filename = os.path.basename(backup_path)
-    boundary = "----kkmHanwha" + os.urandom(12).hex()
-    crlf = b"\r\n"
-    body = crlf.join([
-        b"--" + boundary.encode(),
-        b'Content-Disposition: form-data; name="ConfigFile"; filename="'
-        + filename.encode("utf-8") + b'"',
-        b"Content-Type: application/octet-stream", b"", data,
-        b"--" + boundary.encode() + b"--", b"",
-    ])
+    body = base64.b64encode(data)
     path = _RESTORE_CGI + ("&ExcludeSettings=Network" if keep_network else "")
     schemes = ["https", "http"] if scheme == "auto" else [scheme]
     last_conn = None
@@ -504,7 +493,7 @@ def restore_config(ip, username, password, backup_path, keep_network=False,
         url = f"{sc}://{host_port}{CGI}/{path}"
         req = urllib.request.Request(
             url, data=body, method="POST",
-            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+            headers={"Content-Type": "application/x-www-form-urlencoded;"})
         try:
             text = _open_read(_opener(host_port, username, password), req,
                               timeout).decode("utf-8", errors="replace")
