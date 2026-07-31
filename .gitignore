@@ -22,6 +22,9 @@ base.AppImage
 *.cfg
 *.bin
 
+# Lokale Kamera-Config-Backups (z. B. Wisenet .bin, geraetespezifisch)
+configfiles/
+
 # Projektspezifische Claude-Notiz (nicht versioniert, wie im Discovery-Tool)
 CLAUDE.md
 
