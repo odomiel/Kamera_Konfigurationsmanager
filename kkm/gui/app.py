@@ -112,6 +112,77 @@ def _sort_key(value):
     return (0, parts)
 
 
+class _GroupPicker(tk.Toplevel):
+    """Gruppenauswahl mit Filterfeld und Scrollbar.
+
+    Ersetzt das Kaskaden-Untermenü »Zu Gruppe hinzufügen«: ein ``tk.Menu`` kann
+    keine Scrollbar und bietet bei vielen Gruppen nur das mühsame Pfeil-Scrollen.
+    ``result`` ist ``("group", gid)`` für eine gewählte Gruppe, ``("new", None)``
+    für »Neue Gruppe…« oder ``None`` bei Abbruch.
+    """
+
+    def __init__(self, parent, groups, n_cams):
+        super().__init__(parent)
+        self.title(t("Zu Gruppe hinzufügen"))
+        self.transient(parent)
+        self.result: tuple[str, str | None] | None = None
+        self._groups = list(groups)          # [(gid, name)], bereits sortiert
+        self._filtered: list[tuple[str, str]] = []
+
+        frame = ttk.Frame(self, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(frame, text=t("{n} Kamera(s) einer Gruppe zuweisen:", n=n_cams)
+                  ).pack(anchor=tk.W, pady=(0, 6))
+
+        self._filter = tk.StringVar()
+        ent = ttk.Entry(frame, textvariable=self._filter)
+        ent.pack(fill=tk.X, pady=(0, 6))
+        self._filter.trace_add("write", lambda *_a: self._populate())
+
+        box = ttk.Frame(frame)
+        box.pack(fill=tk.BOTH, expand=True)
+        self._list = tk.Listbox(box, height=12, exportselection=False)
+        scroll = ttk.Scrollbar(box, orient=tk.VERTICAL, command=self._list.yview)
+        self._list.config(yscrollcommand=scroll.set)
+        self._list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.LEFT, fill=tk.Y)
+
+        row = ttk.Frame(frame)
+        row.pack(fill=tk.X, pady=(8, 0))
+        ttk.Button(row, text=t("Übernehmen"), command=self._ok).pack(side=tk.LEFT)
+        ttk.Button(row, text=t("Neue Gruppe…"), command=self._new).pack(side=tk.LEFT, padx=6)
+        ttk.Button(row, text=t("Abbrechen"), command=self.destroy).pack(side=tk.LEFT)
+
+        self._list.bind("<Double-Button-1>", lambda _e: self._ok())
+        # Enter im Filterfeld übernimmt die (Vor-)Auswahl.
+        ent.bind("<Return>", lambda _e: self._ok())
+        self._populate()
+        ent.focus_set()
+
+        self.grab_set()
+        self.wait_window(self)
+
+    def _populate(self):
+        needle = self._filter.get().strip().casefold()
+        self._filtered = [(gid, name) for gid, name in self._groups
+                          if not needle or needle in name.casefold()]
+        self._list.delete(0, tk.END)
+        for _gid, name in self._filtered:
+            self._list.insert(tk.END, name)
+        if self._filtered:
+            self._list.selection_set(0)
+
+    def _ok(self):
+        sel = self._list.curselection()
+        if sel:
+            self.result = ("group", self._filtered[sel[0]][0])
+            self.destroy()
+
+    def _new(self):
+        self.result = ("new", None)
+        self.destroy()
+
+
 class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -699,20 +770,11 @@ class MainWindow(tk.Tk):
                              command=lambda c=cap, l=label: self._open_action(c, l))
         menu.add_separator()
 
-        add_menu = tk.Menu(menu, tearoff=0)
-        user_groups = sorted(
-            ((gid, g) for gid, g in self.store.groups.items()
-             if gid not in VIRTUAL_GROUP_IDS),
-            key=lambda item: item[1].name.casefold())
-        for gid, g in user_groups:
-            add_menu.add_command(label=g.name,
-                                 command=lambda gid=gid: self._assign_selected(gid, keys))
-        if user_groups:
-            add_menu.add_separator()
-        add_menu.add_command(label=t("Neue Gruppe…"),
-                             command=lambda: self._assign_new_group(keys))
-        menu.add_cascade(label=t("Zu Gruppe hinzufügen ({n} Kamera(s))", n=len(cams)),
-                         menu=add_menu)
+        # Auswahldialog mit Filter + Scrollbar statt Kaskaden-Untermenü: ein
+        # tk.Menu kann keine Scrollbar und bietet bei vielen Gruppen nur Pfeile.
+        menu.add_command(
+            label=t("Zu Gruppe hinzufügen ({n} Kamera(s))", n=len(cams)),
+            command=lambda: self._pick_group_to_assign(keys, len(cams)))
 
         g = self.store.groups.get(self._current_gid)
         if g and self._current_gid not in VIRTUAL_GROUP_IDS:
@@ -726,6 +788,21 @@ class MainWindow(tk.Tk):
             menu.tk_popup(event.x_root, event.y_root)
         finally:
             menu.grab_release()
+
+    def _pick_group_to_assign(self, keys, n_cams):
+        """Gruppen-Auswahldialog öffnen und Ergebnis anwenden."""
+        groups = sorted(
+            ((gid, g.name) for gid, g in self.store.groups.items()
+             if gid not in VIRTUAL_GROUP_IDS),
+            key=lambda item: item[1].casefold())
+        picker = _GroupPicker(self, groups, n_cams)
+        if not picker.result:
+            return
+        kind, gid = picker.result
+        if kind == "new":
+            self._assign_new_group(keys)
+        else:
+            self._assign_selected(gid, keys)
 
     def _assign_selected(self, gid, keys):
         self.store.assign(gid, keys)

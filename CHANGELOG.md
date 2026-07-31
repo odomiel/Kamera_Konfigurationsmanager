@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.31 — 2026-07-31
+
+- **Gruppenauswahl im Rechtsklickmenü mit Scrollbar & Filter.** „Zu Gruppe
+  hinzufügen" öffnet nun einen kleinen Auswahldialog (Listbox mit vertikaler
+  Scrollbar + Filterfeld) statt eines Kaskaden-Untermenüs. Bei vielen Gruppen
+  entfällt damit das mühsame Pfeil-Scrollen des nativen `tk.Menu` (das prinzipiell
+  keine Scrollbar unterstützt). Tippen filtert live, Doppelklick/Enter übernimmt;
+  „Neue Gruppe…" bleibt als Schaltfläche erhalten. Neuer Dialog `_GroupPicker`
+  (nach dem Muster von `_VersionPicker`).
+
 ## 26.07.25 — 2026-07-25
 
 - **Firmware-Vorschlag: Axis' `latest/ver.txt` ist jetzt maßgeblich.** Der Axis-Repo
