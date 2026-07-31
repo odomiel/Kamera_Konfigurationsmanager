@@ -47,6 +47,7 @@ class DahuaPlugin(VendorPlugin):
     id = "dahua"
     name = "Dahua"
     experimental = True
+    default_username = "admin"
     capabilities = {
         Capability.DISCOVER,
         Capability.ONLINE_CHECK,

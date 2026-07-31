@@ -44,6 +44,7 @@ class HikvisionPlugin(VendorPlugin):
     id = "hikvision"
     name = "Hikvision"
     experimental = True
+    default_username = "admin"
     capabilities = {
         Capability.DISCOVER,
         Capability.ONLINE_CHECK,

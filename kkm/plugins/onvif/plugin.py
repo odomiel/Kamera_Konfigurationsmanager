@@ -53,6 +53,7 @@ from . import soap
 class OnvifPlugin(VendorPlugin):
     id = "onvif"
     name = "ONVIF (generisch)"
+    default_username = "admin"   # die meisten ONVIF-Kameras; Axis (root) hat ein eigenes Plugin
     #: Herstellerneutral — findet auch Geraete, fuer die es ein eigenes Plugin gibt.
     #: Die Suche im Hauptfenster bevorzugt darum das Hersteller-Plugin (s. app.py).
     generic = True

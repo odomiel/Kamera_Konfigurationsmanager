@@ -4,6 +4,20 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.31b6 — 2026-07-31
+
+- **Bugfix: Aktionen an Nicht-Axis-Kameras schlugen mit 401 fehl.** Der Zugangsdaten-
+  Block der Aktionsdialoge belegte den Benutzer fest mit `root` (Axis-Konvention).
+  Hanwha/Hikvision/Dahua nutzen aber `admin` — ohne manuelle Korrektur scheiterte
+  **jede** Aktion (Konfig-Backup, Werksreset, …) an der Authentifizierung. Neu: Plugin-
+  Attribut `default_username`, mit dem der Dialog das Benutzerfeld herstellerabhängig
+  vorbelegt (Axis `root`, Hanwha/Hikvision/Dahua/ONVIF `admin`).
+- **Hanwha robuster gegen HTTP 490.** Wisenet-Kameras antworten mit `490`, wenn die
+  Zahl gleichzeitiger CGI-Sitzungen erschöpft ist (offene Web-UI + Online-Prüfung +
+  Aktion). Statt sofort abzubrechen, wartet der SUNAPI-Client jetzt kurz und versucht
+  es erneut (bis zu 3×) — betrifft alle GET/POST inkl. Config-Backup, Restore, Firmware
+  und Werksreset.
+
 ## 26.07.31b5 — 2026-07-31
 
 - **Hikvision Konfig-Backup an echter Hardware verifiziert.** Export **und** Import

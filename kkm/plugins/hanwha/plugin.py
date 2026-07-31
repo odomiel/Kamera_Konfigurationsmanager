@@ -45,6 +45,7 @@ class HanwhaPlugin(VendorPlugin):
     id = "hanwha"
     name = "Hanwha (Wisenet)"
     experimental = True
+    default_username = "admin"
     config_backup_keep_network = True   # SUNAPI ExcludeSettings=Network
     capabilities = {
         Capability.DISCOVER,

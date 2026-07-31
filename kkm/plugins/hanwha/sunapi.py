@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import re
 import ssl
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -93,6 +94,27 @@ def _opener(host_port: str, username: str, password: str, auth: bool = True):
     return urllib.request.build_opener(*handlers)
 
 
+# Hanwha antwortet mit HTTP 490, wenn die maximale Zahl gleichzeitiger CGI-Sitzungen
+# erreicht ist (z. B. offene Web-UI + Online-Pruefung + Aktion). Das ist transient —
+# kurz warten und erneut versuchen, statt die Aktion abzubrechen.
+_MAX_490_RETRIES = 3
+
+
+def _open_read(opener, target, timeout) -> bytes:
+    """``opener.open(target)`` + ``read()`` mit Retry bei HTTP 490 („zu viele
+    Verbindungen"). ``target`` ist eine URL oder ein ``Request``. Andere HTTP-/
+    Verbindungsfehler reicht die Funktion unveraendert an den Aufrufer durch."""
+    for attempt in range(_MAX_490_RETRIES + 1):
+        try:
+            with opener.open(target, timeout=timeout) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code == 490 and attempt < _MAX_490_RETRIES:
+                time.sleep(1.0 + attempt)   # Session-Slot freiwerden lassen
+                continue
+            raise
+
+
 def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
              auth=True):
     """Fuehrt einen SUNAPI-GET-Aufruf aus und liefert den Antworttext (str).
@@ -104,8 +126,8 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
     host_port = f"{ip}:{port}"
     url = f"{scheme}://{host_port}{path}"
     try:
-        with _opener(host_port, username, password, auth).open(url, timeout=timeout) as resp:
-            return resp.read().decode("utf-8", errors="replace")
+        return _open_read(_opener(host_port, username, password, auth), url,
+                          timeout).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
             raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
@@ -412,8 +434,8 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
             url, data=body, method="POST",
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
         try:
-            with _opener(host_port, username, password).open(req, timeout=timeout) as resp:
-                text = resp.read().decode("utf-8", errors="replace")
+            text = _open_read(_opener(host_port, username, password), req,
+                              timeout).decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
                 raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
@@ -484,8 +506,8 @@ def restore_config(ip, username, password, backup_path, keep_network=False,
             url, data=body, method="POST",
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
         try:
-            with _opener(host_port, username, password).open(req, timeout=timeout) as resp:
-                text = resp.read().decode("utf-8", errors="replace")
+            text = _open_read(_opener(host_port, username, password), req,
+                              timeout).decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
                 raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
@@ -512,8 +534,7 @@ def export_config(ip, username, password, out_path, scheme="auto", port=None,
         host_port = f"{ip}:{p}"
         url = f"{sc}://{host_port}{CGI}/{_BACKUP_CGI}"
         try:
-            with _opener(host_port, username, password).open(url, timeout=timeout) as resp:
-                data = resp.read()
+            data = _open_read(_opener(host_port, username, password), url, timeout)
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
                 raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))

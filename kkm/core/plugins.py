@@ -116,6 +116,12 @@ class VendorPlugin(abc.ABC):
     #: es False, zeigt der Backup-Dialog einen Warnhinweis „noch nicht verifiziert".
     config_backup_import_verified: bool = False
 
+    #: Werksseitiger Standard-Benutzername des Herstellers. Der Zugangsdaten-Block der
+    #: Aktionsdialoge belegt das Benutzerfeld damit vor (Axis „root", die meisten
+    #: anderen „admin") — sonst schlaegt jede Aktion an einer Nicht-Axis-Kamera mit 401
+    #: fehl, weil „root" dort nicht existiert.
+    default_username: str = "root"
+
     #: Rollen des Benutzer-Dialogs bzw. Stufen des ONVIF-Dialogs, hoechstes Recht
     #: zuerst. Die Dialoge lesen sie vom Plugin — sie sind herstellerabhaengig.
     USER_ROLES: tuple[str, ...] = ()

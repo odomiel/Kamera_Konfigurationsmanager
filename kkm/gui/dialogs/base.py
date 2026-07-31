@@ -111,7 +111,10 @@ class ActionDialog(tk.Toplevel):
     def _build_credentials(self, parent):
         cred = ttk.LabelFrame(parent, text=t("Zugangsdaten"), padding=8)
         cred.pack(fill=tk.X, pady=(8, 4))
-        self.user_var = tk.StringVar(value="root")
+        # Standard-Benutzer je Hersteller vorbelegen (Axis „root", sonst meist „admin")
+        # — sonst schlaegt jede Aktion an einer Nicht-Axis-Kamera mit 401 fehl.
+        default_user = getattr(self.plugin0(), "default_username", "root") or "root"
+        self.user_var = tk.StringVar(value=default_user)
         self.pass_var = tk.StringVar()
         self.scheme_var = tk.StringVar(value="auto")
         self.port_var = tk.StringVar()
