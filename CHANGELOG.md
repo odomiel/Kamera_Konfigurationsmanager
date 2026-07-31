@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.31b3 — 2026-07-31
+
+- **Werksreset jetzt für alle Hersteller erreichbar (Rechtsklickmenü).** Der Werksreset
+  hing bisher im „Konfiguration"-Dialog, der nur bei `Capability.CONFIG` (= **nur Axis**)
+  freigeschaltet ist — für **Hikvision, Hanwha, Dahua, ONVIF** war er dadurch trotz
+  vorhandener, verifizierter `FACTORY_RESET`-Fähigkeit **nicht auslösbar**. Der Reset ist
+  nun eine eigenständige Aktion (neuer `FactoryResetDialog`) und liegt im
+  **Rechtsklick-Kontextmenü** der Kameraliste („Auf Werkseinstellungen zurücksetzen…"),
+  sichtbar/aktiv für jede Auswahl, deren Plugin `FACTORY_RESET` meldet. Beide Modi wie
+  gehabt: „mit Erhalt der IP" (`keep_ip`, wartet auf Neustart + Werkszustand) und
+  „kompletter Reset inkl. IP". Aus dem Config-Dialog entfernt (eine Quelle statt zwei).
+
 ## 26.07.31b2 — 2026-07-31
 
 - **Neue Aktion „Konfig-Backup" (Capability `CONFIG_BACKUP`).** Getrennt von der

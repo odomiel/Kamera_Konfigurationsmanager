@@ -783,6 +783,13 @@ class MainWindow(tk.Tk):
             menu.add_command(label=t("Aus „{group}“ entfernen", group=g.name),
                              command=lambda: self._unassign_selected(self._current_gid, keys))
         menu.add_separator()
+        # Werksreset: eigenständige Aktion (FactoryResetDialog) — für alle Plugins mit
+        # FACTORY_RESET, nicht mehr im Axis-only Konfigurations-Dialog vergraben.
+        fr_state = (tk.NORMAL if self._action_supported(Capability.FACTORY_RESET, cams)
+                    else tk.DISABLED)
+        menu.add_command(label=t("Auf Werkseinstellungen zurücksetzen…"), state=fr_state,
+                         command=lambda: self._open_action(Capability.FACTORY_RESET,
+                                                           "Werkseinstellungen"))
         menu.add_command(label=t("Kamera(s) vollständig entfernen ({n})", n=len(cams)),
                          command=lambda: self._remove_selected(cams, keys))
         try:

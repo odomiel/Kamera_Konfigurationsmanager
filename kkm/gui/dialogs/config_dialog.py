@@ -44,7 +44,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Capability, camera_key, t
+from kkm.core import Capability, t
 from kkm.core import get_first_ip
 from .base import ActionDialog
 from .vault_access import ensure_vault_unlocked
@@ -83,86 +83,11 @@ class ConfigDialog(ActionDialog):
         ttk.Button(exp, text=t("Konfiguration auslesen…"), command=self._do_export_read).pack(
             anchor=tk.W, pady=(6, 0))
 
-        # --- Werkseinstellungen (Reset) — nur wenn das Plugin es unterstützt ---
-        plugin0 = self.plugin_for(self.cameras[0]) if self.cameras else None
-        if plugin0 and plugin0.supports(Capability.FACTORY_RESET):
-            # camera_keys der zurückgesetzten Kameras: alle (Zugangsdaten ungültig
-            # -> aufräumen) bzw. bestätigt werksneu (-> in der Liste kennzeichnen).
-            self._reset_all_keys: list[str] = []
-            self._reset_factory_keys: list[str] = []
-            self._reset_mode = tk.StringVar(value="keep")
-            rst = ttk.LabelFrame(
-                parent, text=t("Werkseinstellungen (auf alle ausgewählten Kameras)"),
-                padding=8)
-            rst.pack(fill=tk.X, pady=(6, 0))
-            ttk.Label(rst, text=t("Setzt die Kamera(s) zurück; sie starten danach neu.")).pack(
-                anchor=tk.W)
-            ttk.Radiobutton(rst, text=t("Werksreset mit Erhalt der IP-Adresse"),
-                            value="keep", variable=self._reset_mode).pack(anchor=tk.W)
-            ttk.Radiobutton(rst, text=t("Kompletter Werksreset (inkl. IP-Adresse)"),
-                            value="full", variable=self._reset_mode).pack(anchor=tk.W)
-            ttk.Button(rst, text=t("Auf Werkseinstellungen zurücksetzen"),
-                       command=self._do_factory_reset).pack(anchor=tk.W, pady=(6, 0))
+        # Werkseinstellungen sind eine eigenständige Aktion im Rechtsklickmenü
+        # (FactoryResetDialog) — sie hingen früher hier, waren so aber nur für Axis
+        # (einziges Plugin mit CONFIG) erreichbar.
 
         self.after(120, self._check_read)
-
-    # ------------------------------------------------------------- factory reset
-    def _do_factory_reset(self):
-        keep_ip = self._reset_mode.get() == "keep"
-        mode = (t("mit Erhalt der IP-Adresse") if keep_ip
-                else t("inkl. IP-Adresse — kompletter Reset"))
-        if not messagebox.askyesno(
-                t(self.title_text),
-                t("{n} Kamera(s) auf Werkseinstellungen zurücksetzen ({mode})?\n\n"
-                  "Die Kameras starten danach neu. Diese Aktion kann "
-                  "nicht rückgängig gemacht werden.", n=len(self.cameras), mode=mode), parent=self):
-            return
-        self._reset_all_keys.clear()
-        self._reset_factory_keys.clear()
-
-        def op(plugin, camera, creds):
-            key = camera_key(camera)
-            plugin.factory_reset(camera, creds, keep_ip=keep_ip)   # löst Reset aus
-            self._reset_all_keys.append(key)   # Zugangsdaten sind jetzt ungültig
-            if not keep_ip:
-                # IP ändert sich -> nicht am alten Ziel pollbar. Nur Hinweis.
-                return t("Reset ausgelöst — Kamera startet neu und ist danach unter "
-                         "Standard-/DHCP-Adresse erreichbar (bitte neu suchen).")
-            # keep_ip: warten, bis die Kamera neu gestartet und wieder erreichbar
-            # UND im Werkszustand (Erstkonfiguration) ist.
-            if self._wait_until_factory(plugin, camera, creds):
-                self._reset_factory_keys.append(key)
-                return t("Werksreset erfolgreich — Kamera wieder erreichbar, "
-                         "Erstkonfiguration erforderlich.")
-            return t("Reset ausgelöst, aber Kamera kam im Zeitfenster nicht "
-                     "erreichbar/werksneu zurück — später erneut suchen.")
-
-        self.run_per_camera(op, done_msg=t("Werksreset abgeschlossen."))
-
-    def _wait_until_factory(self, plugin, camera, creds,
-                            timeout=180, interval=5) -> bool:
-        """Pollt (im Worker-Thread) die Kamera, bis sie nach dem Neustart wieder
-        antwortet und sich im Auslieferungszustand befindet. Gibt True zurück,
-        sobald der Werkszustand bestätigt ist."""
-        name = camera.get("Name", "?")
-        ip = get_first_ip(camera) or "?"
-        msg = "… " + t("{name} ({ip}): warte auf Neustart und Erstkonfigurationsmodus…",
-                       name=name, ip=ip)
-        return bool(self.poll_until(
-            lambda: plugin.is_unconfigured(camera, creds),
-            timeout, interval, start_msg=msg))
-
-    def _on_done(self):
-        """Nach dem Durchlauf: Zugangsdaten der zurückgesetzten Kameras verwerfen
-        und werksneu bestätigte Kameras in der Liste kennzeichnen."""
-        all_keys = getattr(self, "_reset_all_keys", None)
-        if not all_keys:
-            return
-        hook = getattr(self.master, "after_factory_reset", None)
-        if callable(hook):
-            hook(list(all_keys), list(self._reset_factory_keys))
-        self._reset_all_keys.clear()
-        self._reset_factory_keys.clear()
 
     # ----------------------------------------------------------------- import
     def _choose_cfg(self):
