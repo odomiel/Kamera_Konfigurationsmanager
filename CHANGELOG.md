@@ -4,6 +4,28 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.31b2 — 2026-07-31
+
+- **Neue Aktion „Konfig-Backup" (Capability `CONFIG_BACKUP`).** Getrennt von der
+  Axis-`CONFIG`-Vorlage (auswählbare Parameter) behandelt sie den opaken, geräte-/
+  firmwaregebundenen Komplett-Backup-Blob mancher Hersteller. Erste Umsetzung:
+  **Hanwha (Wisenet)** über SUNAPI. Neuer Dialog `ConfigBackupDialog` mit zwei
+  Modi (Einspielen / Herunterladen), Datei-Auswahl und Option „Netzwerkeinstellungen
+  (IP) beibehalten" (`ExcludeSettings=Network`). Endpunkte aus `attributes.cgi`
+  gelesen: Export `configbackup&action=control`, Restore `configrestore&action=control`.
+  Neue Plugin-Methoden `import_config_backup`/`export_config_backup` (Basis + Hanwha)
+  und SUNAPI-Funktionen `export_config`/`restore_config`.
+  - **Herunterladen** ist an echter QNO-6082R verifiziert (173-KB-Blob).
+  - **Einspielen** ist auf dieser Firmware (1.41.18) **noch nicht verifiziert**: die
+    Kamera lehnt den Upload mit `Error Code 607 (Unknown Error)` ab — sowohl für ein
+    API-exportiertes als auch ein Web-UI-Backup, unabhängig von Feldname/
+    `ExcludeSettings`/Passwort. Die Firmware nutzt beim Restore offenbar einen eigenen,
+    undokumentierten Flow. Die Funktion bleibt enthalten, ist im Dialog aber klar als
+    ungetestet markiert (Warnhinweis). Hanwha-Plugin bleibt `experimental`.
+- **Rechtsklick-Kontextmenü:** neuer Punkt „Konfig-Backup" (nur bei Plugins mit
+  `CONFIG_BACKUP`).
+- **`.gitignore`:** `configfiles/` (lokale Kamera-Config-Backups) ausgeschlossen.
+
 ## 26.07.31b1 — 2026-07-31
 
 - **Gespeicherte Zugangsdaten im Tresor einsehbar.** Einstellungen → **Tresor**

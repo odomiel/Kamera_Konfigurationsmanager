@@ -53,6 +53,7 @@ class HanwhaPlugin(VendorPlugin):
         Capability.USERS,
         Capability.ONVIF_USERS,
         Capability.FIRMWARE,
+        Capability.CONFIG_BACKUP,
         Capability.FACTORY_RESET,
     }
 
@@ -160,3 +161,15 @@ class HanwhaPlugin(VendorPlugin):
         ip = self.ip_of(camera)
         return sunapi.factory_reset(ip, creds.username, creds.password,
                                     keep_ip=keep_ip, **self._conn(creds))
+
+    def import_config_backup(self, camera, creds: Credentials, backup_path,
+                             keep_network=False, progress=None):
+        ip = self.ip_of(camera)
+        return sunapi.restore_config(ip, creds.username, creds.password,
+                                     backup_path, keep_network=keep_network,
+                                     **self._conn(creds))
+
+    def export_config_backup(self, camera, creds: Credentials, out_path):
+        ip = self.ip_of(camera)
+        return sunapi.export_config(ip, creds.username, creds.password,
+                                    out_path, **self._conn(creds))

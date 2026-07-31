@@ -56,6 +56,10 @@ class Capability:
     FIRMWARE = "firmware"
     FIRMWARE_CHECK = "firmware_check"   # sucht online nach neuerer Firmware
     CONFIG = "config"
+    # Opakes, geraetespezifisches Komplett-Backup (verschluesselter Blob), das nur
+    # als Ganzes ein-/ausgespielt wird — im Gegensatz zu CONFIG (auswaehlbare
+    # Parameter-Vorlage). Z. B. Hanwha SUNAPI-Config-Backup (.bin).
+    CONFIG_BACKUP = "config_backup"
     FACTORY_RESET = "factory_reset"
 
 
@@ -139,6 +143,25 @@ class VendorPlugin(abc.ABC):
         """Konfigurationsdatei auf eine Kamera anwenden. Die Auswahl-Argumente
         spiegeln :meth:`write_config_file` — was sich exportieren laesst, laesst sich
         auch gezielt importieren (``None`` = alles)."""
+        raise NotImplementedError
+
+    # --- opaque config backup (Capability.CONFIG_BACKUP) --------------------
+    # Manche Hersteller (Hanwha, Hikvision, Dahua) bieten nur ein verschluesseltes
+    # Komplett-Backup an — nicht auswaehlbar, geraete-/modellgebunden. Getrennt von
+    # CONFIG (Parameter-Vorlage), damit die GUI beides sauber unterscheidet.
+    def import_config_backup(self, camera: dict, creds: Credentials, backup_path,
+                             keep_network: bool = False,
+                             progress: "ProgressFn | None" = None) -> str:
+        """Spielt ein zuvor gesichertes Komplett-Backup (opaker Blob) auf die Kamera
+        ein. Mit ``keep_network`` bleiben IP-/Netzwerkeinstellungen der Zielkamera
+        erhalten (wichtig beim Einspielen auf eine *andere* Kamera). Das Geraet startet
+        danach i. d. R. neu. Nur verfuegbar, wenn das Plugin ``Capability.CONFIG_BACKUP``
+        meldet."""
+        raise NotImplementedError
+
+    def export_config_backup(self, camera: dict, creds: Credentials, out_path) -> str:
+        """Laedt das aktuelle Komplett-Backup der Kamera herunter und speichert es
+        unter *out_path*. Optionaler Gegenpart zu :meth:`import_config_backup`."""
         raise NotImplementedError
 
     # --- discovery & status -------------------------------------------------

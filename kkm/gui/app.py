@@ -73,6 +73,7 @@ ACTION_ITEMS = [
     ("ONVIF-Benutzer", Capability.ONVIF_USERS),
     ("Firmware", Capability.FIRMWARE),
     ("Konfiguration", Capability.CONFIG),
+    ("Konfig-Backup", Capability.CONFIG_BACKUP),
 ]
 
 _NUM_CHUNK = re.compile(r"(\d+)")

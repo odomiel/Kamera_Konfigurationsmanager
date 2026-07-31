@@ -432,3 +432,98 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
     if last_conn is not None:
         return t("Firmware hochgeladen — Verbindung getrennt, Gerät flasht/startet neu")
     raise SunapiConnectError(t("Kamera nicht erreichbar."))
+
+
+# ------------------------------------------------- Konfigurations-Backup (Blob)
+# SUNAPI-Config-Backup: ein opaker, verschluesselter Komplett-Blob (nicht
+# auswaehlbar, modell-/firmwaregebunden). Endpunkte aus der Selbstdokumentation
+# ``/stw-cgi/attributes.cgi/system`` gelesen und an der QNO-6082R verifiziert:
+#   Export  = system.cgi?msubmenu=configbackup&action=control  (liefert den Blob)
+#   Restore = system.cgi?msubmenu=configrestore&action=control (Datei hochladen);
+#             optional ExcludeSettings=Network -> Netzwerk/IP der Kamera bleibt.
+_BACKUP_CGI = "system.cgi?msubmenu=configbackup&action=control"
+_RESTORE_CGI = "system.cgi?msubmenu=configrestore&action=control"
+
+
+def restore_config(ip, username, password, backup_path, keep_network=False,
+                   scheme="auto", port=None, timeout=600):
+    """Spielt ein Config-Backup ein (``configrestore&action=control``),
+    multipart/form-data. Mit ``keep_network=True`` (``ExcludeSettings=Network``)
+    behaelt die Kamera ihre aktuelle IP/Netz-Konfiguration — wichtig, wenn ein Backup
+    auf eine *andere* Kamera gespielt wird. Das Geraet startet danach neu; ein
+    Verbindungsabbruch ist erwartbar und wird als Erfolg gewertet. ``NG``/``Error
+    Code`` im 200-Body (falsches Modell/beschaedigt) → SunapiError.
+
+    **Noch nicht an Hardware verifiziert:** Auf der QNO-6082R (Firmware 1.41.18)
+    quittiert die Kamera diesen Upload mit ``NG / Error Code 607 / Unknown Error`` —
+    sowohl fuer ein per API exportiertes als auch fuer ein per Web-UI erzeugtes Backup,
+    unabhaengig von Feldname/``ExcludeSettings``/Passwort. Die Firmware nutzt beim
+    Restore offenbar einen eigenen (undokumentierten) Flow, den ``attributes.cgi`` nicht
+    abbildet. Der Export (:func:`export_config`) ist dagegen verifiziert."""
+    import os
+    with open(backup_path, "rb") as fh:
+        data = fh.read()
+    filename = os.path.basename(backup_path)
+    boundary = "----kkmHanwha" + os.urandom(12).hex()
+    crlf = b"\r\n"
+    body = crlf.join([
+        b"--" + boundary.encode(),
+        b'Content-Disposition: form-data; name="ConfigFile"; filename="'
+        + filename.encode("utf-8") + b'"',
+        b"Content-Type: application/octet-stream", b"", data,
+        b"--" + boundary.encode() + b"--", b"",
+    ])
+    path = _RESTORE_CGI + ("&ExcludeSettings=Network" if keep_network else "")
+    schemes = ["https", "http"] if scheme == "auto" else [scheme]
+    last_conn = None
+    for sc in schemes:
+        p = port if port else DEFAULT_PORTS[sc]
+        host_port = f"{ip}:{p}"
+        url = f"{sc}://{host_port}{CGI}/{path}"
+        req = urllib.request.Request(
+            url, data=body, method="POST",
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        try:
+            with _opener(host_port, username, password).open(req, timeout=timeout) as resp:
+                text = resp.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as exc:
+            if exc.code == 401:
+                raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise SunapiError(t("SUNAPI-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_conn = exc            # Reboot kappt die Verbindung -> erwartet
+            continue
+        _check_response(text)          # NG -> SunapiError
+        return t("Backup eingespielt — Gerät startet neu")
+    if last_conn is not None:
+        return t("Backup hochgeladen — Verbindung getrennt, Gerät startet neu")
+    raise SunapiConnectError(t("Kamera nicht erreichbar."))
+
+
+def export_config(ip, username, password, out_path, scheme="auto", port=None,
+                  timeout=120):
+    """Laedt das aktuelle Config-Backup herunter (``configbackup&action=control``) und
+    speichert es unter *out_path*. Fehlerantworten kommen als kurzer Text (``NG``)
+    statt Binaerblob → SunapiError."""
+    schemes = ["https", "http"] if scheme == "auto" else [scheme]
+    last_conn = None
+    for sc in schemes:
+        p = port if port else DEFAULT_PORTS[sc]
+        host_port = f"{ip}:{p}"
+        url = f"{sc}://{host_port}{CGI}/{_BACKUP_CGI}"
+        try:
+            with _opener(host_port, username, password).open(url, timeout=timeout) as resp:
+                data = resp.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code == 401:
+                raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise SunapiError(t("SUNAPI-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_conn = exc
+            continue
+        if data[:16].lstrip()[:2].upper() == b"NG":
+            _check_response(data.decode("utf-8", errors="replace"))
+        with open(out_path, "wb") as fh:
+            fh.write(data)
+        return t("Backup gespeichert: {path} ({n} Bytes)", path=out_path, n=len(data))
+    raise SunapiConnectError(t("Kamera nicht erreichbar."))
