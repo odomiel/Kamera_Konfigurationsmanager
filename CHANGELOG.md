@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.31b1 — 2026-07-31
+
+- **Gespeicherte Zugangsdaten im Tresor einsehbar.** Einstellungen → **Tresor**
+  hat bei entsperrtem Tresor einen neuen Punkt „Gespeicherte Zugangsdaten
+  anzeigen…". Er öffnet eine read-only Übersicht aller im Vault gespeicherten
+  Kamera-Zugangsdaten (Schlüssel/Benutzer/Passwort) mit **Scrollbar**, **Filter**
+  (nach Schlüssel oder Benutzer), umschaltbarer **Passwort-Anzeige** (standardmäßig
+  maskiert) und **„Passwort kopieren"** in die Zwischenablage. Neuer öffentlicher
+  Vault-Accessor `PasswordVault.all_entries()` (statt Zugriff auf `_data`); neuer
+  Dialog `_CredentialsViewer`. Nur bei entsperrtem Tresor erreichbar.
+
 ## 26.07.31 — 2026-07-31
 
 - **Gruppenauswahl im Rechtsklickmenü mit Scrollbar & Filter.** „Zu Gruppe

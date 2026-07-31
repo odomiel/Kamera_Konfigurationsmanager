@@ -62,6 +62,85 @@ def _dep_version(dist_name: str, module_name: str | None = None) -> str:
         return "nicht installiert"
 
 
+class _CredentialsViewer(tk.Toplevel):
+    """Read-only Ansicht der im Tresor gespeicherten Kamera-Zugangsdaten.
+
+    Bekommt die bereits entschlüsselten Einträge (der Tresor ist entsperrt) als
+    Liste ``(camera_key, username, password)``. Passwörter sind zunächst maskiert
+    und lassen sich per Checkbox einblenden; ``Filter`` grenzt nach Schlüssel oder
+    Benutzer ein; „Passwort kopieren" legt das Passwort der markierten Zeile in die
+    Zwischenablage.
+    """
+
+    def __init__(self, parent, entries):
+        super().__init__(parent)
+        self.title(t("Gespeicherte Zugangsdaten"))
+        self.transient(parent)
+        self._entries = list(entries)          # [(key, user, password)]
+        self._reveal = tk.BooleanVar(value=False)
+
+        frame = ttk.Frame(self, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        top = ttk.Frame(frame)
+        top.pack(fill=tk.X, pady=(0, 6))
+        ttk.Label(top, text=t("Filter:")).pack(side=tk.LEFT)
+        self._filter = tk.StringVar()
+        ent = ttk.Entry(top, textvariable=self._filter)
+        ent.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(4, 8))
+        self._filter.trace_add("write", lambda *_a: self._populate())
+        ttk.Checkbutton(top, text=t("Passwörter anzeigen"), variable=self._reveal,
+                        command=self._populate).pack(side=tk.LEFT)
+
+        box = ttk.Frame(frame)
+        box.pack(fill=tk.BOTH, expand=True)
+        cols = ("key", "user", "pw")
+        self._tree = ttk.Treeview(box, columns=cols, show="headings", height=12)
+        self._tree.heading("key", text=t("Kamera (Schlüssel)"))
+        self._tree.heading("user", text=t("Benutzer"))
+        self._tree.heading("pw", text=t("Passwort"))
+        self._tree.column("key", width=240)
+        self._tree.column("user", width=120)
+        self._tree.column("pw", width=160)
+        scroll = ttk.Scrollbar(box, orient=tk.VERTICAL, command=self._tree.yview)
+        self._tree.config(yscrollcommand=scroll.set)
+        self._tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.LEFT, fill=tk.Y)
+        self._tree.bind("<Double-Button-1>", lambda _e: self._reveal.set(True) or self._populate())
+
+        row = ttk.Frame(frame)
+        row.pack(fill=tk.X, pady=(8, 0))
+        ttk.Button(row, text=t("Passwort kopieren"),
+                   command=self._copy_pw).pack(side=tk.LEFT)
+        ttk.Button(row, text=t("Schließen"), command=self.destroy).pack(side=tk.RIGHT)
+
+        self._populate()
+        ent.focus_set()
+        self.grab_set()
+
+    def _populate(self):
+        needle = self._filter.get().strip().casefold()
+        reveal = self._reveal.get()
+        self._tree.delete(*self._tree.get_children())
+        for key, user, pw in self._entries:
+            if needle and needle not in key.casefold() and needle not in user.casefold():
+                continue
+            shown = pw if reveal else ("•" * len(pw) if pw else "")
+            self._tree.insert("", tk.END, values=(key, user, shown))
+
+    def _copy_pw(self):
+        sel = self._tree.selection()
+        if not sel:
+            return
+        key = self._tree.item(sel[0], "values")[0]
+        for k, _user, pw in self._entries:
+            if k == key:
+                self.clipboard_clear()
+                self.clipboard_append(pw)
+                self.update()          # Zwischenablage sofort wirksam
+                break
+
+
 class SettingsDialog(tk.Toplevel):
     def __init__(self, parent, *, vault, registry, settings, store, current_gid,
                  columns, fixed_columns=(), apply_columns=None,
@@ -201,6 +280,11 @@ class SettingsDialog(tk.Toplevel):
             ttk.Separator(self._vault_body, orient=tk.HORIZONTAL).grid(
                 row=7, column=0, columnspan=2, sticky="ew", pady=8)
             self._autounlock_widgets(self._vault_body, start_row=8)
+            ttk.Separator(self._vault_body, orient=tk.HORIZONTAL).grid(
+                row=10, column=0, columnspan=2, sticky="ew", pady=8)
+            ttk.Button(self._vault_body, text=t("Gespeicherte Zugangsdaten anzeigen…"),
+                       command=self._show_stored_credentials).grid(
+                row=11, column=0, columnspan=2, sticky=tk.W, pady=6)
 
     def _autounlock_widgets(self, parent, start_row):
         """Checkbox + Warnhinweis für die automatische Entsperrung beim Start."""
@@ -290,6 +374,20 @@ class SettingsDialog(tk.Toplevel):
             return
         messagebox.showinfo(t("Tresor"), t("Master-Passwort geändert."), parent=self)
         self._render_vault()
+
+    def _show_stored_credentials(self):
+        """Read-only Ansicht aller im Tresor gespeicherten Kamera-Zugangsdaten."""
+        if self.vault is None or self.vault.is_locked:
+            return
+        entries = sorted(
+            ((key, cred.get("username", ""), cred.get("password", ""))
+             for key, cred in self.vault.all_entries().items()),
+            key=lambda e: e[0].casefold())
+        if not entries:
+            messagebox.showinfo(t("Tresor"),
+                                t("Es sind keine Zugangsdaten gespeichert."), parent=self)
+            return
+        _CredentialsViewer(self, entries)
 
     # ----------------------------------------------------------------- plugins
     def _build_plugins_tab(self, parent):

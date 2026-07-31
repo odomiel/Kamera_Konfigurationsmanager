@@ -244,6 +244,12 @@ class PasswordVault:
         self._require_unlocked()
         return self._data.get(camera_key)
 
+    def all_entries(self) -> dict:
+        """Kopie aller gespeicherten Eintraege (``camera_key -> {username,
+        password}``). Erfordert einen entsperrten Tresor."""
+        self._require_unlocked()
+        return {k: dict(v) for k, v in self._data.items()}
+
     def delete(self, camera_key: str) -> None:
         self._require_unlocked()
         self._data.pop(camera_key, None)
