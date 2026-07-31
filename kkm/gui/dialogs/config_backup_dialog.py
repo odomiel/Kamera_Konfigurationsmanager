@@ -55,6 +55,8 @@ class ConfigBackupDialog(ActionDialog):
         # „Netz behalten" bietet nur an, wessen Plugin es unterstützt (Hanwha).
         plugin0 = self.plugin0()
         self._supports_keep_net = bool(getattr(plugin0, "config_backup_keep_network", False))
+        # Warnhinweis nur, wenn das Einspielen (noch) nicht an Hardware verifiziert ist.
+        self._import_verified = bool(getattr(plugin0, "config_backup_import_verified", False))
 
         modes = ttk.Frame(parent)
         modes.pack(fill=tk.X)
@@ -102,11 +104,12 @@ class ConfigBackupDialog(ActionDialog):
                        "Benutzer). Es ist an Modell/Firmware gebunden und wird als "
                        "Ganzes übernommen; die Kamera startet danach neu. Auf mehrere "
                        "Kameras gespielt, führt es zu Adress-/Identitätskonflikten."))
-            self._warn.config(
-                text=t("Hinweis: Das Einspielen ist noch nicht an echter Hardware "
-                       "verifiziert — die Kamera kann es mit einem Geräte-Fehler "
-                       "ablehnen. Das Herunterladen von Backups ist getestet."))
-            self._warn.pack(anchor=tk.W, pady=(6, 0), before=self._apply_btn)
+            if not self._import_verified:
+                self._warn.config(
+                    text=t("Hinweis: Das Einspielen ist noch nicht an echter Hardware "
+                           "verifiziert — die Kamera kann es mit einem Geräte-Fehler "
+                           "ablehnen. Das Herunterladen von Backups ist getestet."))
+                self._warn.pack(anchor=tk.W, pady=(6, 0), before=self._apply_btn)
         else:
             self._keep_net_cb.pack_forget()
             self._warn.pack_forget()

@@ -112,6 +112,10 @@ class VendorPlugin(abc.ABC):
     #: Checkbox „Netz behalten" nur dann ein. Standard: nicht unterstuetzt.
     config_backup_keep_network: bool = False
 
+    #: True, wenn das Einspielen eines Backups an echter Hardware verifiziert ist. Ist
+    #: es False, zeigt der Backup-Dialog einen Warnhinweis „noch nicht verifiziert".
+    config_backup_import_verified: bool = False
+
     #: Rollen des Benutzer-Dialogs bzw. Stufen des ONVIF-Dialogs, hoechstes Recht
     #: zuerst. Die Dialoge lesen sie vom Plugin — sie sind herstellerabhaengig.
     USER_ROLES: tuple[str, ...] = ()

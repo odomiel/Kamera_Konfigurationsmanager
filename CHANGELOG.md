@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.07.31b5 — 2026-07-31
+
+- **Hikvision Konfig-Backup an echter Hardware verifiziert.** Export **und** Import
+  laufen auf der ICLP041D (Firmware V5.4.5): Export lieferte den ~888-KB-Blob, der
+  Import des eigenen Configs wurde vom Gerät mit Erfolgsstatus quittiert (kein Fehler
+  wie Hanwhas 607), die Kamera kam nach dem Neustart unverändert zurück. Der Hikvision-
+  Import ist damit als verifiziert markiert (neues Plugin-Flag
+  `config_backup_import_verified`), der Warnhinweis „noch nicht verifiziert" entfällt für
+  Hikvision. Bei Hanwha (Restore weiter offen) bleibt er stehen.
+
 ## 26.07.31b4 — 2026-07-31
 
 - **Konfig-Backup jetzt auch für Hikvision.** Das Hikvision-Plugin meldet nun

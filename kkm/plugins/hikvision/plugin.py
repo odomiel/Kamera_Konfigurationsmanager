@@ -55,6 +55,8 @@ class HikvisionPlugin(VendorPlugin):
         Capability.CONFIG_BACKUP,
         Capability.FACTORY_RESET,
     }
+    # Config-Backup Ex-/Import an ICLP041D (V5.4.5) verifiziert -> kein Warnhinweis.
+    config_backup_import_verified = True
 
     USER_ROLES = isapi.USER_ROLES
     ONVIF_LEVELS = ("Administrator", "Operator", "User")

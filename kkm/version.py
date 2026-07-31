@@ -20,5 +20,5 @@ Version scheme follows the Discovery tool: ``JJ.MM.TT`` (2-digit year);
 multiple releases the same day get an incrementing ``bN`` suffix.
 """
 
-__version__ = "26.07.31b4"
+__version__ = "26.07.31b5"
 APP_NAME = "Kamera_Konfigurationsmanager"
