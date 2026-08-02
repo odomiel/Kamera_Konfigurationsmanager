@@ -10,6 +10,7 @@ eigene Programmcode (Paket `kkm/`, `main.py`, `bump_version.py`,
 | Komponente | Version | Lizenz | Im Bundle |
 |---|---|---|---|
 | CPython | 3.14.x | PSF License Agreement | AppImage + .exe |
+| Expat (libexpat) | in CPython | MIT | AppImage + .exe |
 | Tcl | 9.0.x | Tcl/Tk License (BSD-artig) | AppImage (Quelltext) + .exe (aus Python 3.14) |
 | Tk | 9.0.x | Tcl/Tk License (BSD-artig) | AppImage (Quelltext) + .exe (aus Python 3.14) |
 | libffi | 3.6.0 | libffi License (MIT-artig) | AppImage |
@@ -43,6 +44,20 @@ Copyright © 2001-2025 Python Software Foundation. Alle Rechte vorbehalten.
 
 Lizenziert unter dem **PSF License Agreement** (BSD-kompatibel, permissiv).
 Vollständiger Text: https://docs.python.org/3/license.html
+
+---
+
+## Expat (libexpat)
+
+Copyright © 1998-2000 Thai Open Source Software Center Ltd und Clark Cooper,
+© 2001-2025 die Expat-Maintainer.
+
+Lizenziert unter der **MIT-Lizenz** (Wortlaut wie bei *ifaddr* unten). Ein
+schneller XML-Parser, der **in CPython** enthalten ist (C-Modul `pyexpat`) und dort
+`xml.etree.ElementTree` zugrunde liegt. Das Programm nutzt ihn zum Parsen der
+Kamera-Antworten: ONVIF-SOAP (`kkm/plugins/onvif`), Hikvision ISAPI/SADP
+(`kkm/plugins/hikvision`) und Axis-VAPIX (`kkm/plugins/axis`). Quellcode:
+https://github.com/libexpat/libexpat
 
 ---
 

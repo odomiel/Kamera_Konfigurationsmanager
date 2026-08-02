@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.02b1 — 2026-08-02
+
+- **AppImage verschlankt: ungenutzte Tcl-Erweiterungen und SQLite entfernt.** Der
+  Tcl-9-„batteries-included"-Quellbaum liefert `[incr Tcl]`, `tdbc` (+ mysql/odbc/
+  postgres), das `Thread`-Paket und `sqlite3` mit — das Programm nutzt keines davon
+  (es ist bewusst datenbankfrei). Das Build-Skript wirft sie jetzt beim Verschlanken
+  raus. Das reduziert Größe **und** die rechtliche Attributionsfläche auf die
+  tatsächlich genutzten Komponenten.
+- **Lizenz-Doku: Expat (libexpat) ergänzt.** Expat steckt in CPython (`pyexpat`) und
+  ist Grundlage von `xml.etree` — das Programm parst damit alle Kamera-Antworten
+  (ONVIF/Hikvision/Axis). MIT-lizenziert, GPL-3.0-kompatibel; jetzt in
+  `THIRD_PARTY_LICENSES.md` und damit auch im Lizenz-Reiter aufgeführt.
+
 ## 26.08.02 — 2026-08-02
 
 - **Neuer Reiter „Lizenzen" in den Einstellungen** (hinter „Über"). Zeigt in einem

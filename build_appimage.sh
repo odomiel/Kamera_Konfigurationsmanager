@@ -230,6 +230,16 @@ find "$PREFIX/lib/python$PY_XY/lib-dynload" \
      \( -name "_test*.so" -o -name "_xxtestfuzz*.so" -o -name "xxlimited*.so" \) \
      -delete 2>/dev/null || true
 find "$PREFIX" -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true
+# (4b) Ungenutzte Tcl-Erweiterungen + SQLite. Das Programm ist datenbankfrei
+#      (CLAUDE.md) und nutzt weder [incr Tcl], tdbc, das Thread-Paket noch sqlite —
+#      die kommen nur aus dem "batteries-included" Tcl-9-Quellbaum bzw. der
+#      Standardbibliothek mit. Entfernen spart Platz UND Attributionsflaeche
+#      (nur noch tatsaechlich genutzte Komponenten wandern mit, s. THIRD_PARTY_LICENSES.md).
+#      Expat (XML, ueber Pythons xml.etree) bleibt — das wird gebraucht.
+rm -rf "$PREFIX/lib/"itcl* "$PREFIX/lib/"tdbc* "$PREFIX/lib/"thread* \
+       "$PREFIX/lib/"sqlite3.* 2>/dev/null || true
+rm -rf "$PREFIX/lib/python$PY_XY/sqlite3" \
+       "$PREFIX/lib/python$PY_XY/lib-dynload/"_sqlite3*.so 2>/dev/null || true
 
 # (5) Debug-Symbole aus allen mitgelieferten Binaerdateien strippen (.so + python).
 #     --strip-unneeded ist fuer shared libs sicher (behaelt exportierte Symbole).
