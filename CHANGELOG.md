@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.02 — 2026-08-02
+
+- **Neuer Reiter „Lizenzen" in den Einstellungen** (hinter „Über"). Zeigt in einem
+  scrollbaren, schreibgeschützten Feld die Drittanbieter-Lizenzen aller gebündelten
+  Komponenten (`THIRD_PARTY_LICENSES.md`) sowie den vollständigen GPL-3.0-Lizenztext
+  des Programms (`LICENSE`). Beide Dateien werden neben `main.py` ausgeliefert
+  (AppImage + Windows-.exe) und zur Laufzeit geladen — Muster wie beim Hilfe-Fenster
+  (`sys._MEIPASS` im Frozen-Build, sonst Wurzelverzeichnis).
+
 ## 26.07.31b7 — 2026-07-31
 
 - **Hanwha Config-Restore (Einspielen) gelöst und verifiziert.** Der frühere `Error

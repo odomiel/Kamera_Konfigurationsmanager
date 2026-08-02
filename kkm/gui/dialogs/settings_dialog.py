@@ -172,6 +172,7 @@ class SettingsDialog(tk.Toplevel):
         nb.add(self._build_firmware_tab(nb), text=t("Firmwareupdates"))
         nb.add(self._build_import_tab(nb), text=t("Import und Sicherung"))
         nb.add(self._build_about_tab(nb), text=t("Über"))
+        nb.add(self._build_licenses_tab(nb), text=t("Lizenzen"))
 
         ttk.Button(self, text=t("Schließen"), command=self.destroy).pack(
             anchor=tk.E, padx=8, pady=(0, 8))
@@ -865,4 +866,51 @@ class SettingsDialog(tk.Toplevel):
         ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=t(
             "Dieses Programm wurde mit Unterstützung von künstlicher Intelligenz "
             "(Claude von Anthropic) entwickelt.")).pack(anchor=tk.W)
+        return tab
+
+    # ---------------------------------------------------------------- lizenzen
+    @staticmethod
+    def _read_doc(name: str) -> str | None:
+        """Datei aus dem Programmwurzel-Verzeichnis lesen (LICENSE etc.).
+
+        Neben ``main.py`` gebündelt: im AppImage/Quelllauf im Wurzelverzeichnis,
+        im PyInstaller-Build unter ``sys._MEIPASS`` (vgl. ``_open_help``)."""
+        import sys
+        from pathlib import Path
+        if getattr(sys, "frozen", False):
+            base = Path(getattr(sys, "_MEIPASS", "."))
+        else:
+            base = Path(__file__).resolve().parents[3]   # <root>/ bzw. AppImage app/
+        try:
+            return (base / name).read_text(encoding="utf-8")
+        except OSError:
+            return None
+
+    def _build_licenses_tab(self, parent):
+        tab = ttk.Frame(parent, padding=10)
+        ttk.Label(tab, text=t("Lizenzen der verwendeten Komponenten"),
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=t(
+            "Der eigene Programmcode steht unter der GPL-3.0-or-later. Das "
+            "ausgelieferte Programm bündelt zusätzlich die unten aufgeführten "
+            "Komponenten mit ihren jeweiligen Lizenzen.")).pack(anchor=tk.W, pady=(0, 6))
+
+        box = ttk.Frame(tab)
+        box.pack(fill=tk.BOTH, expand=True)
+        scroll = ttk.Scrollbar(box, orient=tk.VERTICAL)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        txt = tk.Text(box, wrap=tk.WORD, yscrollcommand=scroll.set,
+                      padx=8, pady=8, height=18, width=70)
+        txt.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.config(command=txt.yview)
+
+        missing = t("(Datei nicht gefunden.)")
+        third = self._read_doc("THIRD_PARTY_LICENSES.md") or missing
+        gpl = self._read_doc("LICENSE") or missing
+        sep = "=" * 70
+        content = (third + "\n\n" + sep + "\n"
+                   + t("Vollständiger Lizenztext dieses Programms (GNU GPL v3):")
+                   + "\n" + sep + "\n\n" + gpl)
+        txt.insert("1.0", content)
+        txt.config(state=tk.DISABLED)
         return tab
