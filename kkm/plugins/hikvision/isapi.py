@@ -503,6 +503,8 @@ def export_config(ip, username, password, out_path, scheme="auto", port=None,
         with open(out_path, "wb") as fh:
             fh.write(data)
         return t("Backup gespeichert: {path} ({n} Bytes)", path=out_path, n=len(data))
+    if last_conn is not None:
+        raise IsapiConnectError(t("Kamera nicht erreichbar: {err}", err=last_conn))
     raise IsapiConnectError(t("Kamera nicht erreichbar."))
 
 

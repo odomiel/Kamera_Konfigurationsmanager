@@ -29,7 +29,7 @@ import time
 
 from zeroconf import IPVersion, ServiceBrowser, Zeroconf
 
-from kkm.core.camera import FIELD_NAMES, get_first_ip, export_results  # noqa: F401
+# Die hier erzeugten Kamera-Dicts folgen der Form von ``kkm.core.camera.FIELD_NAMES``.
 
 
 class AxisDiscovery:

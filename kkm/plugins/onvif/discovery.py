@@ -33,7 +33,7 @@ import time
 import uuid
 from urllib.parse import urlparse
 
-from kkm.core.camera import FIELD_NAMES  # noqa: F401  (Dict-Form dieses Moduls)
+# Die hier erzeugten Kamera-Dicts folgen der Form von ``kkm.core.camera.FIELD_NAMES``.
 
 MCAST_ADDR = "239.255.255.250"
 MCAST_PORT = 3702

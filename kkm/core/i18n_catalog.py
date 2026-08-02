@@ -243,6 +243,7 @@ EN: dict[str, str] = {
     'Kamera hat keine IP-Adresse.': 'Camera has no IP address.',
     'Kamera im Browser geöffnet: {url}': 'Camera opened in browser: {url}',
     'Kamera nicht erreichbar.': 'Camera not reachable.',
+    'Kamera nicht erreichbar: {err}': 'Camera not reachable: {err}',
     'Kamera öffnen': 'Open camera',
     'Kamera(s) vollständig entfernen ({n})': 'Remove camera(s) completely ({n})',
     'Kameras': 'Cameras',

@@ -233,10 +233,8 @@ class VendorPlugin(abc.ABC):
     # These mirror the Discovery tool's "Kameraeinstellungen" tabs, which become
     # front-view toolbar buttons. Each acts on the selected cameras; per-camera
     # outcomes are reported via ``progress``. Concrete signatures are defined by
-    # the plugin; the GUI dialogs are also plugin-provided (see ``action_dialogs``).
-    def action_dialogs(self) -> dict[str, type]:
-        """Map Capability.* -> a Toplevel dialog class for that action. Optional."""
-        return {}
+    # the plugin; the GUI dialogs are wired up centrally in ``gui/dialogs`` via
+    # the ``ACTION_DIALOGS`` map (Capability.* -> Toplevel dialog class).
 
 
 @dataclass

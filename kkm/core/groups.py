@@ -211,9 +211,9 @@ class GroupStore:
         key = camera_key(camera)
         prev = self.roster.get(key)
         if prev:
-            for field in ("_firmware", "_model"):
-                if not camera.get(field) and prev.get(field):
-                    camera[field] = prev[field]
+            for fld in ("_firmware", "_model"):
+                if not camera.get(fld) and prev.get(fld):
+                    camera[fld] = prev[fld]
         self.roster[key] = camera
         return key
 
@@ -303,11 +303,6 @@ class GroupStore:
             g = self.groups.get(gid)
             if g and key in g.members:
                 g.members.remove(key)
-
-    def forget(self, key: str) -> None:
-        """Remove a camera entirely: from the roster and from every group."""
-        self._forget_one(key)
-        self.save()
 
     def forget_many(self, keys: list[str]) -> None:
         """Batch-remove cameras with a single save (statt N Dateischreibvorgängen)."""

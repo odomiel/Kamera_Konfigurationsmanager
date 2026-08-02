@@ -4,6 +4,20 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.02b2 — 2026-08-02
+
+- **Toten Code entfernt (Aufräumen, keine Funktionsänderung).** Statische Analyse
+  (pyflakes/vulture) durchgegangen: ungenutzte Importe raus (`config_dir` in
+  `app.py`; `ALL_CAMERAS_ID`/`camera_key` in `settings_dialog.py`; die
+  `FIELD_NAMES`-Doku-Importe der vier discovery-Module — als Kommentar erhalten);
+  ungenutzte Funktionen entfernt (`sunapi.get_mac`, `sunapi._interface`,
+  `GroupStore.forget` — es gibt nur noch `forget_many`, `VendorPlugin.action_dialogs`
+  — die Zuordnung läuft über `ACTION_DIALOGS`); Schleifenvariable `field` (Shadow des
+  `dataclasses.field`) in `groups.py` umbenannt.
+- **Nebenbei behoben:** Die Config-Backup-Exporte (Hanwha/Hikvision) verwarfen bei
+  „Kamera nicht erreichbar" den eigentlichen Verbindungsfehler (tote `last_conn`-
+  Variable). Dieser wird jetzt in die Fehlermeldung aufgenommen.
+
 ## 26.08.02b1 — 2026-08-02
 
 - **AppImage verschlankt: ungenutzte Tcl-Erweiterungen und SQLite entfernt.** Der

@@ -38,8 +38,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import (ALL_CAMERAS_ID, VIRTUAL_GROUP_IDS, VaultError, Capability,
-                      camera_key, t, LANGUAGES, get_language, language_label)
+from kkm.core import (VIRTUAL_GROUP_IDS, VaultError, Capability,
+                      t, LANGUAGES, get_language, language_label)
 from kkm.core.backup import create_backup, restore_backup, BackupError
 from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 from kkm.version import __version__, APP_NAME

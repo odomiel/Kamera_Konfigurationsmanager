@@ -48,7 +48,6 @@ from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
                       UNGROUPED_ID, VIRTUAL_GROUP_IDS, camera_key, PasswordVault,
                       AppSettings, VaultError, FIELD_NAMES, get_first_ip,
                       export_results, t, set_language, get_language)
-from kkm.core.groups import config_dir
 from kkm.plugins import build_registry
 from kkm.gui import theme
 from kkm.gui.widgets import add_scrollbars

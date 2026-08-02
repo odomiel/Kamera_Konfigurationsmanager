@@ -208,15 +208,6 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
     }
 
 
-def get_mac(ip, username, password, scheme="auto", port=None, timeout=10) -> str:
-    """MAC-Adresse der Kamera (fuer die stabile Identitaet nach der ONVIF-Discovery,
-    die nur eine UUID liefert)."""
-    try:
-        return get_device_info(ip, username, password, scheme, port, timeout).get("mac", "")
-    except SunapiError:
-        return ""
-
-
 def is_unconfigured(ip, scheme="auto", port=None, timeout=5) -> bool:
     """True, wenn die Wisenet noch **nicht initialisiert** ist (werksneu / nach
     Werksreset).
@@ -244,13 +235,6 @@ def is_unconfigured(ip, scheme="auto", port=None, timeout=5) -> bool:
 
 
 # ------------------------------------------------------------------- network
-def _interface(ip, username, password, scheme, port, timeout) -> dict:
-    """Aktuelle Interface-Konfiguration (``network.cgi interface view``)."""
-    return _parse_kv(_request_auto(
-        ip, username, password, f"{CGI}/network.cgi?msubmenu=interface&action=view",
-        scheme=scheme, port=port, timeout=timeout))
-
-
 def set_static_ip(ip, username, password, new_ip, subnet_mask, gateway,
                   scheme="auto", port=None, timeout=10):
     """Feste IP setzen (``network.cgi?msubmenu=interface&action=set``).
@@ -536,4 +520,6 @@ def export_config(ip, username, password, out_path, scheme="auto", port=None,
         with open(out_path, "wb") as fh:
             fh.write(data)
         return t("Backup gespeichert: {path} ({n} Bytes)", path=out_path, n=len(data))
+    if last_conn is not None:
+        raise SunapiConnectError(t("Kamera nicht erreichbar: {err}", err=last_conn))
     raise SunapiConnectError(t("Kamera nicht erreichbar."))
