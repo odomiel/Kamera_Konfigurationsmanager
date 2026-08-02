@@ -30,6 +30,9 @@ import time
 from zeroconf import IPVersion, ServiceBrowser, Zeroconf
 
 # Die hier erzeugten Kamera-Dicts folgen der Form von ``kkm.core.camera.FIELD_NAMES``.
+# get_first_ip wird bewusst re-exportiert: axis/plugin.py löst die Kamera-IP über
+# ``discovery.get_first_ip(camera)`` auf (nicht in diesem Modul selbst benutzt).
+from kkm.core.camera import get_first_ip  # noqa: F401  (Re-Export für axis/plugin.py)
 
 
 class AxisDiscovery:

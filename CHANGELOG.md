@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.02b3 — 2026-08-02
+
+- **Regression aus b2 behoben: Suche/Aktualisierung blieb bei Axis-Kameras hängen.**
+  Beim Dead-Code-Aufräumen (b2) wurde in `axis/discovery.py` der Import
+  `get_first_ip` mitentfernt — er sah dort ungenutzt aus, wird aber **re-exportiert**:
+  `axis/plugin.py` löst die Kamera-IP über `discovery.get_first_ip(camera)` auf.
+  Dadurch warf `ip_of()` (und damit `check_online`/`device_info` jeder Axis-Kamera)
+  einen `AttributeError` außerhalb der Fehlerbehandlung, was die Fortschrittszählung
+  der Hintergrund-Worker zerstörte → „Suchen/Aktualisieren" endete nie. Der Import
+  ist wiederhergestellt und als bewusster Re-Export kommentiert.
+
 ## 26.08.02b2 — 2026-08-02
 
 - **Toten Code entfernt (Aufräumen, keine Funktionsänderung).** Statische Analyse
