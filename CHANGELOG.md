@@ -18,6 +18,8 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   gesendet. **An echter Hardware verifiziert** (ICL004 auf `192.0.0.64`, Rechner in
   `192.0.2.0/24`). Nebenbei liest die Discovery jetzt die Firmware (`SoftwareVersion`)
   mit aus.
+- **Build:** Python-Pin auf **3.14.7** angehoben (täglicher Dependency-Check; Tcl/Tk
+  9.0.4, OpenSSL 3.5.7 LTS, libffi 3.7.1 bleiben aktuell).
 
 ## 26.08.02b3 — 2026-08-02
 
