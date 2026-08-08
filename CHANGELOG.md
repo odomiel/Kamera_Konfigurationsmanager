@@ -4,6 +4,21 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.08 — 2026-08-08
+
+- **Hikvision: werksneue Kameras im fremden IP-Segment werden jetzt gefunden.** Die
+  SADP-Discovery empfing bisher keine Antworten von Kameras auf ihrer Werks-IP (z. B.
+  `192.0.0.64`/`192.168.1.64`), wenn der Rechner in einem anderen Segment steht.
+  Ursache: SADP-Geräte schicken ihre `ProbeMatch`-Antwort an die **Multicast-Gruppe**
+  `239.255.255.250:37020`, nicht per Unicast — der alte Code band aber nur einen
+  Ephemeral-Port ohne Gruppenbeitritt und sah die Antworten nie. Jetzt wird auf Port
+  37020 gebunden und der Multicast-Gruppe (auf allen Interfaces) beigetreten
+  (`SO_REUSEPORT` für Koexistenz mit der offiziellen SADP-Software; Fallback auf
+  Ephemeral, falls der Port belegt ist), periodisch nachgefragt und pro Interface
+  gesendet. **An echter Hardware verifiziert** (ICL004 auf `192.0.0.64`, Rechner in
+  `192.0.2.0/24`). Nebenbei liest die Discovery jetzt die Firmware (`SoftwareVersion`)
+  mit aus.
+
 ## 26.08.02b3 — 2026-08-02
 
 - **Regression aus b2 behoben: Suche/Aktualisierung blieb bei Axis-Kameras hängen.**

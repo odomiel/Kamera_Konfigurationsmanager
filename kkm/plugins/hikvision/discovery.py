@@ -39,6 +39,7 @@ import xml.etree.ElementTree as ET
 
 MCAST_ADDR = "239.255.255.250"
 MCAST_PORT = 37020
+BROADCAST = "255.255.255.255"
 
 # SADP-„inquiry": Uuid dient der Zuordnung Antwort<->Anfrage; Types=inquiry fragt
 # alle Geraete ab.
@@ -91,6 +92,7 @@ def _parse_match(data: str) -> dict | None:
         "MAC-Adresse/Seriennummer": mac or serial,
         "_model": model,
         "_serial": serial,
+        "_firmware": _text(root, "SoftwareVersion"),
     }
     if activated == "false":
         cam["_factory"] = True
@@ -106,24 +108,101 @@ def _find_any(root) -> bool:
     return False
 
 
+def _local_ipv4s() -> list[str]:
+    """Best-effort Liste lokaler IPv4-Adressen (stdlib-only) fuer Multicast-Join/-Send
+    auf allen Interfaces. Loopback wird ausgelassen."""
+    ips: set[str] = set()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("192.0.2.1", 9))          # TEST-NET-1, nicht routbar; sendet nichts
+            ips.add(s.getsockname()[0])
+        finally:
+            s.close()
+    except OSError:
+        pass
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ips.add(info[4][0])
+    except OSError:
+        pass
+    return [ip for ip in ips if not ip.startswith("127.")]
+
+
 def discover(timeout: int = 10) -> list[dict]:
     """Blockierender SADP-Probe. Liefert Kamera-Dicts (Schluessel = FIELD_NAMES).
 
-    Antworten werden bis *timeout* gesammelt und ueber MAC (ersatzweise IP)
-    entdoppelt — Geraete mit mehreren Interfaces antworten mehrfach."""
+    **Entscheidend:** SADP-Geraete schicken ihre ``ProbeMatch``-Antwort an die
+    **Multicast-Gruppe** ``239.255.255.250:37020`` — NICHT per Unicast an den Frager.
+    Deshalb muss dieser Socket auf Port 37020 gebunden *und* der Gruppe beigetreten
+    sein, sonst kommen die Antworten nie an. Genau das findet auch **werksneue** Kameras
+    in einem FREMDEN IP-Segment (z. B. Werks-IP ``192.0.0.64``/``192.168.1.64``, waehrend
+    der Host in ``192.0.2.0/24`` steht): Multicast wird auf L2 zugestellt, eine
+    Unicast-Antwort wuerde die (gatewaylose) Kamera off-subnet nie los.
+
+    Antworten werden bis *timeout* gesammelt und ueber MAC (ersatzweise IP) entdoppelt —
+    Geraete mit mehreren Interfaces antworten mehrfach."""
     probe = _PROBE.format(uuid=uuid.uuid4()).encode("utf-8")
     found: dict[str, dict] = {}
+    ifaces = _local_ipv4s()
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # SO_REUSEPORT (wo vorhanden) erlaubt die Koexistenz mit der offiziellen
+        # SADP-Software, die denselben Port 37020 belegt.
+        if hasattr(socket, "SO_REUSEPORT"):
+            try:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            except OSError:
+                pass
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
-        sock.settimeout(1.0)
-        sock.bind(("", 0))
-        sock.sendto(probe, (MCAST_ADDR, MCAST_PORT))
 
+        # Auf 37020 binden, um die Multicast-Antworten zu empfangen. Klappt das nicht
+        # (Port belegt ohne REUSEPORT), auf Ephemeral zurueckfallen — findet dann nur
+        # noch Kameras im selben Segment (die per Unicast antworten koennen).
+        joined = True
+        try:
+            sock.bind(("", MCAST_PORT))
+        except OSError:
+            sock.bind(("", 0))
+            joined = False
+
+        if joined:
+            # Der Gruppe auf allen Interfaces beitreten (INADDR_ANY + je lokaler IP).
+            for iface in ["0.0.0.0", *ifaces]:
+                try:
+                    mreq = socket.inet_aton(MCAST_ADDR) + socket.inet_aton(iface)
+                    sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+                except OSError:
+                    pass
+
+        targets = [(MCAST_ADDR, MCAST_PORT), (BROADCAST, MCAST_PORT)]
+
+        def _send_probe() -> None:
+            # Ueber jedes Interface senden (IP_MULTICAST_IF), damit die Probe auf
+            # mehr-NIC-Hosts auch das Segment der werksneuen Kamera erreicht.
+            for iface in (ifaces or ["0.0.0.0"]):
+                try:
+                    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF,
+                                    socket.inet_aton(iface))
+                except OSError:
+                    pass
+                for tgt in targets:
+                    try:
+                        sock.sendto(probe, tgt)
+                    except OSError:
+                        pass
+
+        sock.settimeout(1.0)
+        _send_probe()
         end = time.time() + max(1, timeout)
+        next_probe = time.time() + 2.0        # periodisch nachfragen (Pakete gehen verloren)
         while time.time() < end:
+            if time.time() >= next_probe:
+                _send_probe()
+                next_probe = time.time() + 2.0
             try:
                 raw, _addr = sock.recvfrom(65535)
             except socket.timeout:
