@@ -268,6 +268,19 @@ OUT="$ROOT/$APP-${VERSION}-x86_64.AppImage"
 ARCH=x86_64 "$AIT" --appimage-extract-and-run \
     --comp zstd --mksquashfs-opt -Xcompression-level --mksquashfs-opt 19 \
     "$APPDIR" "$OUT" 2>&1 | tail -5
+
+# Gear Lever (Forgejo-Updater) erkennt Updates an der DATEIGROESSE des Assets, nicht an
+# der Versionsnummer. Zwei Builds koennen sich zufaellig identisch gross komprimieren
+# -> dann bietet Gear Lever kein Update an (real passiert: 26.08.08b1 und b2 waren
+# byte-genau gleich gross). Der fertigen AppImage daher einen harmlosen Trailer mit
+# BUILD-ABHAENGIGER Laenge anhaengen: der squashfs-Superblock deklariert seine eigene
+# Laenge, Trailing-Bytes ignoriert das AppImage-Runtime (an echter Hardware verifiziert,
+# laeuft + --appimage-extract funktioniert weiter). Damit ist die Groesse je Build
+# praktisch eindeutig.
+NS="$(date +%s%N)"
+printf '\n# KKM %s build %s\n' "$VERSION" "$NS" >> "$OUT"
+head -c "$(( NS % 65536 + 4096 ))" /dev/zero >> "$OUT"
+
 ln -sfn "$(basename "$OUT")" "$ROOT/$APP-x86_64.AppImage"
 
 echo ">> Fertig: $OUT"
