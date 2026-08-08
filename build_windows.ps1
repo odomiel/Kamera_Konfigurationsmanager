@@ -2,12 +2,22 @@
 # Muss AUF Windows mit Python 3.14 laufen (PyInstaller cross-kompiliert nicht).
 #
 # Python 3.14 haelt die Python-Version zur Linux-AppImage konsistent.
-# ACHTUNG: Der python.org-WINDOWS-Installer von 3.14 buendelt weiterhin Tcl/Tk
-# 8.6.15 (nur der macOS-Installer wurde auf Tk 9.0 umgestellt; CPythons
-# PCbuild/get_externals.bat pinnt fuer Windows tk-8.6.15.0). PyInstaller nimmt
-# die Tk-Version des bauenden Interpreters -> die .exe hat daher Tk 8.6, NICHT
-# Tk 9. Tk 9 gibt es nur in der AppImage, die Tcl/Tk 9 selbst kompiliert. Der
-# Dunkelmodus (sv_ttk) laeuft auf Tk 8.6 unveraendert.
+# ACHTUNG: Der python.org-WINDOWS-Installer von 3.14 buendelt inzwischen
+# ebenfalls Tcl/Tk 9.0 (frueher noch 8.6.15 -> dieser Kommentar war veraltet).
+# Die Tk-Version folgt weiterhin dem bauenden Interpreter, also hat die .exe
+# jetzt Tk 9, so wie auch die AppImage. Der Dunkelmodus (sv_ttk) laeuft auf
+# Tk 9 unveraendert.
+#
+# WICHTIG (Tk 9 + PyInstaller): Der Windows-Installer liefert die Tcl/Tk-9-
+# Bibliotheksdateien nicht mehr als lose Dateien, sondern in zwei ZIPs
+# (<PythonRoot>\tcl\libtcl9.x.zip / libtk9.x.zip), die Tcl zur Laufzeit ueber
+# sein eingebautes zipfs moundet. PyInstaller 6.21 erkennt das nicht (prueft
+# nur os.path.isdir() auf dem echten Dateisystem) und sammelt dadurch 0
+# Tcl/Tk-Dateien ein -> die gebaute .exe stirbt sofort mit "FileNotFoundError:
+# Tcl data directory ..._tcl_data not found". Kamerakonfigurationsmanager.spec
+# enthaelt deshalb einen Workaround, der diese beiden ZIPs selbst entpackt und
+# als datas einspeist. Bei einer PyInstaller-Version, die zipfs-Tcl/Tk nativ
+# unterstuetzt, kann dieser Workaround wieder entfernt werden.
 #
 #   powershell -ExecutionPolicy Bypass -File build_windows.ps1
 #   powershell -ExecutionPolicy Bypass -File build_windows.ps1 -Bump   # Version vorher erhoehen
@@ -26,7 +36,7 @@ if ($Bump) {
 # Einzige Quelle der Wahrheit: kkm/version.py (dieselbe, die auch die Spec liest).
 $Version = (py -3.14 bump_version.py --print).Trim()
 
-Write-Host "==== Abhaengigkeiten sicherstellen (Python 3.14, Tcl/Tk 8.6) ===="
+Write-Host "==== Abhaengigkeiten sicherstellen (Python 3.14, Tcl/Tk 9.0) ===="
 py -3.14 -m pip install --upgrade pip pyinstaller
 # Laufzeit-Abhaengigkeiten aus requirements.txt: zeroconf, cryptography UND sv-ttk
 # (das Sun-Valley-Theme fuer Hell/Dunkel). Fehlte sv-ttk hier, buendelte PyInstaller
