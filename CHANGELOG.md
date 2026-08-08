@@ -14,9 +14,11 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   Dialog wartete endlos auf einen Reboot, der nie kam. Jetzt stößt `upgrade_firmware`
   den Neustart selbst an, sobald der Upload mit einem sauberen HTTP 200 quittiert wird
   (bleibt die Verbindung bestehen = vorgemerkt). Geräte, die von sich aus flashen
-  (Verbindungsabbruch), verhalten sich unverändert. Diagnose an echter Hardware
-  (ICL004, `192.0.2.156`): Upload → HTTP 200, kein Selbst-Reboot; ungültige Datei →
-  HTTP 500 „Device Error" (wird korrekt als Fehler gemeldet).
+  (Verbindungsabbruch), verhalten sich unverändert. **An echter Hardware verifiziert**
+  (ICL004, `192.0.2.156`): echter Flash der `digicap.dav` → Upload HTTP 200 →
+  Neustart ausgelöst → Kamera ging offline und kam gesund zurück (vorher blieb sie oben
+  → Endlos-Warten); ungültige Datei → HTTP 500 „Device Error" (korrekt als Fehler
+  gemeldet).
 
 ## 26.08.08b1 — 2026-08-08
 
