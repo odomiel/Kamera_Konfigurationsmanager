@@ -148,6 +148,18 @@ def _check_status(text: str) -> str:
     raise IsapiError(t("Geraet meldete: {body}", body=_isapi_error(text)))
 
 
+def _mentions_reboot(text: str) -> bool:
+    """True, wenn die ISAPI-Antwort einen Neustart verlangt (``Reboot Required``)."""
+    if not text.strip():
+        return False
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return False
+    return ("reboot" in _text(root, "statusString").lower()
+            or "reboot" in _text(root, "subStatusCode").lower())
+
+
 # ------------------------------------------------------------------- HTTP
 def _opener(host_port: str, username: str, password: str, auth: bool = True):
     handlers = [urllib.request.HTTPSHandler(context=_SSL_CONTEXT)]
@@ -322,9 +334,9 @@ def _read_ip_object(ip, username, password, iface, scheme, port, timeout):
     return root, _ns_of(root)
 
 
-def _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout) -> str:
-    """Modifiziertes ``ipAddress``-Objekt zurueckschreiben (PUT). Liefert einen
-    optionalen Hinweis (z. B. „Neustart nötig")."""
+def _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout) -> bool:
+    """Modifiziertes ``ipAddress``-Objekt zurueckschreiben (PUT). Liefert ``True``, wenn
+    das Geraet fuer die Aenderung einen Neustart verlangt (``Reboot Required``)."""
     if ns:
         ET.register_namespace("", ns)   # Default-NS ohne Praefix serialisieren
     body = ('<?xml version="1.0" encoding="UTF-8"?>'
@@ -332,7 +344,19 @@ def _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeou
     path = f"{ISAPI}/System/Network/interfaces/{iface}/ipAddress"
     text = _request_auto(ip, username, password, path, method="PUT", body=body,
                          scheme=scheme, port=port, timeout=timeout)
-    return _check_status(text)
+    _check_status(text)                 # wirft bei echten Fehlern
+    return _mentions_reboot(text)
+
+
+def _auto_reboot(ip, username, password, scheme, port, timeout) -> str:
+    """Nach einer IP-Aenderung, die ``Reboot Required`` meldet, den Neustart selbst
+    anstossen. Best effort: schlaegt der Neustart-Aufruf fehl, wird das als Hinweis
+    zurueckgegeben, statt die (bereits uebernommene) IP-Aenderung als Fehler zu werten."""
+    try:
+        reboot(ip, username, password, scheme=scheme, port=port, timeout=timeout)
+        return t("Neustart automatisch ausgelöst")
+    except IsapiError as exc:
+        return t("Neustart nötig, aber automatisch nicht möglich: {err}", err=exc)
 
 
 def set_static_ip(ip, username, password, new_ip, subnet_mask, gateway,
@@ -351,17 +375,28 @@ def set_static_ip(ip, username, password, new_ip, subnet_mask, gateway,
     if gw is None:
         gw = ET.SubElement(root, _q(ns, "DefaultGateway"))
     _set_child(gw, ns, "ipAddress", gateway)
-    hint = _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout)
-    return t("feste IP {ip} gesetzt", ip=new_ip) + (f" — {hint}" if hint else "")
+    reboot_required = _put_ip_object(ip, username, password, iface, root, ns,
+                                     scheme, port, timeout)
+    msg = t("feste IP {ip} gesetzt", ip=new_ip)
+    if reboot_required:
+        msg += " — " + _auto_reboot(ip, username, password, scheme, port, timeout)
+    return msg
 
 
 def set_dhcp(ip, username, password, scheme="auto", port=None, timeout=10):
-    """Auf DHCP umstellen (nur ``addressingType`` im vollen Objekt aendern)."""
+    """Auf DHCP umstellen (nur ``addressingType`` im vollen Objekt aendern).
+
+    Aeltere Geraete uebernehmen die Umstellung erst nach einem Neustart
+    (``Reboot Required``) — der wird hier automatisch angestossen."""
     iface, _ = _network_interface_info(ip, username, password, scheme, port, timeout)
     root, ns = _read_ip_object(ip, username, password, iface, scheme, port, timeout)
     _set_child(root, ns, "addressingType", "dynamic")
-    hint = _put_ip_object(ip, username, password, iface, root, ns, scheme, port, timeout)
-    return t("auf DHCP umgestellt") + (f" — {hint}" if hint else "")
+    reboot_required = _put_ip_object(ip, username, password, iface, root, ns,
+                                     scheme, port, timeout)
+    msg = t("auf DHCP umgestellt")
+    if reboot_required:
+        msg += " — " + _auto_reboot(ip, username, password, scheme, port, timeout)
+    return msg
 
 
 # --------------------------------------------------------------------- users
@@ -443,6 +478,19 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
         return t("Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu")
     _check_status(text)
     return t("Firmware aufgespielt — Geraet startet neu")
+
+
+# ------------------------------------------------------------------- reboot
+def reboot(ip, username, password, scheme="auto", port=None, timeout=30):
+    """Startet das Geraet neu (``PUT /ISAPI/System/reboot``). Der Neustart kappt die
+    Verbindung -> ein danach auftretender Verbindungsfehler ist erwartbar (= Erfolg)."""
+    try:
+        text = _request_auto(ip, username, password, f"{ISAPI}/System/reboot",
+                             method="PUT", scheme=scheme, port=port, timeout=timeout)
+    except IsapiConnectError:
+        return t("Neustart ausgelöst — Gerät startet neu")
+    _check_status(text)
+    return t("Neustart ausgelöst — Gerät startet neu")
 
 
 # ------------------------------------------------------------- factory reset

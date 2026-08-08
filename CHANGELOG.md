@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.08b1 — 2026-08-08
+
+- **Hikvision: nach IP-Umstellung wird der nötige Neustart automatisch ausgelöst.**
+  Ältere Geräte übernehmen eine Umstellung auf DHCP (oder eine neue feste IP) erst nach
+  einem Reboot und antworten mit „Reboot Required". Statt das nur als Hinweis anzuzeigen,
+  stößt das Programm den Neustart jetzt selbst an (`PUT /ISAPI/System/reboot`). Die
+  Rückmeldung lautet dann z. B. „auf DHCP umgestellt — Neustart automatisch ausgelöst".
+  Best effort: schlägt der Neustart-Aufruf fehl, bleibt die (bereits übernommene)
+  IP-Änderung erfolgreich und es erscheint ein entsprechender Hinweis.
+
 ## 26.08.08 — 2026-08-08
 
 - **Hikvision: werksneue Kameras im fremden IP-Segment werden jetzt gefunden.** Die
