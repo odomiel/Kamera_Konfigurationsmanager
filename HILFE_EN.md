@@ -133,6 +133,9 @@ address immediately on success** (only for successfully changed cameras). For DH
 displayed address stays unchanged, because the new address is assigned by the DHCP server
 and is not known to the program.
 
+Some cameras (e.g. older Hikvision/STD-CGI) only apply the change after a **restart** — the
+program triggers it automatically and reports this in the result log.
+
 ### Users
 Manage regular camera users:
 - **Create** — name, password, role (administrator/operator/viewer). Option
@@ -186,6 +189,10 @@ it in the device list. The corresponding row in the dialog turns **green** on su
 the camera comes back factory-new and is marked as "Initial setup required".
 
 Caution: the firmware must match the model; the cameras restart afterwards.
+
+Some cameras (e.g. older Hikvision/STD-CGI) do not flash immediately but apply the uploaded
+firmware only on the **next restart** — in that case the program triggers the restart itself
+(otherwise it would wait endlessly "for the restart").
 
 ### Configuration (Axis `.cfg`)
 Import/export of Axis Device Manager configuration files (format v1 + v2):

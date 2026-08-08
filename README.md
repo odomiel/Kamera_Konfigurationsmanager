@@ -99,7 +99,9 @@ Online-Prüfung je Gruppe (an/aus + Intervall, mit automatischer Prüfung der
 gewählten Gruppe im Hauptfenster) und Spalten-Sichtbarkeit; Tresor ist ins
 Hauptfenster eingebunden (Aktions-Dialoge füllen gespeicherte Passwörter vor).
 Ein Reiter **„Über"** zeigt Programm- und Komponentenversionen, Ersteller/Lizenz
-sowie den Hinweis auf die KI-gestützte Entwicklung.
+sowie den Hinweis auf die KI-gestützte Entwicklung; der Reiter **„Lizenzen"**
+listet die Drittanbieter-Lizenzen aller mitgelieferten Komponenten und den
+vollständigen GPL-3.0-Text.
 **Build-Skripte fertig:** Linux-AppImage und Windows-`.exe` (siehe unten). Die
 Programm-Features sind damit vollständig.
 

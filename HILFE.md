@@ -148,6 +148,10 @@ Erfolgsfall sofort auf die neue Adresse aktualisiert** (nur für erfolgreich
 umgestellte Kameras). Bei DHCP bleibt die angezeigte Adresse unverändert, weil die
 neue Adresse vom DHCP-Server vergeben wird und dem Programm nicht bekannt ist.
 
+Manche Kameras (z. B. ältere Hikvision/STD-CGI) übernehmen die Umstellung erst nach
+einem **Neustart** — das Programm löst ihn automatisch aus und meldet das im
+Ergebnis-Protokoll.
+
 ### Benutzer
 Reguläre Kamera-Benutzer verwalten:
 - **Anlegen** — Name, Passwort, Rolle (administrator/operator/viewer). Option
@@ -202,6 +206,10 @@ Option *Werkseinstellungen* gesetzt, kommt die Kamera werksneu zurück und wird 
 „Ersteinrichtung erforderlich" gekennzeichnet.
 
 Achtung: Die Firmware muss zum Modell passen; die Kameras starten danach neu.
+
+Einige Kameras (z. B. ältere Hikvision/STD-CGI) flashen nicht sofort, sondern wenden
+die hochgeladene Firmware erst beim **nächsten Neustart** an — das Programm stößt
+diesen Neustart in dem Fall selbst an (sonst würde es endlos „auf den Neustart" warten).
 
 ### Konfiguration (Axis `.cfg`)
 Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):

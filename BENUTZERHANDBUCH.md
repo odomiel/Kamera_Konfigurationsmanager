@@ -166,6 +166,11 @@ Programm die Geräteliste sofort auf die neue Adresse; bei DHCP bleibt die angez
 Adresse stehen, weil die neue Adresse vom DHCP-Server kommt und dem Programm nicht bekannt
 ist — suchen Sie danach erneut.
 
+> **Hinweis:** Manche Kameras (z. B. ältere Hikvision/STD-CGI) übernehmen die Umstellung
+> auf DHCP oder eine neue feste IP erst nach einem **Neustart** („Reboot Required"). Das
+> Programm löst diesen Neustart automatisch aus; die Ergebnismeldung lautet dann z. B.
+> „auf DHCP umgestellt — Neustart automatisch ausgelöst".
+
 ### 8.2 Benutzer
 
 Verwaltet die regulären Kamera-Benutzer: **Anlegen** (Name, Passwort, Rolle
@@ -216,6 +221,12 @@ werksneu zurück und wird als „Ersteinrichtung erforderlich" gekennzeichnet.
 
 > **Achtung:** Die Firmware muss zum Modell passen. Die Kameras starten nach dem Update
 > neu und sind für einige Minuten nicht erreichbar.
+
+> **Hinweis:** Einige Kameras (z. B. ältere Hikvision/STD-CGI) flashen nicht sofort,
+> sondern nehmen die hochgeladene Firmware nur an und wenden sie erst beim **nächsten
+> Neustart** an. Das Programm stößt diesen Neustart in dem Fall selbst an — sonst bliebe
+> die Kamera scheinbar unverändert und der Fortschritt würde endlos „auf den Neustart"
+> warten.
 
 ### 8.5 Konfiguration
 
@@ -306,7 +317,9 @@ bei Axis-Geräten kann es schlicht weniger.
 > Gefahr eingesetzt werden:
 >
 > - **Hikvision** (ISAPI): Suche per SADP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
->   Firmware-Upload, Werksreset.
+>   Firmware-Upload, Werksreset. Die SADP-Suche findet auch **werksneue** Kameras, die noch
+>   auf ihrer **Werks-IP in einem anderen IP-Segment** stehen (z. B. `192.0.0.64` bzw.
+>   `192.168.1.64`, während der Rechner in `192.0.2.x` ist).
 > - **Dahua** (HTTP-API): Suche per DHIP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
 >   Firmware-Upload, Werksreset. Deckt zugleich viele **Dahua-OEM-Marken** ab — u. a. die
 >   **Honeywell Performance Series** und Amcrest.
@@ -374,6 +387,10 @@ sichtbar).
 
 **Über** — zeigt Programm- und Komponentenversionen, Ersteller und Lizenz sowie den Hinweis
 auf die KI-gestützte Entwicklung.
+
+**Lizenzen** — listet in einem scrollbaren Feld die Lizenzen **aller mitgelieferten
+Komponenten** (Python, Tcl/Tk, OpenSSL, zeroconf, cryptography u. a. — die
+Drittanbieter-Lizenzen) sowie den **vollständigen GPL-3.0-Lizenztext** des Programms.
 
 ## 13 Wo die Daten liegen
 

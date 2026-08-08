@@ -156,6 +156,11 @@ device list to the new address immediately; for DHCP the displayed address remai
 the new address comes from the DHCP server and is not known to the program — search again
 afterwards.
 
+> **Note:** Some cameras (e.g. older Hikvision/STD-CGI) only apply a switch to DHCP or a new
+> static IP after a **restart** ("Reboot Required"). The program triggers that restart
+> automatically; the result message then reads e.g. "switched to DHCP — restart triggered
+> automatically".
+
 ### 8.2 Users
 
 Manages the regular camera users: **Create** (name, password, role
@@ -203,6 +208,11 @@ factory-new and is marked as "Initial setup required".
 
 > **Caution:** The firmware must match the model. The cameras restart after the update and
 > are unreachable for a few minutes.
+
+> **Note:** Some cameras (e.g. older Hikvision/STD-CGI) do not flash immediately — they only
+> accept the uploaded firmware and apply it on the **next restart**. In that case the program
+> triggers the restart itself; otherwise the camera would appear unchanged and the progress
+> would wait endlessly "for the restart".
 
 ### 8.5 Configuration
 
@@ -287,7 +297,9 @@ meant for cameras that have no dedicated plugin — for Axis devices it simply c
 > documentation but should be used carefully and at your own risk:
 >
 > - **Hikvision** (ISAPI): search via SADP, device info, IP, users, ONVIF users, firmware
->   upload, factory reset.
+>   upload, factory reset. The SADP search also finds **factory-new** cameras still on their
+>   **factory IP in a different IP segment** (e.g. `192.0.0.64` or `192.168.1.64` while the
+>   computer is in `192.0.2.x`).
 > - **Dahua** (HTTP API): search via DHIP, device info, IP, users, ONVIF users, firmware
 >   upload, factory reset. Also covers many **Dahua OEM brands** — including the **Honeywell
 >   Performance Series** and Amcrest.
@@ -352,6 +364,10 @@ visible).
 
 **About** — shows the program and component versions, the author and the license, as well as
 the note about the AI-supported development.
+
+**Licenses** — lists, in a scrollable field, the licenses of **all bundled components**
+(Python, Tcl/Tk, OpenSSL, zeroconf, cryptography, etc. — the third-party licenses) as well
+as the **full GPL-3.0 license text** of the program itself.
 
 ## 13 Where the data is stored
 
