@@ -466,8 +466,18 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
     Hikvision-Firmware ist eine ``digicap.dav``; sie wird als
     ``application/octet-stream`` gesendet — als ``application/xml`` (der Default der
     anderen Endpunkte) antwortet das Geraet mit HTTP 400 „Invalid XML Content" (an
-    echter Hardware verifiziert). Das Geraet startet nach dem Upload neu; ein danach
-    auftretender Verbindungsfehler ist erwartbar und wird als Erfolg gewertet."""
+    echter Hardware verifiziert).
+
+    Zwei Geraeteverhalten:
+
+    - **Selbst-flashend:** das Geraet kappt beim Flash-Start die Verbindung
+      (``IsapiConnectError``) und startet neu — das gilt als Erfolg.
+    - **Staging (aeltere STD-CGI-Geraete, z. B. ICL004/V5.4.5):** das Geraet nimmt die
+      Firmware mit **HTTP 200** an, flasht aber NICHT von selbst — es haelt sie
+      „vorgemerkt" und wendet sie erst beim naechsten **Neustart** an (dieselbe
+      Reboot-Semantik wie bei der IP-Umstellung). Bleibt die Verbindung nach dem 200
+      bestehen, wird der Neustart daher selbst angestossen — sonst „passiert nichts"
+      und die Kamera laeuft mit der alten Firmware weiter."""
     with open(firmware_path, "rb") as fh:
         data = fh.read()
     try:
@@ -475,9 +485,13 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
                              method="PUT", body=data, scheme=scheme, port=port,
                              timeout=timeout, content_type="application/octet-stream")
     except IsapiConnectError:
+        # Geraet kappt die Verbindung -> es flasht bereits selbst.
         return t("Firmware hochgeladen — Verbindung getrennt, Geraet flasht/startet neu")
-    _check_status(text)
-    return t("Firmware aufgespielt — Geraet startet neu")
+    _check_status(text)   # wirft bei echten Fehlern (badDevType, Device Error, ...)
+    # HTTP 200 + Verbindung steht => Firmware ist vorgemerkt; erst der Neustart wendet
+    # sie an. Reboot selbst anstossen (kappt die Verbindung, kurzes Timeout genuegt).
+    reboot(ip, username, password, scheme=scheme, port=port, timeout=min(timeout, 30))
+    return t("Firmware hochgeladen — Neustart ausgelöst, Gerät flasht beim Hochfahren")
 
 
 # ------------------------------------------------------------------- reboot

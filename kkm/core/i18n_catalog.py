@@ -302,6 +302,7 @@ EN: dict[str, str] = {
     'Neustart ausgeloest': 'Restart triggered',
     'Neustart nötig, damit die Änderung wirksam wird': 'Restart required for the change to take effect',
     'Neustart ausgelöst — Gerät startet neu': 'Restart triggered — device is rebooting',
+    'Firmware hochgeladen — Neustart ausgelöst, Gerät flasht beim Hochfahren': 'Firmware uploaded — restart triggered, device flashes on boot',
     'Neustart automatisch ausgelöst': 'Restart triggered automatically',
     'Neustart nötig, aber automatisch nicht möglich: {err}': 'Restart required, but could not be triggered automatically: {err}',
     'Nicht erreichbar: {err}': 'Not reachable: {err}',

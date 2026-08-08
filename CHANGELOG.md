@@ -4,6 +4,20 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.08b2 — 2026-08-08
+
+- **Hikvision-Firmwareupdate: „passiert nichts / Endlos-Warten" behoben.** Ältere
+  STD-CGI-Geräte (z. B. ICL004/V5.4.5) flashen nicht von selbst: Sie nehmen die
+  Firmware mit HTTP 200 an, merken sie aber nur vor und wenden sie erst beim nächsten
+  **Neustart** an (dieselbe Reboot-Semantik wie bei der IP-Umstellung). Bisher wurde
+  dieser Neustart nie ausgelöst → die Kamera lief mit der alten Firmware weiter und der
+  Dialog wartete endlos auf einen Reboot, der nie kam. Jetzt stößt `upgrade_firmware`
+  den Neustart selbst an, sobald der Upload mit einem sauberen HTTP 200 quittiert wird
+  (bleibt die Verbindung bestehen = vorgemerkt). Geräte, die von sich aus flashen
+  (Verbindungsabbruch), verhalten sich unverändert. Diagnose an echter Hardware
+  (ICL004, `192.0.2.156`): Upload → HTTP 200, kein Selbst-Reboot; ungültige Datei →
+  HTTP 500 „Device Error" (wird korrekt als Fehler gemeldet).
+
 ## 26.08.08b1 — 2026-08-08
 
 - **Hikvision: nach IP-Umstellung wird der nötige Neustart automatisch ausgelöst.**
