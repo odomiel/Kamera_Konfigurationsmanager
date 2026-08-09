@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.09b2 — 2026-08-09
+
+- **Suche: „[WinError 10065] Der Host war bei einem Socketvorgang nicht erreichbar"
+  (Hanwha/ONVIF) behoben.** Beim Suchen/Aktualisieren erschien unter Windows manchmal die
+  Meldung „Suche teilweise fehlgeschlagen: Hanwha (Wisenet): [WinError 10065]…". Ursache:
+  Der WS-Discovery-Probe (ONVIF, von Hanwha mitbenutzt) wurde per Multicast über *ein* vom
+  Betriebssystem gewähltes Interface gesendet; hatte dieses keine Route zur Discovery-Gruppe
+  (mehrere NICs, VPN-/Virtual-Adapter, getrenntes WLAN), warf `sendto` unter Windows
+  `WSAEHOSTUNREACH` — und die Exception brach die Suche mit Fehlermeldung ab. Der Probe wird
+  jetzt (wie schon bei der Hikvision-SADP-Suche) über **jedes lokale Interface** gesendet;
+  einzelne nicht erreichbare Interfaces werden übersprungen statt gemeldet. Nebeneffekt: In
+  Multi-NIC-Umgebungen werden mehr ONVIF-/Hanwha-Geräte gefunden.
+
 ## 26.08.09b1 — 2026-08-09
 
 - **Firmware-Dialog: Dateifilter je Hersteller statt nur `*.bin`.** Beim „Firmware-Datei

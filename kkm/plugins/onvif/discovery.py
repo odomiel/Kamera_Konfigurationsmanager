@@ -125,6 +125,56 @@ def _parse_match(data: str) -> dict | None:
     }
 
 
+def _local_ipv4s() -> list[str]:
+    """Best-effort Liste lokaler IPv4-Adressen (stdlib-only) fuer den Multicast-Send
+    auf allen Interfaces. Loopback wird ausgelassen."""
+    ips: set[str] = set()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("192.0.2.1", 9))          # TEST-NET-1, nicht routbar; sendet nichts
+            ips.add(s.getsockname()[0])
+        finally:
+            s.close()
+    except OSError:
+        pass
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ips.add(info[4][0])
+    except OSError:
+        pass
+    return [ip for ip in ips if not ip.startswith("127.")]
+
+
+def _send_probe(sock, probe) -> bool:
+    """Sendet den WS-Discovery-Probe an die Multicast-Gruppe — ueber *jedes* lokale
+    Interface (Multicast-Send geht immer nur ueber ein Interface). Einzelne nicht
+    erreichbare Interfaces werden uebersprungen: unter Windows wirft ein Interface ohne
+    Route zur Gruppe ``[WinError 10065]`` (WSAEHOSTUNREACH) — das darf die Suche nicht
+    abbrechen (frueher meldete das Plugin dann „Suche teilweise fehlgeschlagen"). Liefert
+    True, sobald mindestens ein Interface den Probe abgenommen hat."""
+    sent = False
+    for iface in _local_ipv4s():
+        try:
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(iface))
+            sock.sendto(probe, (MCAST_ADDR, MCAST_PORT))
+            sent = True
+        except OSError:
+            continue  # dieses Interface hat keine Route zur Gruppe -> naechstes
+    if not sent:
+        # Kein Interface ermittelbar/erreichbar -> Standard-Interface des OS versuchen.
+        try:
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton("0.0.0.0"))
+        except OSError:
+            pass
+        try:
+            sock.sendto(probe, (MCAST_ADDR, MCAST_PORT))
+            sent = True
+        except OSError:
+            pass
+    return sent
+
+
 def discover(timeout: int = 10) -> list[dict]:
     """Blockierender WS-Discovery-Probe. Liefert Kamera-Dicts (Schluessel = FIELD_NAMES).
 
@@ -140,7 +190,10 @@ def discover(timeout: int = 10) -> list[dict]:
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
         sock.settimeout(1.0)
         sock.bind(("", 0))
-        sock.sendto(probe, (MCAST_ADDR, MCAST_PORT))
+        if not _send_probe(sock, probe):
+            # Gar kein Probe rausgekommen (kein erreichbares Interface) -> nichts finden,
+            # aber die Suche NICHT mit einem Fehler abbrechen.
+            return []
 
         end = time.time() + max(1, timeout)
         while time.time() < end:
