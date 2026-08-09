@@ -67,6 +67,14 @@ class DahuaConnectError(DahuaError):
 
 
 # --------------------------------------------------------------- KEY=VALUE
+def _auth_error(msg):
+    """401 -> Fehler mit Marker ``auth_failed``, den der GUI-Aktionsdialog erkennt, um das
+    Passwort erneut abzufragen (veralteter Tresor-Eintrag nach externer Aenderung)."""
+    e = DahuaError(msg)
+    e.auth_failed = True
+    return e
+
+
 def _parse_kv(text: str) -> dict:
     """Dahuas ``KEY=VALUE``-Zeilen in ein Dict wandeln (wie Axis ``param.cgi``)."""
     out = {}
@@ -128,7 +136,7 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise DahuaError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
                              "falsch, oder die Uhr der Kamera weicht ab)."))
         try:
             detail = _dahua_error(exc.read().decode("utf-8", errors="replace"))
@@ -341,7 +349,7 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
             return t("Firmware aufgespielt — Geraet startet neu")
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise DahuaError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+                raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
             raise DahuaError(t("Dahua-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last_conn_err = exc            # Reboot kappt die Verbindung -> erwartet

@@ -72,6 +72,14 @@ class SunapiConnectError(SunapiError):
 
 
 # --------------------------------------------------------------- KEY=VALUE
+def _auth_error(msg):
+    """401 -> Fehler mit Marker ``auth_failed``, den der GUI-Aktionsdialog erkennt, um das
+    Passwort erneut abzufragen (veralteter Tresor-Eintrag nach externer Aenderung)."""
+    e = SunapiError(msg)
+    e.auth_failed = True
+    return e
+
+
 def _parse_kv(text: str) -> dict:
     """SUNAPIs ``KEY=VALUE``-Zeilen in ein Dict wandeln (wie Axis ``param.cgi``)."""
     out = {}
@@ -130,7 +138,7 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
                           timeout).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         try:
             detail = exc.read().decode("utf-8", errors="replace").strip()
         except Exception:  # noqa: BLE001
@@ -422,7 +430,7 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
                               timeout).decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+                raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
             raise SunapiError(t("SUNAPI-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last_conn = exc            # Reboot kappt die Verbindung -> erwartet
@@ -483,7 +491,7 @@ def restore_config(ip, username, password, backup_path, keep_network=False,
                               timeout).decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+                raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
             raise SunapiError(t("SUNAPI-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last_conn = exc            # Reboot kappt die Verbindung -> erwartet
@@ -510,7 +518,7 @@ def export_config(ip, username, password, out_path, scheme="auto", port=None,
             data = _open_read(_opener(host_port, username, password), url, timeout)
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise SunapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+                raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
             raise SunapiError(t("SUNAPI-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last_conn = exc

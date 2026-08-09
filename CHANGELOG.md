@@ -4,6 +4,21 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.09b3 — 2026-08-09
+
+- **Erneute Passwortabfrage, wenn das Tresor-Passwort nicht mehr stimmt.** Wurde das
+  Passwort einer Kamera *außerhalb* des Programms geändert, schlug eine Aktion mit dem
+  gespeicherten Passwort bisher nur mit „fehlgeschlagen" fehl. Jetzt erkennt der
+  Aktionsdialog den Authentifizierungsfehler (HTTP 401), fragt **nach dem Durchlauf einmal
+  das aktuelle Passwort ab** und **wiederholt die Aktion** für die betroffenen Kamera(s).
+  Optional (Häkchen, standardmäßig an, wenn der Tresor entsperrt ist) wird das neue,
+  funktionierende Passwort direkt **im Tresor aktualisiert**, sodass die Abfrage nicht
+  erneut kommt. Ein 401 tritt vor jeder Wirkung auf — die Aktion wurde also nicht
+  ausgeführt, der erneute Versuch ist unbedenklich. Umsetzung: Die stdlib-Clients
+  (Axis/Hikvision/Dahua/Hanwha/ONVIF) markieren 401-Fehler i18n-sicher mit einem
+  Attribut, das der Dialog über `VendorPlugin.is_auth_error()` auswertet; die erneut
+  eingegebenen Zugangsdaten überschreiben pro Kamera für den Wiederholungslauf.
+
 ## 26.08.09b2 — 2026-08-09
 
 - **Suche: „[WinError 10065] Der Host war bei einem Socketvorgang nicht erreichbar"

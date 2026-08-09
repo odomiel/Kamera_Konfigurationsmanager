@@ -40,6 +40,7 @@ from tkinter import ttk, messagebox
 
 from kkm.core import Credentials, camera_key, get_first_ip, t
 from .vault_access import ensure_vault_unlocked
+from .reauth_prompt import ReauthPromptDialog
 
 
 class ActionDialog(tk.Toplevel):
@@ -60,6 +61,13 @@ class ActionDialog(tk.Toplevel):
         self.vault = vault
         self._q: queue.Queue = queue.Queue()
         self._busy = False
+        # Re-Auth: pro Kamera überschriebene Zugangsdaten (nach erneuter Passwortabfrage),
+        # gültig für die Dialog-Sitzung; und der Zustand des laufenden Retry-Durchlaufs.
+        self._creds_override: dict = {}
+        self._active_op = None
+        self._reauth_in_progress = False
+        self._reauth_cams: list = []
+        self._reauth_store = False
 
         outer = ttk.Frame(self, padding=10)
         outer.pack(fill=tk.BOTH, expand=True)
@@ -164,10 +172,15 @@ class ActionDialog(tk.Toplevel):
         )
 
     def creds_for(self, camera: dict) -> Credentials:
-        """Zugangsdaten je Kamera. Ist „Aus Tresor verwenden" aktiv und der Tresor
-        entsperrt, gewinnt **immer** der Tresor-Eintrag (Benutzer + Passwort); die
+        """Zugangsdaten je Kamera. Ein per erneuter Passwortabfrage gesetztes Override
+        gewinnt vor allem anderen; sonst gewinnt bei aktivem „Aus Tresor verwenden" und
+        entsperrtem Tresor **immer** der Tresor-Eintrag (Benutzer + Passwort); die
         Dialogfelder dienen nur als Rückfall für Kameras ohne Eintrag."""
         creds = self.credentials()
+        override = self._creds_override.get(camera_key(camera))
+        if override:
+            creds.username, creds.password = override
+            return creds
         if self.use_vault_var.get() and self.vault and not self.vault.is_locked:
             stored = self.vault.get_password(camera_key(camera))
             if stored:
@@ -232,7 +245,8 @@ class ActionDialog(tk.Toplevel):
             cache[key] = (username, password)
 
     # ------------------------------------------------------------- background run
-    def run_per_camera(self, op, done_msg=None, parallel=False, max_workers=4):
+    def run_per_camera(self, op, done_msg=None, parallel=False, max_workers=4,
+                       cameras=None):
         """Run ``op(plugin, camera, creds)`` for each camera in a worker thread.
 
         ``op`` returns a short status string on success or raises on failure; each
@@ -240,7 +254,9 @@ class ActionDialog(tk.Toplevel):
 
         Mit ``parallel=True`` werden die Kameras nebenläufig (Thread-Pool, höchstens
         ``max_workers`` gleichzeitig) statt nacheinander abgearbeitet — sinnvoll für
-        langlaufende Operationen wie Firmware-Updates.
+        langlaufende Operationen wie Firmware-Updates. ``cameras`` schränkt den Durchlauf
+        auf eine Teilmenge ein (für den erneuten Versuch nach einer Passwort-Neueingabe);
+        Standard ist die ganze Auswahl.
         """
         if self._busy:
             return
@@ -248,6 +264,12 @@ class ActionDialog(tk.Toplevel):
             done_msg = t("Fertig.")
         self._parallel = parallel
         self._max_workers = max(1, int(max_workers))
+        # Für einen etwaigen erneuten Versuch nach Auth-Fehler merken.
+        self._active_op = op
+        self._active_parallel = parallel
+        self._active_max_workers = self._max_workers
+        self._run_cameras = list(cameras) if cameras is not None else self.cameras
+        self._auth_failures = []
         # Tresor wird gebraucht (zum Lesen der Passwörter und/oder zum Speichern),
         # ist aber gesperrt/nicht angelegt -> auf dem Main-Thread anbieten, ihn
         # einzurichten. Eine Nachfrage deckt beide Fälle ab.
@@ -278,17 +300,25 @@ class ActionDialog(tk.Toplevel):
             msg = op(plugin, cam, self.creds_for(cam))
             self._q.put(("line", f"✓ {name} ({ip}): {msg or 'OK'}"))
         except Exception as exc:  # noqa: BLE001 - per-camera failure is logged
-            self._q.put(("line", f"✗ {name} ({ip}): {exc}"))
+            # Auth-Fehler (401): Kamera vormerken, damit der Dialog nach dem Durchlauf das
+            # Passwort erneut abfragen und die Aktion wiederholen kann.
+            if plugin.is_auth_error(exc):
+                self._q.put(("authfail", cam))
+                self._q.put(("line", f"✗ {name} ({ip}): {exc} — "
+                             + t("Passwort ggf. veraltet.")))
+            else:
+                self._q.put(("line", f"✗ {name} ({ip}): {exc}"))
 
     def _worker(self, op, done_msg):
-        if getattr(self, "_parallel", False) and len(self.cameras) > 1:
+        cams = getattr(self, "_run_cameras", self.cameras)
+        if getattr(self, "_parallel", False) and len(cams) > 1:
             # Nebenläufig, aber gedeckelt (max_workers). Die Ergebnis-Queue ist
             # thread-sicher; Log-Zeilen können sich dadurch verschränken.
-            workers = min(self._max_workers, len(self.cameras))
+            workers = min(self._max_workers, len(cams))
             with ThreadPoolExecutor(max_workers=workers) as ex:
-                list(ex.map(lambda cam: self._run_one(op, cam), self.cameras))
+                list(ex.map(lambda cam: self._run_one(op, cam), cams))
         else:
-            for cam in self.cameras:
+            for cam in cams:
                 self._run_one(op, cam)
         self._q.put(("done", done_msg))
 
@@ -299,19 +329,75 @@ class ActionDialog(tk.Toplevel):
         # mit TclError zu sterben.
         if not self.winfo_exists():
             return
+        done_seen = False
         try:
             while True:
                 kind, payload = self._q.get_nowait()
                 if kind == "line":
                     self._log_line(payload)
+                elif kind == "authfail":
+                    self._auth_failures.append(payload)
                 elif kind == "done":
                     self.progress.stop()
                     self._busy = False
                     self._log_line(f"— {payload}")
                     self._on_done()
+                    done_seen = True
         except queue.Empty:
             pass
+        # Erst nach dem Leeren der Queue behandeln — kann modal nachfragen und einen
+        # erneuten Durchlauf starten (setzt dann wieder ``_busy``).
+        if done_seen:
+            self._handle_auth_failures()
         self.after(120, self._poll)
+
+    # ------------------------------------------------------- erneute Passwortabfrage
+    def _handle_auth_failures(self):
+        """Nach einem Durchlauf: erfolgreiche Retries im Tresor nachziehen und, wenn noch
+        Kameras die Zugangsdaten ablehnen, das Passwort erneut abfragen und wiederholen."""
+        # War das gerade ein Wiederholungs-Durchlauf? Was diesmal *nicht* wieder scheiterte,
+        # gilt als erfolgreich — dessen neues Passwort ggf. in den Tresor übernehmen.
+        if self._reauth_in_progress:
+            self._reauth_in_progress = False
+            failed_now = {camera_key(c) for c in self._auth_failures}
+            if self._reauth_store:
+                for cam in self._reauth_cams:
+                    if camera_key(cam) not in failed_now:
+                        self._persist_override(cam)
+        if self._auth_failures and self._active_op is not None:
+            self._prompt_and_retry(list(self._auth_failures))
+
+    def _prompt_and_retry(self, cams):
+        default_user = self.creds_for(cams[0]).username
+        can_store = bool(self.vault and not self.vault.is_locked)
+        dlg = ReauthPromptDialog(self, cams, default_user=default_user, can_store=can_store)
+        self.wait_window(dlg)
+        if not dlg.result or dlg.result[0] != "apply":
+            return
+        _, user, password, store = dlg.result
+        for cam in cams:
+            self._creds_override[camera_key(cam)] = (user, password)
+        self._reauth_in_progress = True
+        self._reauth_cams = cams
+        self._reauth_store = store
+        self.run_per_camera(self._active_op, done_msg=t("Erneuter Versuch abgeschlossen."),
+                            parallel=getattr(self, "_active_parallel", False),
+                            max_workers=getattr(self, "_active_max_workers", 4),
+                            cameras=cams)
+
+    def _persist_override(self, camera):
+        """Übernimmt die per Re-Auth gesetzten Zugangsdaten der Kamera in den Tresor
+        (und den Sitzungs-Cache des Hauptfensters)."""
+        ov = self._creds_override.get(camera_key(camera))
+        if not ov:
+            return
+        username, password = ov
+        key = camera_key(camera)
+        if self.vault and not self.vault.is_locked:
+            self.vault.set_password(key, username, password)
+        cache = getattr(self.master, "_cam_creds", None)
+        if cache is not None:
+            cache[key] = (username, password)
 
     # ----------------------------------------------------------------------- log
     def _log_clear(self):

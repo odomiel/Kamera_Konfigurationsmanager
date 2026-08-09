@@ -68,6 +68,14 @@ class IsapiConnectError(IsapiError):
 
 
 # --------------------------------------------------------------------- XML
+def _auth_error(msg):
+    """401 -> Fehler mit Marker ``auth_failed``, den der GUI-Aktionsdialog erkennt, um das
+    Passwort erneut abzufragen (veralteter Tresor-Eintrag nach externer Aenderung)."""
+    e = IsapiError(msg)
+    e.auth_failed = True
+    return e
+
+
 def _local(tag: str) -> str:
     """Tag ohne Namensraum (ISAPI-Antworten tragen eine Default-Namespace-URI)."""
     return tag.rsplit("}", 1)[-1]
@@ -194,7 +202,7 @@ def _request(ip, username, password, path, method="GET", body=None,
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise IsapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
                              "falsch, oder die Uhr der Kamera weicht ab)."))
         try:
             detail = _isapi_error(exc.read().decode("utf-8", errors="replace"))
@@ -548,7 +556,7 @@ def export_config(ip, username, password, out_path, scheme="auto", port=None,
                 data = resp.read()
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise IsapiError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
+                raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
                                  "falsch, oder die Uhr der Kamera weicht ab)."))
             try:
                 detail = _isapi_error(exc.read().decode("utf-8", errors="replace"))

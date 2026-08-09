@@ -146,6 +146,13 @@ class VendorPlugin(abc.ABC):
     def supports(self, capability: str) -> bool:
         return capability in self.capabilities
 
+    def is_auth_error(self, exc: Exception) -> bool:
+        """True, wenn *exc* eine fehlgeschlagene Authentifizierung (HTTP 401) ist — dann
+        bietet der Aktionsdialog eine erneute Passwortabfrage an. Die stdlib-Clients
+        markieren solche Fehler mit dem Attribut ``auth_failed`` (i18n-sicher, ohne auf
+        die uebersetzte Meldung zu matchen); Plugins mit anderer Fehlerquelle ueberschreiben."""
+        return bool(getattr(exc, "auth_failed", False))
+
     # --- neutrale Helfer (Plugins duerfen ueberschreiben) --------------------
     def parse_user_list(self, path, onvif: bool = False):
         """Benutzerliste ``Name,Passwort[,Rolle]`` fuer den Stapel-Import lesen.

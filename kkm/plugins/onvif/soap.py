@@ -79,6 +79,14 @@ class OnvifError(Exception):
 
 
 # --------------------------------------------------------------------- XML
+def _auth_error(msg):
+    """401 -> Fehler mit Marker ``auth_failed``, den der GUI-Aktionsdialog erkennt, um das
+    Passwort erneut abzufragen (veralteter Tresor-Eintrag nach externer Aenderung)."""
+    e = OnvifError(msg)
+    e.auth_failed = True
+    return e
+
+
 def _local(tag: str) -> str:
     """Tag ohne Namensraum — ONVIF-Geraete nutzen wechselnde Praefixe."""
     return tag.rsplit("}", 1)[-1]
@@ -172,7 +180,7 @@ def call(url: str, body: str, username: str = "", password: str = "",
         except ET.ParseError:
             reason = ""
         if exc.code == 401:
-            raise OnvifError(t("Authentifizierung fehlgeschlagen — ONVIF-Benutzer/"
+            raise _auth_error(t("Authentifizierung fehlgeschlagen — ONVIF-Benutzer/"
                              "Passwort falsch, oder die Uhr der Kamera weicht ab."))
         raise OnvifError(reason or t("HTTP {code}: {reason}", code=exc.code, reason=exc.reason)) from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:

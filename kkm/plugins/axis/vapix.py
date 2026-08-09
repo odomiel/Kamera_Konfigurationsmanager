@@ -58,6 +58,15 @@ class VapixConnectError(VapixError):
     (Brute-Force-Sperre des Geraets)."""
 
 
+def _auth_error(msg):
+    """401 -> Fehler mit Marker ``auth_failed``, den der GUI-Aktionsdialog erkennt, um das
+    Passwort erneut abzufragen (z. B. wenn es ausserhalb des Programms geaendert wurde und
+    der Tresor-Eintrag veraltet ist)."""
+    e = VapixError(msg)
+    e.auth_failed = True
+    return e
+
+
 def _build_opener(host_port, username, password, auth=True):
     """Opener mit ungepruefter HTTPS-Verbindung.
 
@@ -92,7 +101,7 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
     except urllib.error.URLError as exc:
         raise VapixConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
@@ -130,7 +139,7 @@ def _post_form(ip, username, password, path, fields, scheme, port, timeout):
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
     except urllib.error.URLError as exc:
         raise VapixConnectError(t("Nicht erreichbar: {reason}", reason=exc.reason))
@@ -194,7 +203,7 @@ def _post_json(ip, username, password, path, obj, scheme, port, timeout, method=
             text = resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         # AXIS-JSON-APIs liefern die eigentliche Ursache oft im Fehler-Body mit --
         # unbedingt anzeigen (z. B. bei 500 vom VMD4-control.cgi).
         detail = _http_error_detail(exc)
@@ -371,7 +380,7 @@ def _basic_device_info(ip, username, password, scheme="auto", port=None, timeout
             return data.get("data", {}).get("propertyList", {}) or {}
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
-                raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+                raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
             continue  # Endpunkt nicht vorhanden o. Ae. -> naechstes Schema
         except (urllib.error.URLError, TimeoutError, OSError, ValueError):
             continue
@@ -641,7 +650,7 @@ def _onvif_post(ip, username, password, inner, scheme, port, timeout):
             return resp.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         detail = exc.read().decode("utf-8", errors="replace")
         reason = _extract_soap_fault(detail) or f"HTTP {exc.code}: {exc.reason}"
         raise VapixError(t("ONVIF-Fehler: {reason}", reason=reason))
@@ -865,7 +874,7 @@ def _modern_upgrade(ip, username, password, filename, data, factory_default,
                                parts, scheme, port, timeout)
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
     except (urllib.error.URLError, TimeoutError, OSError):
         return t("Firmware hochgeladen - Geraet startet neu (bitte Status pruefen)")
@@ -884,7 +893,7 @@ def _legacy_upgrade(ip, username, password, filename, data, scheme, port, timeou
                                parts, scheme, port, timeout)
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
-            raise VapixError(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
+            raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         raise VapixError(t("HTTP-Fehler {code}: {reason}", code=exc.code, reason=exc.reason))
     except (urllib.error.URLError, TimeoutError, OSError):
         return t("Firmware hochgeladen (Legacy) - Verbindung getrennt, Geraet flasht/startet neu (bitte pruefen)")
