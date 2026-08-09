@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.09b1 — 2026-08-09
+
+- **Firmware-Dialog: Dateifilter je Hersteller statt nur `*.bin`.** Beim „Firmware-Datei
+  für Modell wählen…" zeigte der Filter „Firmware" nur `*.bin` an — Hikvision-`.dav`-,
+  Hanwha-`.img`- und andere Firmwaredateien waren nur über „Alle Dateien" sichtbar. Der
+  Filter kommt jetzt vom Plugin des jeweiligen Modells (`firmware_extensions`): Axis/Dahua
+  `.bin`, **Hikvision `.dav`**, **Hanwha/Wisenet `.img`**. „Alle Dateien" bleibt als
+  Rückfall.
+
 ## 26.08.09 — 2026-08-09
 
 - **Axis-Geräte-Sicherung im Menüpunkt „Konfig-Backup".** Bisher konnte man dort nur

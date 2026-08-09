@@ -58,6 +58,8 @@ class HikvisionPlugin(VendorPlugin):
     }
     # Config-Backup Ex-/Import an ICLP041D (V5.4.5) verifiziert -> kein Warnhinweis.
     config_backup_import_verified = True
+    # Hikvision-Firmware ist eine digicap.dav.
+    firmware_extensions = (".dav",)
 
     USER_ROLES = isapi.USER_ROLES
     ONVIF_LEVELS = ("Administrator", "Operator", "User")

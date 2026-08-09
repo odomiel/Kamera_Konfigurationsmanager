@@ -405,6 +405,18 @@ class FirmwareDialog(ActionDialog):
             return None
         return self.tree.parent(sel[0]) or sel[0]
 
+    def _firmware_filetypes(self, model):
+        """Dateifilter für die Firmware-Auswahl — herstellerabhängig je Modell.
+
+        Ein Modell gehört eindeutig zu einem Plugin; dessen ``firmware_extensions``
+        bestimmen den „Firmware"-Filter (Axis/Dahua ``.bin``, Hikvision ``.dav``,
+        Hanwha ``.img``). „Alle Dateien" bleibt immer als Rückfall wählbar."""
+        cams = self._by_model.get(model) or []
+        plugin = self.plugin_for(cams[0]) if cams else None
+        exts = tuple(getattr(plugin, "firmware_extensions", (".bin",))) or (".bin",)
+        patterns = " ".join(f"*{e}" for e in exts)
+        return [(t("Firmware"), patterns), (t("Alle Dateien"), "*.*")]
+
     def _choose_for_model(self):
         model = self._selected_model()
         if not model:
@@ -412,7 +424,7 @@ class FirmwareDialog(ActionDialog):
             return
         path = filedialog.askopenfilename(
             parent=self, title=t("Firmware für {model}", model=model),
-            filetypes=[(t("Firmware"), "*.bin"), (t("Alle Dateien"), "*.*")])
+            filetypes=self._firmware_filetypes(model))
         if not path:
             return
         self._fw_by_model[model] = path

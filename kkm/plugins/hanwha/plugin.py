@@ -48,6 +48,7 @@ class HanwhaPlugin(VendorPlugin):
     default_username = "admin"
     config_backup_keep_network = True    # SUNAPI ExcludeSettings=Network
     config_backup_import_verified = True  # Restore an QNO-6082R V1.41.18 verifiziert
+    firmware_extensions = (".img",)      # Wisenet-Firmware ist eine .img (aus ZIP entpackt)
     capabilities = {
         Capability.DISCOVER,
         Capability.ONLINE_CHECK,

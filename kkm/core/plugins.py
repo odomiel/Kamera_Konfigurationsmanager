@@ -116,6 +116,11 @@ class VendorPlugin(abc.ABC):
     #: es False, zeigt der Backup-Dialog einen Warnhinweis „noch nicht verifiziert".
     config_backup_import_verified: bool = False
 
+    #: Dateiendungen der Firmware-Datei im Firmware-Dialog (Datei-Auswahl). Herstellerspezifisch
+    #: (Axis/Dahua ``.bin``, Hikvision ``.dav``, Hanwha/Wisenet ``.img``). Der Firmware-Dialog
+    #: baut daraus den Dateifilter für das jeweilige Modell.
+    firmware_extensions: tuple[str, ...] = (".bin",)
+
     #: Dateiendung und Anzeigename der Backup-Datei im Datei-Dialog. Herstellerspezifisch
     #: (verschluesselter ``.bin``-Blob bei Hikvision/Hanwha/Dahua, ``.json``-Ressourcen-
     #: Map bei Axis). Der Backup-Dialog baut daraus den Dateifilter.
