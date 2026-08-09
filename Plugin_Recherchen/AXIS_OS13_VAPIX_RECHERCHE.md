@@ -100,6 +100,17 @@ Programm genutzten Axis-Funktionen laufen auf OS 13.
   `# Error: Error setting 'root.…'`** ab (Body-Fehler, **kein** 401). Die Härtung (dieses
   Release) fährt korrekt parameterweise nach: **gültiger Parameter angewendet, obsoleter
   übersprungen**, ohne den Import scheitern zu lassen — an echter OS-13-Hardware bestätigt.
+- **Benutzer** (`USERS`): anlegen + Passwort ändern; **ONVIF-Benutzer** (`ONVIF_USERS`, über
+  `/vapix/services`): anlegen; **Firmware-Update-Suche** (`FIRMWARE_CHECK`): Modell im
+  Axis-Verzeichnis gefunden (kein Downgrade auf die öffentlichen ≤12-Versionen empfohlen).
+- **IP-Adresse** (`SET_IP`): feste IP **und** DHCP gesetzt (`param.cgi` `Network.*`),
+  Gerät blieb erreichbar. **Werksreset** (`FACTORY_RESET`, IP erhalten): Gerät kam nach
+  ~10 s zurück in den Ersteinrichtungsmodus.
+
+**Damit sind alle vom Programm genutzten Axis-Capabilities auf OS 13 verifiziert** — außer
+dem **echten Firmware-Flash** (`FIRMWARE`), der mangels passender OS-13-`.bin` nicht
+getestet wurde (die Upload-API `firmwaremanagement.cgi` selbst ist die empfohlene und
+unveränderte).
 
 **Zwei neue Befunde:**
 1. **HTTPS-only.** Das OS-13-Gerät nimmt **kein HTTP** mehr an (Port 80 → „Connection
@@ -113,8 +124,8 @@ Programm genutzten Axis-Funktionen laufen auf OS 13.
    meldete. **Behoben:** eine echte Geräte-Ablehnung (kein 401) beim unauth-Erstversuch
    wird jetzt als maßgebliche Ursache durchgereicht.
 
-Noch offen (nur auf ausdrücklichen Wunsch, da zustandsverändernd): IP/DHCP setzen,
-Firmware-Flash, Werksreset an OS-13-Hardware.
+Einziger offener Punkt: **echter Firmware-Flash** an OS-13-Hardware (braucht eine passende
+`.dav`/`.bin` für das Modell).
 
 ## Quellen
 
