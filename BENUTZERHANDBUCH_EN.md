@@ -317,18 +317,20 @@ meant for cameras that have no dedicated plugin — for Axis devices it simply c
 > documentation but should be used carefully and at your own risk:
 >
 > - **Hikvision** (ISAPI): search via SADP, device info, IP, users, ONVIF users, firmware
->   upload, factory reset. The SADP search also finds **factory-new** cameras still on their
->   **factory IP in a different IP segment** (e.g. `192.0.0.64` or `192.168.1.64` while the
->   computer is in `192.0.2.x`).
+>   upload, **config backup**, factory reset. The SADP search also finds **factory-new**
+>   cameras still on their **factory IP in a different IP segment** (e.g. `192.0.0.64` or
+>   `192.168.1.64` while the computer is in `192.0.2.x`).
 > - **Dahua** (HTTP API): search via DHIP, device info, IP, users, ONVIF users, firmware
 >   upload, factory reset. Also covers many **Dahua OEM brands** — including the **Honeywell
 >   Performance Series** and Amcrest.
 > - **Hanwha/Wisenet** (SUNAPI): search via ONVIF, device info, IP, users, ONVIF users,
->   firmware, factory reset. Verified on a Wisenet camera (discovery, info, IP, users);
->   firmware and factory reset not yet.
+>   firmware, **config backup**, factory reset. Verified on a Wisenet camera (discovery,
+>   info, IP, users); firmware and factory reset not yet.
 >
-> For all of them there is no update search and no configuration import/export (no open
-> firmware directory, no cross-manufacturer configuration template).
+> For all of them there is no update search and no `.cfg` **parameter** import/export (no
+> open firmware directory, no cross-manufacturer configuration template). The **config
+> backup** (opaque whole-device image, section 8.6) is independent of this and is available
+> for Hikvision and Hanwha.
 
 **What ONVIF cannot do and why:** the standard does not standardize a configuration template
 (its backup function only returns an opaque data block for exactly one device), the firmware

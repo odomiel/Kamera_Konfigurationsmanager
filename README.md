@@ -94,8 +94,12 @@ Stapel-Import aus `Name,Passwort[,Rolle]`-Datei (einmal validiert, je Kamera ×
 Benutzer); optional Speichern ins Tresor. **ONVIF-Benutzer-Dialog fertig:**
 gleicher Aufbau mit ONVIF-Stufen (Administrator/Operator/User), ohne factory.
 **IP-Adresse-Dialog fertig:** DHCP / feste IP fortlaufend ab Start-IP / pro Kamera
-einzeln (Ziel-IPs werden vor dem Zugriff validiert). **Alle fünf Aktions-Dialoge
-stehen damit.** **Einstellungen-Dialog fertig:** Tresor-Verwaltung (Master-Passwort
+einzeln (Ziel-IPs werden vor dem Zugriff validiert). **Konfig-Backup-Dialog fertig:**
+sichert bzw. spielt die *vollständige* Gerätekonfiguration als Ganzes ein — Axis über
+die Device-Configuration-API als `.json` (Varianten Zusammenführen/Ersetzen),
+Hikvision/Dahua/Hanwha als verschlüsselter `.bin`-Blob; der Dialog liest Dateiendung,
+„Netz behalten" und Einspiel-Varianten je Plugin. **Alle Aktions-Dialoge stehen damit.**
+**Einstellungen-Dialog fertig:** Tresor-Verwaltung (Master-Passwort
 anlegen/entsperren/sperren/ändern), Plugin-Manager (Hersteller an/aus, persistent),
 Online-Prüfung je Gruppe (an/aus + Intervall, mit automatischer Prüfung der
 gewählten Gruppe im Hauptfenster) und Spalten-Sichtbarkeit; Tresor ist ins

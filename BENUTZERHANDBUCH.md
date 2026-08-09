@@ -338,18 +338,20 @@ bei Axis-Geräten kann es schlicht weniger.
 > Gefahr eingesetzt werden:
 >
 > - **Hikvision** (ISAPI): Suche per SADP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
->   Firmware-Upload, Werksreset. Die SADP-Suche findet auch **werksneue** Kameras, die noch
->   auf ihrer **Werks-IP in einem anderen IP-Segment** stehen (z. B. `192.0.0.64` bzw.
->   `192.168.1.64`, während der Rechner in `192.0.2.x` ist).
+>   Firmware-Upload, **Konfig-Backup**, Werksreset. Die SADP-Suche findet auch **werksneue**
+>   Kameras, die noch auf ihrer **Werks-IP in einem anderen IP-Segment** stehen (z. B.
+>   `192.0.0.64` bzw. `192.168.1.64`, während der Rechner in `192.0.2.x` ist).
 > - **Dahua** (HTTP-API): Suche per DHIP, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
 >   Firmware-Upload, Werksreset. Deckt zugleich viele **Dahua-OEM-Marken** ab — u. a. die
 >   **Honeywell Performance Series** und Amcrest.
 > - **Hanwha/Wisenet** (SUNAPI): Suche über ONVIF, Geräteinfo, IP, Benutzer,
->   ONVIF-Benutzer, Firmware, Werksreset. An einer Wisenet-Kamera verifiziert (Discovery,
->   Info, IP, Benutzer); Firmware und Werksreset noch nicht.
+>   ONVIF-Benutzer, Firmware, **Konfig-Backup**, Werksreset. An einer Wisenet-Kamera
+>   verifiziert (Discovery, Info, IP, Benutzer); Firmware und Werksreset noch nicht.
 >
-> Bei allen gibt es keine Update-Suche und keinen Konfigurations-Im-/Export (kein offenes
-> Firmware-Verzeichnis, keine herstellerübergreifende Konfigurationsvorlage).
+> Bei allen gibt es keine Update-Suche und keinen `.cfg`-**Parameter**-Im-/Export (kein
+> offenes Firmware-Verzeichnis, keine herstellerübergreifende Konfigurationsvorlage). Das
+> **Konfig-Backup** (opakes Komplett-Abbild, Abschnitt 8.6) ist davon unabhängig und steht
+> bei Hikvision und Hanwha zur Verfügung.
 
 **Was ONVIF nicht kann und warum:** Der Standard normiert keine Konfigurationsvorlage
 (seine Sicherungsfunktion liefert nur einen undurchsichtigen Datenblock für genau ein
