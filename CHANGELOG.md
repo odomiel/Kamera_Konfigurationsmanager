@@ -20,6 +20,8 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   dem Axis_Kamera_Discovery-Tool übernommen. Das **Einspielen** ist noch **nicht an
   echter Hardware verifiziert** — der Dialog zeigt dafür den bekannten Warnhinweis; das
   Herunterladen entspricht dem bewährten Discovery-Export.
+- **Build: libffi auf 3.8.0 aktualisiert** (täglicher Abhängigkeits-Check; Python 3.14.7,
+  OpenSSL 3.5.7 LTS und Tcl/Tk 9.0.4 waren bereits aktuell).
 
 ## 26.08.08b2 — 2026-08-08
 
