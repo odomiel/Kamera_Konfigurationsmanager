@@ -112,6 +112,14 @@ Every action dialog has a **"Credentials"** area at the top: user, password, con
 
 This way you no longer have to type the password if it is stored in the vault.
 
+**Password changed outside the program?** If a camera's password was changed elsewhere,
+the stored vault entry no longer matches and the action fails with an authentication
+error. The program detects this and, **after the run, asks once for the current
+password** and **retries the action** for the affected camera(s). If several are
+affected, it asks **once** and retries for all. When the vault is unlocked, the prompt
+offers to **update the new password directly in the vault** (checkbox, on by default) —
+so the prompt does not come back.
+
 ---
 
 ## Actions (buttons in the action bar)
@@ -152,7 +160,8 @@ Like "Users", but for ONVIF accounts with the levels
 
 ### Firmware
 Updates the firmware of **several cameras of different models at once**:
-- assign a matching `.bin` file per model,
+- assign a matching firmware file per model — the file picker pre-filters by manufacturer
+  (Axis/Dahua `.bin`, Hikvision `.dav`, Hanwha `.img`; "All files" stays available),
 - option **Factory settings (factory default)**,
 - models without an assigned file are skipped.
 
@@ -209,6 +218,10 @@ Import/export of Axis Device Manager configuration files (format v1 + v2):
   - Write-protected `Properties.*` parameters (device properties that an AXIS Device
     Manager export writes along) are skipped automatically — otherwise the camera would
     reject the entire import with "Authentication failed" (HTTP 401).
+  - **Parameters rejected by the device are skipped, not the whole import.** If the
+    camera rejects individual parameters (e.g. ones removed/obsolete in newer firmware —
+    AXIS OS 13 drops a number of them), only those are left out; the rest are applied and
+    the skipped ones are named in the result log.
   - If the `.cfg` contains a **motion detection (VMD4)** — the AXIS Device Manager stores
     it as its own block, not as a `param.cgi` parameter — it is applied too via the VMD4
     app interface (`/local/vmd/control.cgi`). The file info then shows the note "Motion

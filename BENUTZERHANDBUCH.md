@@ -151,6 +151,13 @@ oben sind dann ausgegraut und dienen nur als **Rückfall** für Kameras ohne Tre
 Entfernen Sie das Häkchen, gelten die eingetippten Zugangsdaten einheitlich für alle
 markierten Kameras.
 
+**Passwort außerhalb des Programms geändert.** Stimmt das gespeicherte Passwort nicht
+mehr (die Aktion scheitert mit einem Authentifizierungsfehler), fragt das Programm **nach
+dem Durchlauf einmal das aktuelle Passwort ab** und **wiederholt die Aktion** für die
+betroffenen Kameras (bei mehreren wird einmal gefragt und für alle erneut versucht). Ist
+der Tresor entsperrt, bietet die Abfrage an, das neue Passwort direkt **im Tresor zu
+aktualisieren** (Häkchen, standardmäßig an) — dann kommt die Nachfrage nicht wieder.
+
 ## 8 Die Aktionen
 
 ### 8.1 IP-Adresse
@@ -192,9 +199,10 @@ Wie *Benutzer*, aber für ONVIF-Konten mit den Stufen **Administrator/Operator/U
 ### 8.4 Firmware
 
 Aktualisiert mehrere Kameras **verschiedener Modelle gleichzeitig**. Die Kameras sind nach
-Modell gruppiert; jede Modellzeile bekommt **eine** passende `.bin`-Datei, und eine Zeile
+Modell gruppiert; jede Modellzeile bekommt **eine** passende Firmware-Datei, und eine Zeile
 lässt sich aufklappen, um die einzelnen Kameras zu sehen. Modelle ohne zugewiesene Datei
-werden übersprungen.
+werden übersprungen. Der Dateiauswahl-Dialog filtert passend zum Hersteller vor
+(Axis/Dahua `.bin`, Hikvision `.dav`, Hanwha `.img`; „Alle Dateien" bleibt wählbar).
 
 **Nach Updates suchen** (nur Axis) gleicht die Modelle online ab. Das Programm liest das
 öffentliche Firmware-Verzeichnis des Herstellers und zeigt in der Spalte *Verfügbar
@@ -244,7 +252,10 @@ Ausgewählte anzeigen*), die **Stream-Profile einzeln** und die **Bewegungserken
 > diese Parameter.
 
 Schreibgeschützte `Properties.*`-Parameter überspringt das Programm automatisch — sonst
-würde die Kamera den gesamten Import mit „Authentifizierung fehlgeschlagen" ablehnen. Eine
+würde die Kamera den gesamten Import mit „Authentifizierung fehlgeschlagen" ablehnen.
+Lehnt die Kamera darüber hinaus **einzelne** Parameter ab (etwa in neuerer Firmware
+entfernte/obsolete — mit AXIS OS 13 fallen etliche weg), werden nur diese übersprungen und
+im Ergebnis-Log genannt; der übrige Import läuft durch, statt komplett zu scheitern. Eine
 enthaltene Bewegungserkennung wird über die VMD4-Schnittstelle angewendet; ist die
 VMD-Anwendung auf der Kamera gestoppt, startet das Programm sie vorher.
 

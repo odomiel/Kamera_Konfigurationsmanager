@@ -126,6 +126,14 @@ Verbindung (auto/https/http), optionaler Port und Timeout.
 
 So muss man das Passwort **nicht** mehr eintippen, wenn es im Tresor liegt.
 
+**Passwort außerhalb des Programms geändert?** Wurde das Passwort einer Kamera anderswo
+geändert, stimmt der gespeicherte Tresor-Eintrag nicht mehr und die Aktion scheitert mit
+einem Authentifizierungsfehler. Das Programm erkennt das und **fragt nach dem Durchlauf
+einmal das aktuelle Passwort ab** und **wiederholt die Aktion** für die betroffene(n)
+Kamera(s). Sind mehrere betroffen, wird **einmal** gefragt und für alle erneut versucht.
+Ist der Tresor entsperrt, bietet die Abfrage an, das **neue Passwort direkt im Tresor zu
+aktualisieren** (Häkchen, standardmäßig an) — dann kommt die Nachfrage nicht wieder.
+
 ---
 
 ## Aktionen (Buttons in der Aktionsleiste)
@@ -168,7 +176,9 @@ Wie „Benutzer", aber für ONVIF-Konten mit den Stufen
 
 ### Firmware
 Aktualisiert die Firmware **mehrerer Kameras verschiedener Modelle gleichzeitig**:
-- je Modell eine passende `.bin`-Datei zuweisen,
+- je Modell eine passende Firmware-Datei zuweisen — der Dateiauswahl-Dialog filtert
+  passend zum Hersteller vor (Axis/Dahua `.bin`, Hikvision `.dav`, Hanwha `.img`;
+  „Alle Dateien" bleibt wählbar),
 - Option **Werkseinstellungen (factory default)**,
 - Modelle ohne zugewiesene Datei werden übersprungen.
 
@@ -227,6 +237,10 @@ Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
     AXIS-Device-Manager-Export mitschreibt) werden automatisch übersprungen —
     sonst würde die Kamera den kompletten Import mit „Authentifizierung
     fehlgeschlagen" (HTTP 401) ablehnen.
+  - **Vom Gerät abgelehnte Parameter werden übersprungen, nicht der ganze Import.**
+    Lehnt die Kamera einzelne Parameter ab (z. B. in neuerer Firmware entfernte/obsolete
+    — mit AXIS OS 13 fallen etliche weg), werden nur diese ausgelassen; die übrigen
+    werden angewendet und die übersprungenen im Ergebnis-Log genannt.
   - Enthält die `.cfg` eine **Bewegungserkennung (VMD4)** — der AXIS Device Manager
     legt sie als eigenen Block ab, nicht als `param.cgi`-Parameter —, wird sie über
     die VMD4-App-Schnittstelle (`/local/vmd/control.cgi`) mitangewendet. In der

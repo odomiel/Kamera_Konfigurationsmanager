@@ -142,6 +142,13 @@ user and password are taken **per camera** from the vault. The fields at the top
 greyed out and serve only as a **fallback** for cameras without a vault entry. If you clear
 the checkbox, the entered credentials apply uniformly to all selected cameras.
 
+**Password changed outside the program.** If the stored password no longer matches (the
+action fails with an authentication error), the program **asks once for the current
+password after the run** and **retries the action** for the affected cameras (if several
+are affected, it asks once and retries for all). When the vault is unlocked, the prompt
+offers to **update the new password in the vault** (checkbox, on by default) — so the
+prompt does not come back.
+
 ## 8 The actions
 
 ### 8.1 IP address
@@ -182,8 +189,10 @@ Like *Users*, but for ONVIF accounts with the levels **Administrator/Operator/Us
 ### 8.4 Firmware
 
 Updates several cameras of **different models at the same time**. The cameras are grouped by
-model; each model row gets **one** matching `.bin` file, and a row can be expanded to see
-the individual cameras. Models without an assigned file are skipped.
+model; each model row gets **one** matching firmware file, and a row can be expanded to see
+the individual cameras. Models without an assigned file are skipped. The file picker
+pre-filters by manufacturer (Axis/Dahua `.bin`, Hikvision `.dav`, Hanwha `.img`; "All
+files" stays available).
 
 **Search for updates** (Axis only) matches the models online. The program reads the
 manufacturer's public firmware directory and shows in the *Available (online)* column which
@@ -229,9 +238,12 @@ contains is preselected.
 > Filter the list for example by `Image.` and select only those parameters.
 
 Write-protected `Properties.*` parameters are skipped automatically — otherwise the camera
-would reject the entire import with "Authentication failed". A contained motion detection is
-applied via the VMD4 interface; if the VMD application on the camera is stopped, the program
-starts it beforehand.
+would reject the entire import with "Authentication failed". If the camera additionally
+rejects **individual** parameters (e.g. ones removed/obsolete in newer firmware — AXIS OS 13
+drops a number of them), only those are skipped and named in the result log; the rest of the
+import goes through instead of failing entirely. A contained motion detection is applied via
+the VMD4 interface; if the VMD application on the camera is stopped, the program starts it
+beforehand.
 
 **Export** — reads out the configuration of the **first** selected camera and opens the same
 selection; afterwards the `.cfg` is saved.
