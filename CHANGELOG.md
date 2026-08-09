@@ -4,6 +4,22 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.09b4 — 2026-08-09
+
+- **Axis-Konfig-Import robuster: einzelne abgelehnte Parameter überspringen statt alles
+  scheitern lassen.** Bisher wurde die ADM-`.cfg` in *einem* `param.cgi`-Batch angewendet
+  — lehnte die Kamera einen einzigen Parameter ab (z. B. einen in neuerer Firmware
+  entfernten/obsoleten; in AXIS OS 13 fallen etliche weg), scheiterte der **ganze** Import.
+  Jetzt wird bei einer Batch-Ablehnung **parameterweise** nachgefahren: die gültigen
+  Parameter werden angewendet, die vom Gerät abgelehnten übersprungen und in der
+  Ergebnismeldung genannt („N vom Gerät abgelehnt/übersprungen: …"). Zwei Fallstricke
+  sauber behandelt: Ein `401` auf den Batch löst **nur dann** die erneute Passwortabfrage
+  aus, wenn ein Lesezugriff bestätigt, dass die Zugangsdaten wirklich nicht mehr stimmen
+  (sonst gilt es als Parameter-Ablehnung); und bei echtem Auth-Fehler wird **nicht**
+  Parameter für Parameter neu eingeloggt (das würde die Brute-Force-Sperre der Kamera
+  auslösen). Vorbereitung auf AXIS OS 13 (Recherche in
+  `Plugin_Recherchen/AXIS_OS13_VAPIX_RECHERCHE.md`).
+
 ## 26.08.09b3 — 2026-08-09
 
 - **Erneute Passwortabfrage, wenn das Tresor-Passwort nicht mehr stimmt.** Wurde das

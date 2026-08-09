@@ -40,6 +40,7 @@ EN: dict[str, str] = {
     ', {n} fehlgeschlagen (Zugangsdaten/Erreichbarkeit)': ', {n} failed (credentials/reachability)',
     ', {n} ohne Firmware-Wert': ', {n} without firmware value',
     '; Bewegungserkennung (VMD4) angewendet': '; motion detection (VMD4) applied',
+    '; {n} vom Gerät abgelehnt/übersprungen: {names}': '; {n} rejected/skipped by the device: {names}',
     '; Profile: {created} angelegt, {updated} ueberschrieben, {failed} fehlgeschlagen': '; profiles: {created} created, {updated} overwritten, {failed} failed',
     'ADM-Konfiguration wählen': 'Select ADM configuration',
     'AXIS-Device-Manager-Export wählen': 'Select AXIS Device Manager export',
