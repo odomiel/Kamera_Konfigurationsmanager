@@ -289,6 +289,16 @@ zur `.cfg`-Vorlage (auswählbare Parameter) ein gerätespezifisches Komplett-Abb
     echter Hardware verifiziert; der Dialog weist darauf hin.
   - **Hanwha** kann die **Netzwerkeinstellungen der Zielkamera beibehalten** (Checkbox).
 
+### Zeitzone
+Setzt die **Zeitzone** einer oder mehrerer Kameras (Axis). Grundlage ist die **Time API**
+(ab AXIS OS 9.30) mit **IANA-Namen** wie `Europe/Berlin` — die Sommerzeit wird daraus
+automatisch abgeleitet. Das ersetzt den Parameter `Time.POSIXTimeZone`, der in **AXIS OS
+13** aus `param.cgi` entfernt wurde.
+- Die Zeitzone wird aus einer **durchsuchbaren Liste** gewählt (freie Eingabe möglich).
+- **„Von erster Kamera laden"** holt die aktuell gesetzte Zeitzone der ersten markierten
+  Kamera und — falls das Gerät sie liefert — die Liste der von ihm unterstützten Zonen.
+- **Anwenden** setzt die gewählte Zeitzone auf alle markierten Kameras.
+
 ---
 
 ## Exportieren
@@ -307,8 +317,9 @@ IP-Adresse (fest/DHCP), ONVIF-Benutzer und Werksreset.
 
 **Nur das Axis-Plugin kann:** reguläre **Benutzer** (der ONVIF-Standard kennt nur *eine*
 Benutzerliste — die ONVIF-Liste), **Firmware aufspielen**, die **Update-Suche**, den
-**Konfigurations-Import/-Export** (`.cfg`) und das **Konfig-Backup** (Komplett-Sicherung
-über die Device-Configuration-API). Für ONVIF-Geräte bleiben diese Buttons ausgegraut.
+**Konfigurations-Import/-Export** (`.cfg`), das **Konfig-Backup** (Komplett-Sicherung
+über die Device-Configuration-API) und das Setzen der **Zeitzone** (Time API). Für
+ONVIF-Geräte bleiben diese Buttons ausgegraut.
 
 Das **ONVIF-Plugin ist ab Werk ausgeschaltet** (Einstellungen → *Plugins*). Es ist für
 Kameras gedacht, für die es kein eigenes Hersteller-Plugin gibt; bei Axis-Geräten kann es

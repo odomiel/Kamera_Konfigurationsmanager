@@ -264,6 +264,16 @@ time, users …). Supported by **Axis**, **Hikvision**, **Dahua** and **Hanwha**
     dialog points this out.
   - **Hanwha** can **keep the target camera's network settings** (checkbox).
 
+### Time zone
+Sets the **time zone** of one or more cameras (Axis). It uses the **Time API** (from AXIS
+OS 9.30) with **IANA names** such as `Europe/Berlin` — daylight saving is derived from that
+automatically. This replaces the `Time.POSIXTimeZone` parameter removed from `param.cgi` in
+**AXIS OS 13**.
+- The time zone is picked from a **searchable list** (free entry possible).
+- **"Load from first camera"** fetches the currently set time zone of the first selected
+  camera and — if the device provides it — the list of zones it supports.
+- **Apply** sets the chosen time zone on all selected cameras.
+
 ---
 
 ## Export
@@ -282,8 +292,9 @@ ONVIF users and factory reset.
 
 **Only the Axis plugin can:** regular **users** (the ONVIF standard knows only *one* user
 list — the ONVIF list), **install firmware**, the **update search**, the
-**configuration import/export** (`.cfg`) and the **config backup** (whole-device backup
-via the Device Configuration API). For ONVIF devices these buttons stay greyed out.
+**configuration import/export** (`.cfg`), the **config backup** (whole-device backup
+via the Device Configuration API) and setting the **time zone** (Time API). For ONVIF
+devices these buttons stay greyed out.
 
 The **ONVIF plugin is off by default** (Settings → *Plugins*). It is meant for cameras
 that have no dedicated manufacturer plugin; for Axis devices it simply can do less. The

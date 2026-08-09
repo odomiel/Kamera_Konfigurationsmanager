@@ -293,6 +293,16 @@ Komplett-Abbild (IP, Name, Ereignisregeln, Zeit, Benutzer …). Unterstützt von
     echter Hardware verifiziert; der Dialog weist darauf hin.
   - **Hanwha** kann die **Netzwerkeinstellungen der Zielkamera beibehalten** (Checkbox).
 
+### 8.7 Zeitzone
+
+Setzt die **Zeitzone** einer oder mehrerer Axis-Kameras über die **Time API** (ab AXIS OS
+9.30) mit **IANA-Namen** wie `Europe/Berlin`; die Sommerzeit wird daraus automatisch
+abgeleitet. Das ersetzt den Parameter `Time.POSIXTimeZone`, der in **AXIS OS 13** aus
+`param.cgi` entfernt wurde. Die Zeitzone wird aus einer durchsuchbaren Liste gewählt (freie
+Eingabe möglich); **„Von erster Kamera laden"** übernimmt die aktuell gesetzte Zeitzone der
+ersten markierten Kamera (und, falls das Gerät sie liefert, die Liste der unterstützten
+Zonen). **Anwenden** setzt sie auf alle markierten Kameras.
+
 ## 9 Der Passwort-Tresor
 
 Der Tresor speichert die Kamera-Passwörter verschlüsselt in **einer** Datei (`vault.enc`):
@@ -336,6 +346,7 @@ meldet das jeweilige Plugin; nicht unterstützte Knöpfe bleiben **ausgegraut**.
 | Update-Suche | ja | — |
 | Konfiguration (.cfg) | ja | — |
 | Konfig-Backup (Komplett-Sicherung) | ja | — |
+| Zeitzone (Time API) | ja | — |
 | Werksreset | ja | ja |
 
 Das ONVIF-Plugin ist **ab Werk ausgeschaltet** und wird in den Einstellungen unter

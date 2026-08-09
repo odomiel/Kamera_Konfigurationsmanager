@@ -278,6 +278,16 @@ name, event rules, time, users …). Supported by **Axis**, **Hikvision**, **Dah
     dialog points this out.
   - **Hanwha** can **keep the target camera's network settings** (checkbox).
 
+### 8.7 Time zone
+
+Sets the **time zone** of one or more Axis cameras via the **Time API** (from AXIS OS 9.30)
+using **IANA names** such as `Europe/Berlin`; daylight saving is derived from that
+automatically. This replaces the `Time.POSIXTimeZone` parameter removed from `param.cgi` in
+**AXIS OS 13**. The time zone is picked from a searchable list (free entry possible); **"Load
+from first camera"** takes over the currently set time zone of the first selected camera
+(and, if the device provides it, the list of supported zones). **Apply** sets it on all
+selected cameras.
+
 ## 9 The password vault
 
 The vault stores the camera passwords encrypted in **one** file (`vault.enc`): from your
@@ -318,6 +328,7 @@ reported by the respective plugin; unsupported buttons stay **greyed out**.
 | Update search | yes | — |
 | Configuration (.cfg) | yes | — |
 | Config backup (whole-device) | yes | — |
+| Time zone (Time API) | yes | — |
 | Factory reset | yes | yes |
 
 The ONVIF plugin is **off by default** and is enabled in the settings under *Plugins*. It is

@@ -61,6 +61,7 @@ class Capability:
     # Parameter-Vorlage). Z. B. Hanwha SUNAPI-Config-Backup (.bin).
     CONFIG_BACKUP = "config_backup"
     FACTORY_RESET = "factory_reset"
+    TIMEZONE = "timezone"               # Zeitzone setzen (Axis: Time API, IANA)
 
 
 @dataclass
@@ -203,6 +204,23 @@ class VendorPlugin(abc.ABC):
         """Laedt das aktuelle Komplett-Backup der Kamera herunter und speichert es
         unter *out_path*. Optionaler Gegenpart zu :meth:`import_config_backup`."""
         raise NotImplementedError
+
+    # --- Zeitzone (Capability.TIMEZONE) -------------------------------------
+    # Herstellerspezifisch (Axis: Time API mit IANA-Namen). Die Auswahlliste im Dialog
+    # kommt aus der stdlib (``zoneinfo``); ``get_timezone`` dient dem Anzeigen/Uebernehmen
+    # der aktuell gesetzten Zone.
+    def set_timezone(self, camera: dict, creds: Credentials, timezone: str) -> str:
+        """Setzt die Zeitzone der Kamera (IANA-Name, z. B. ``Europe/Berlin``)."""
+        raise NotImplementedError
+
+    def get_timezone(self, camera: dict, creds: Credentials) -> str:
+        """Liest die aktuell gesetzte Zeitzone (IANA-Name; leer, wenn unbekannt)."""
+        raise NotImplementedError
+
+    def list_timezones(self, camera: dict, creds: Credentials) -> list[str]:
+        """Vom Geraet unterstuetzte IANA-Zeitzonen; leer, wenn nicht abrufbar (der Dialog
+        faellt dann auf die stdlib-Liste zurueck). Optional — Standard: leer."""
+        return []
 
     # --- discovery & status -------------------------------------------------
     @abc.abstractmethod

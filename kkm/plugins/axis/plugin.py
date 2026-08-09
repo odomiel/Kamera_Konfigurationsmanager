@@ -53,6 +53,7 @@ class AxisPlugin(VendorPlugin):
         Capability.CONFIG,
         Capability.CONFIG_BACKUP,
         Capability.FACTORY_RESET,
+        Capability.TIMEZONE,
     }
 
     # Geraete-Sicherung ueber die Device Configuration API (AXIS OS 11.8+): eine
@@ -267,3 +268,17 @@ class AxisPlugin(VendorPlugin):
         n = vapix.save_device_settings(ip, creds.username, creds.password, out_path,
                                        **self._conn(creds))
         return t("Sicherung gespeichert ({n} Ressourcen).", n=n)
+
+    # --- Zeitzone (Capability.TIMEZONE) — Time API, ersetzt Time.POSIXTimeZone ---
+    def set_timezone(self, camera, creds: Credentials, timezone):
+        ip = self.ip_of(camera)
+        return vapix.set_timezone(ip, creds.username, creds.password, timezone,
+                                  **self._conn(creds))
+
+    def get_timezone(self, camera, creds: Credentials):
+        ip = self.ip_of(camera)
+        return vapix.get_timezone(ip, creds.username, creds.password, **self._conn(creds))
+
+    def list_timezones(self, camera, creds: Credentials):
+        ip = self.ip_of(camera)
+        return vapix.list_timezones(ip, creds.username, creds.password, **self._conn(creds))

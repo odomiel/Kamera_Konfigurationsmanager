@@ -73,6 +73,7 @@ ACTION_ITEMS = [
     ("Firmware", Capability.FIRMWARE),
     ("Konfiguration", Capability.CONFIG),
     ("Konfig-Backup", Capability.CONFIG_BACKUP),
+    ("Zeitzone", Capability.TIMEZONE),
 ]
 
 _NUM_CHUNK = re.compile(r"(\d+)")

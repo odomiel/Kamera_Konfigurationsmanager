@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.09b6 — 2026-08-09
+
+- **Neue Aktion „Zeitzone" (Axis) über die Time API.** Setzt die Zeitzone einer oder
+  mehrerer Kameras per **IANA-Name** (z. B. `Europe/Berlin`) über die Axis **Time API**
+  (`POST /axis-cgi/time.cgi`, `setTimeZone`; ab **AXIS OS 9.30**); die Sommerzeit wird
+  automatisch abgeleitet. Damit ersetzt das Programm den Parameter `Time.POSIXTimeZone`,
+  der in **AXIS OS 13** aus `param.cgi` entfernt wurde. Der neue Dialog bietet eine
+  durchsuchbare IANA-Liste (aus `zoneinfo`, mit kleinem eingebautem Rückfall) mit freier
+  Eingabe und einen Knopf **„Von erster Kamera laden"**, der die aktuell gesetzte Zone und
+  die vom Gerät unterstützten Zonen holt. Neue Capability `Capability.TIMEZONE` (nur Axis;
+  bei anderen Plugins bleibt der Button ausgegraut); Toolbar- und Rechtsklick-Eintrag,
+  Doku (Hilfe + Handbuch DE/EN) ergänzt.
+
 ## 26.08.09b5 — 2026-08-09
 
 - **Ersteinrichtung: klare Fehlermeldung bei zu schwachem Passwort (AXIS OS 13).** An
