@@ -235,6 +235,22 @@ Import/export of Axis Device Manager configuration files (format v1 + v2):
   A safety prompt has to be confirmed; the action cannot be undone. Credentials stored
   for the camera are discarded after the reset (they no longer apply).
 
+### Config backup (whole-device backup)
+Backs up or restores the **complete device configuration as a whole** — unlike the `.cfg`
+template (selectable parameters), a device-specific full image (IP, name, event rules,
+time, users …). Supported by **Axis**, **Hikvision**, **Dahua** and **Hanwha**.
+- **Download backup (camera → file)** — reads the backup of the first selected camera and
+  saves it. For Axis a **`.json` file** (the same one the web interface provides; without
+  passwords), for the other manufacturers an encrypted **`.bin` blob**.
+- **Restore backup (file → camera)** — transfers a backup file; the camera restarts
+  afterwards. Because a backup contains device-specific data (IP, name), applying the same
+  file to several cameras causes address/identity conflicts — the dialog warns about it.
+  - **Axis** requires AXIS OS 11.8 or newer (Device Configuration API) and offers two
+    variants: **Merge** (overwrite only saved values) or **Replace** (reset affected areas
+    to defaults first). Restoring on Axis is not yet verified against real hardware; the
+    dialog points this out.
+  - **Hanwha** can **keep the target camera's network settings** (checkbox).
+
 ---
 
 ## Export
@@ -252,8 +268,9 @@ the respective plugin — unsupported buttons stay **greyed out**.
 ONVIF users and factory reset.
 
 **Only the Axis plugin can:** regular **users** (the ONVIF standard knows only *one* user
-list — the ONVIF list), **install firmware**, the **update search** and the
-**configuration import/export** (`.cfg`). For ONVIF devices these buttons stay greyed out.
+list — the ONVIF list), **install firmware**, the **update search**, the
+**configuration import/export** (`.cfg`) and the **config backup** (whole-device backup
+via the Device Configuration API). For ONVIF devices these buttons stay greyed out.
 
 The **ONVIF plugin is off by default** (Settings → *Plugins*). It is meant for cameras
 that have no dedicated manufacturer plugin; for Axis devices it simply can do less. The

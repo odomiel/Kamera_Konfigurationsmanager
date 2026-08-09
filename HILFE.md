@@ -257,6 +257,24 @@ Import/Export von Axis-Device-Manager-Konfigurationsdateien (Format v1 + v2):
   rückgängig machen. Nach dem Reset gespeicherte Zugangsdaten der Kamera werden
   verworfen (sie gelten nicht mehr).
 
+### Konfig-Backup (Komplett-Sicherung)
+Sichert bzw. spielt die **vollständige Gerätekonfiguration als Ganzes** — im Gegensatz
+zur `.cfg`-Vorlage (auswählbare Parameter) ein gerätespezifisches Komplett-Abbild
+(IP, Name, Ereignisregeln, Zeit, Benutzer …). Unterstützt von **Axis**, **Hikvision**,
+**Dahua** und **Hanwha**.
+- **Backup herunterladen (Kamera → Datei)** — liest die Sicherung der ersten markierten
+  Kamera und speichert sie. Bei Axis eine **`.json`-Datei** (dieselbe, die die
+  Weboberfläche liefert; ohne Passwörter), bei den anderen Herstellern ein
+  verschlüsselter **`.bin`-Blob**.
+- **Backup einspielen (Datei → Kamera)** — überträgt eine Sicherungsdatei; die Kamera
+  startet danach neu. Weil ein Backup gerätespezifische Daten (IP, Name) enthält, führt
+  dasselbe File auf mehreren Kameras zu Adress-/Identitätskonflikten — der Dialog warnt.
+  - **Axis** benötigt AXIS OS 11.8 oder neuer (Device-Configuration-API) und bietet zwei
+    Varianten: **Zusammenführen** (nur gesicherte Werte überschreiben) oder **Ersetzen**
+    (betroffene Bereiche erst auf Standard). Das Einspielen ist bei Axis noch nicht an
+    echter Hardware verifiziert; der Dialog weist darauf hin.
+  - **Hanwha** kann die **Netzwerkeinstellungen der Zielkamera beibehalten** (Checkbox).
+
 ---
 
 ## Exportieren
@@ -274,9 +292,9 @@ Online-Prüfung (bei ONVIF sogar ohne Zugangsdaten), Modell/Firmware auslesen,
 IP-Adresse (fest/DHCP), ONVIF-Benutzer und Werksreset.
 
 **Nur das Axis-Plugin kann:** reguläre **Benutzer** (der ONVIF-Standard kennt nur *eine*
-Benutzerliste — die ONVIF-Liste), **Firmware aufspielen**, die **Update-Suche** und den
-**Konfigurations-Import/-Export** (`.cfg`). Für ONVIF-Geräte bleiben diese Buttons
-ausgegraut.
+Benutzerliste — die ONVIF-Liste), **Firmware aufspielen**, die **Update-Suche**, den
+**Konfigurations-Import/-Export** (`.cfg`) und das **Konfig-Backup** (Komplett-Sicherung
+über die Device-Configuration-API). Für ONVIF-Geräte bleiben diese Buttons ausgegraut.
 
 Das **ONVIF-Plugin ist ab Werk ausgeschaltet** (Einstellungen → *Plugins*). Es ist für
 Kameras gedacht, für die es kein eigenes Hersteller-Plugin gibt; bei Axis-Geräten kann es

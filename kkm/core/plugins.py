@@ -116,6 +116,17 @@ class VendorPlugin(abc.ABC):
     #: es False, zeigt der Backup-Dialog einen Warnhinweis „noch nicht verifiziert".
     config_backup_import_verified: bool = False
 
+    #: Dateiendung und Anzeigename der Backup-Datei im Datei-Dialog. Herstellerspezifisch
+    #: (verschluesselter ``.bin``-Blob bei Hikvision/Hanwha/Dahua, ``.json``-Ressourcen-
+    #: Map bei Axis). Der Backup-Dialog baut daraus den Dateifilter.
+    config_backup_extension: str = ".bin"
+    config_backup_filetype_label: str = "Backup"
+
+    #: Optionale Einspiel-Varianten ``(wert, beschriftung)`` — z. B. Axis „merge"/
+    #: „default". Ist die Liste leer, zeigt der Dialog keine Auswahl und uebergibt
+    #: ``import_mode=None`` (das Plugin waehlt seinen Standard).
+    config_backup_import_modes: tuple[tuple[str, str], ...] = ()
+
     #: Werksseitiger Standard-Benutzername des Herstellers. Der Zugangsdaten-Block der
     #: Aktionsdialoge belegt das Benutzerfeld damit vor (Axis „root", die meisten
     #: anderen „admin") — sonst schlaegt jede Aktion an einer Nicht-Axis-Kamera mit 401
@@ -165,11 +176,13 @@ class VendorPlugin(abc.ABC):
     # Komplett-Backup an — nicht auswaehlbar, geraete-/modellgebunden. Getrennt von
     # CONFIG (Parameter-Vorlage), damit die GUI beides sauber unterscheidet.
     def import_config_backup(self, camera: dict, creds: Credentials, backup_path,
-                             keep_network: bool = False,
+                             keep_network: bool = False, import_mode: str | None = None,
                              progress: "ProgressFn | None" = None) -> str:
         """Spielt ein zuvor gesichertes Komplett-Backup (opaker Blob) auf die Kamera
         ein. Mit ``keep_network`` bleiben IP-/Netzwerkeinstellungen der Zielkamera
-        erhalten (wichtig beim Einspielen auf eine *andere* Kamera). Das Geraet startet
+        erhalten (wichtig beim Einspielen auf eine *andere* Kamera). ``import_mode``
+        waehlt eine herstellerspezifische Einspiel-Variante (siehe
+        ``config_backup_import_modes``; ``None`` = Plugin-Standard). Das Geraet startet
         danach i. d. R. neu. Nur verfuegbar, wenn das Plugin ``Capability.CONFIG_BACKUP``
         meldet."""
         raise NotImplementedError

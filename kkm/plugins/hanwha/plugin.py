@@ -166,7 +166,7 @@ class HanwhaPlugin(VendorPlugin):
                                     keep_ip=keep_ip, **self._conn(creds))
 
     def import_config_backup(self, camera, creds: Credentials, backup_path,
-                             keep_network=False, progress=None):
+                             keep_network=False, import_mode=None, progress=None):
         ip = self.ip_of(camera)
         return sunapi.restore_config(ip, creds.username, creds.password,
                                      backup_path, keep_network=keep_network,

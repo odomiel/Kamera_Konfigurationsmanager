@@ -30,6 +30,7 @@ nothing in :mod:`kkm.core` or :mod:`kkm.gui` changes.
 
 from __future__ import annotations
 
+from kkm.core import t
 from kkm.core.plugins import (VendorPlugin, Credentials, Capability,
                               FirmwareInfo, FirmwareRelease)
 from . import vapix
@@ -50,8 +51,21 @@ class AxisPlugin(VendorPlugin):
         Capability.FIRMWARE,
         Capability.FIRMWARE_CHECK,
         Capability.CONFIG,
+        Capability.CONFIG_BACKUP,
         Capability.FACTORY_RESET,
     }
+
+    # Geraete-Sicherung ueber die Device Configuration API (AXIS OS 11.8+): eine
+    # ``.json``-Ressourcen-Map, kein verschluesselter ``.bin``-Blob wie bei den
+    # anderen Herstellern. Einspiel-Varianten „merge"/„default" (Standard merge).
+    config_backup_extension = ".json"
+    config_backup_filetype_label = "Axis-Sicherung"
+    config_backup_import_modes = (
+        ("merge", "Zusammenführen — nur gesicherte Werte überschreiben"),
+        ("default", "Ersetzen — betroffene Bereiche erst auf Standard zurücksetzen"),
+    )
+    # Einspielen noch nicht an echter Hardware verifiziert -> Dialog zeigt Warnhinweis.
+    config_backup_import_verified = False
 
     # Rollen (VAPIX-Benutzer) und ONVIF-Stufen, jeweils hoechstes Recht zuerst —
     # die Dialoge lesen sie von der Plugin-Instanz.
@@ -234,3 +248,22 @@ class AxisPlugin(VendorPlugin):
                                       selected_params=selected_params,
                                       with_profiles=with_profiles,
                                       with_vmd4=with_vmd4)
+
+    # --- Geraete-Sicherung (Capability.CONFIG_BACKUP) -----------------------
+    # Vollstaendiges Geraete-Abbild ueber die DCA ($export/$import), Gegenpart zu den
+    # .bin-Backups der anderen Hersteller. keep_network wird nicht ausgewertet: das
+    # AXIS-Abbild umfasst die Netzwerkeinstellungen als Teil des Ganzen.
+    def import_config_backup(self, camera, creds: Credentials, backup_path,
+                             keep_network=False, import_mode=None, progress=None):
+        ip = self.ip_of(camera)
+        data = vapix.load_device_settings_backup(backup_path)
+        import_type = import_mode or "merge"
+        n = vapix.import_device_settings(ip, creds.username, creds.password, data,
+                                         import_type=import_type, **self._conn(creds))
+        return t("Sicherung eingespielt ({n} Ressourcen) — Gerät startet neu.", n=n)
+
+    def export_config_backup(self, camera, creds: Credentials, out_path):
+        ip = self.ip_of(camera)
+        n = vapix.save_device_settings(ip, creds.username, creds.password, out_path,
+                                       **self._conn(creds))
+        return t("Sicherung gespeichert ({n} Ressourcen).", n=n)

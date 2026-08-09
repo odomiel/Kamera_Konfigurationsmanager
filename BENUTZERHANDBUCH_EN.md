@@ -247,6 +247,25 @@ selection; afterwards the `.cfg` is saved.
 Both are **irreversible** and have to be confirmed. Credentials stored for the camera are
 discarded afterwards because they no longer apply.
 
+### 8.6 Config backup
+
+Backs up or restores the **complete device configuration as a whole** — unlike the `.cfg`
+template (section 8.5) with its parameter selection, a device-specific full image (IP,
+name, event rules, time, users …). Supported by **Axis**, **Hikvision**, **Dahua** and
+**Hanwha**.
+
+- **Download backup (camera → file)** — reads the backup of the **first** selected camera
+  and saves it. For Axis a **`.json` file** (the same one the web interface provides;
+  passwords are not included), for the other manufacturers an encrypted **`.bin` blob**.
+- **Restore backup (file → camera)** — transfers a backup; the camera restarts afterwards.
+  Because a backup contains device-specific data (IP, name), applying the same file to
+  several cameras causes address/identity conflicts — the dialog warns about it.
+  - **Axis** requires AXIS OS 11.8 or newer (Device Configuration API) and offers the
+    variants **Merge** (overwrite only saved values) or **Replace** (reset affected areas
+    to defaults first). Restoring on Axis is not yet verified against real hardware; the
+    dialog points this out.
+  - **Hanwha** can **keep the target camera's network settings** (checkbox).
+
 ## 9 The password vault
 
 The vault stores the camera passwords encrypted in **one** file (`vault.enc`): from your
@@ -286,6 +305,7 @@ reported by the respective plugin; unsupported buttons stay **greyed out**.
 | Install firmware | yes | — |
 | Update search | yes | — |
 | Configuration (.cfg) | yes | — |
+| Config backup (whole-device) | yes | — |
 | Factory reset | yes | yes |
 
 The ONVIF plugin is **off by default** and is enabled in the settings under *Plugins*. It is

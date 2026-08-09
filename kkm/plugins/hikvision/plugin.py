@@ -161,7 +161,7 @@ class HikvisionPlugin(VendorPlugin):
                                    keep_ip=keep_ip, **self._conn(creds))
 
     def import_config_backup(self, camera, creds: Credentials, backup_path,
-                             keep_network=False, progress=None):
+                             keep_network=False, import_mode=None, progress=None):
         # ISAPI-configurationData kennt keine "Netz behalten"-Option (der Blob umfasst
         # die Netzwerkeinstellungen) -> keep_network wird hier nicht ausgewertet.
         ip = self.ip_of(camera)

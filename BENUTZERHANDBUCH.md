@@ -262,6 +262,26 @@ dieselbe Auswahl; anschließend wird die `.cfg` gespeichert.
 Beides ist **nicht umkehrbar** und muss bestätigt werden. Gespeicherte Zugangsdaten der
 Kamera werden danach verworfen, weil sie nicht mehr gelten.
 
+### 8.6 Konfig-Backup
+
+Sichert bzw. spielt die **vollständige Gerätekonfiguration als Ganzes** ein — anders als
+die `.cfg`-Vorlage (Abschnitt 8.5) mit ihrer Parameterauswahl ein gerätespezifisches
+Komplett-Abbild (IP, Name, Ereignisregeln, Zeit, Benutzer …). Unterstützt von **Axis**,
+**Hikvision**, **Dahua** und **Hanwha**.
+
+- **Backup herunterladen (Kamera → Datei)** — liest die Sicherung der **ersten** markierten
+  Kamera und speichert sie. Bei Axis eine **`.json`-Datei** (dieselbe, die die
+  Weboberfläche liefert; Passwörter sind nicht enthalten), bei den anderen Herstellern ein
+  verschlüsselter **`.bin`-Blob**.
+- **Backup einspielen (Datei → Kamera)** — überträgt eine Sicherung; die Kamera startet
+  danach neu. Da ein Backup gerätespezifische Daten (IP, Name) enthält, erzeugt dasselbe
+  File auf mehreren Kameras Adress-/Identitätskonflikte — der Dialog warnt davor.
+  - **Axis** benötigt AXIS OS 11.8 oder neuer (Device-Configuration-API) und bietet die
+    Varianten **Zusammenführen** (nur gesicherte Werte überschreiben) oder **Ersetzen**
+    (betroffene Bereiche erst auf Standard). Das Einspielen ist bei Axis noch nicht an
+    echter Hardware verifiziert; der Dialog weist darauf hin.
+  - **Hanwha** kann die **Netzwerkeinstellungen der Zielkamera beibehalten** (Checkbox).
+
 ## 9 Der Passwort-Tresor
 
 Der Tresor speichert die Kamera-Passwörter verschlüsselt in **einer** Datei (`vault.enc`):
@@ -304,6 +324,7 @@ meldet das jeweilige Plugin; nicht unterstützte Knöpfe bleiben **ausgegraut**.
 | Firmware aufspielen | ja | — |
 | Update-Suche | ja | — |
 | Konfiguration (.cfg) | ja | — |
+| Konfig-Backup (Komplett-Sicherung) | ja | — |
 | Werksreset | ja | ja |
 
 Das ONVIF-Plugin ist **ab Werk ausgeschaltet** und wird in den Einstellungen unter

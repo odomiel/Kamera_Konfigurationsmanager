@@ -4,6 +4,23 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.09 — 2026-08-09
+
+- **Axis-Geräte-Sicherung im Menüpunkt „Konfig-Backup".** Bisher konnte man dort nur
+  Hikvision-, Dahua- und Hanwha-Backups ein-/herunterspielen; Axis fehlte. Jetzt sichert
+  und spielt das Axis-Plugin die **vollständige Gerätekonfiguration** über die
+  Device-Configuration-API (`GET /config/rest/$export` bzw. `PATCH /config/rest/$import`,
+  AXIS OS 11.8+) — ein gerätespezifisches Komplett-Abbild (IP, Name, Ereignisregeln,
+  Zeit, Benutzer …), Gegenstück zu den `.bin`-Backups der anderen Hersteller. Anders als
+  jene ist die Axis-Sicherung eine **`.json`-Ressourcen-Map** (genau das Format, das die
+  Weboberfläche herunterlädt; Passwörter sind nicht enthalten). Der Backup-Dialog liest
+  Dateiendung, „Netz behalten"-Option und Einspiel-Varianten jetzt vom Plugin: für Axis
+  bietet er die Varianten **„Zusammenführen"** (nur gesicherte Werte überschreiben) und
+  **„Ersetzen"** (betroffene Bereiche erst auf Standard) an. Die Logik ist verbatim aus
+  dem Axis_Kamera_Discovery-Tool übernommen. Das **Einspielen** ist noch **nicht an
+  echter Hardware verifiziert** — der Dialog zeigt dafür den bekannten Warnhinweis; das
+  Herunterladen entspricht dem bewährten Discovery-Export.
+
 ## 26.08.08b2 — 2026-08-08
 
 - **Hikvision-Firmwareupdate: „passiert nichts / Endlos-Warten" behoben.** Ältere

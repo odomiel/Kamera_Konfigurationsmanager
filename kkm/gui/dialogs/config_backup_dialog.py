@@ -17,9 +17,11 @@
 """Config-backup action: import/export a vendor's opaque full-device backup.
 
 Unlike :class:`ConfigDialog` (which handles a *selectable* Axis ADM parameter
-template), a config backup is an encrypted, device-/model-specific blob that is only
-ever applied as a whole (e.g. Hanwha SUNAPI ``.bin``). Two operations on the
-selected cameras:
+template), a config backup is a device-/model-specific whole-device image that is only
+ever applied as a whole — an encrypted ``.bin`` blob (Hikvision/Hanwha/Dahua) or the
+Axis DCA ``.json`` resource map. The file type, an optional "keep network" checkbox,
+and optional import variants (Axis merge/default) all come from the plugin. Two
+operations on the selected cameras:
 
 - **Einspielen**: pick a backup file and restore it. The device reboots afterwards.
   Because a backup carries device-specific settings (IP, name, users), applying one
@@ -41,8 +43,6 @@ from kkm.gui import filedialogs as filedialog
 from kkm.core import Capability, get_first_ip, t
 from .base import ActionDialog
 
-_BIN_TYPES = [("Backup (*.bin)", "*.bin"), (t("Alle Dateien"), "*.*")]
-
 
 class ConfigBackupDialog(ActionDialog):
     title_text = "Konfigurations-Backup"
@@ -57,6 +57,14 @@ class ConfigBackupDialog(ActionDialog):
         self._supports_keep_net = bool(getattr(plugin0, "config_backup_keep_network", False))
         # Warnhinweis nur, wenn das Einspielen (noch) nicht an Hardware verifiziert ist.
         self._import_verified = bool(getattr(plugin0, "config_backup_import_verified", False))
+        # Dateiendung/-filter und optionale Einspiel-Varianten sind herstellerspezifisch.
+        self._ext = getattr(plugin0, "config_backup_extension", ".bin") or ".bin"
+        label = getattr(plugin0, "config_backup_filetype_label", "Backup")
+        self._filetypes = [(f"{t(label)} (*{self._ext})", f"*{self._ext}"),
+                           (t("Alle Dateien"), "*.*")]
+        self._import_modes = tuple(getattr(plugin0, "config_backup_import_modes", ()))
+        self._import_mode = tk.StringVar(
+            value=self._import_modes[0][0] if self._import_modes else "")
 
         modes = ttk.Frame(parent)
         modes.pack(fill=tk.X)
@@ -82,6 +90,12 @@ class ConfigBackupDialog(ActionDialog):
             parent, text=t("Netzwerkeinstellungen (IP) der Zielkamera beibehalten"),
             variable=self._keep_net)
 
+        # Einspiel-Variante (nur wenn das Plugin welche anbietet, z. B. Axis merge/default).
+        self._mode_frame = ttk.LabelFrame(parent, text=t("Einspiel-Variante"))
+        for value, mlabel in self._import_modes:
+            ttk.Radiobutton(self._mode_frame, text=t(mlabel), value=value,
+                            variable=self._import_mode).pack(anchor=tk.W)
+
         self._hint = ttk.Label(parent, wraplength=440, justify=tk.LEFT)
         self._hint.pack(anchor=tk.W, pady=(8, 0))
 
@@ -98,6 +112,8 @@ class ConfigBackupDialog(ActionDialog):
         if self._mode.get() == "import":
             if self._supports_keep_net:
                 self._keep_net_cb.pack(anchor=tk.W, pady=(6, 0), before=self._hint)
+            if self._import_modes:
+                self._mode_frame.pack(fill=tk.X, pady=(6, 0), before=self._hint)
             self._file_label.config(text=t("Backup-Datei:"))
             self._hint.config(
                 text=t("Ein Backup enthält gerätespezifische Einstellungen (IP, Name, "
@@ -112,6 +128,7 @@ class ConfigBackupDialog(ActionDialog):
                 self._warn.pack(anchor=tk.W, pady=(6, 0), before=self._apply_btn)
         else:
             self._keep_net_cb.pack_forget()
+            self._mode_frame.pack_forget()
             self._warn.pack_forget()
             self._file_label.config(text=t("Zieldatei:"))
             self._hint.config(
@@ -120,22 +137,22 @@ class ConfigBackupDialog(ActionDialog):
     def _browse(self):
         if self._mode.get() == "import":
             path = filedialog.askopenfilename(parent=self, title=t("Backup-Datei wählen"),
-                                              filetypes=_BIN_TYPES)
+                                              filetypes=self._filetypes)
         else:
             cam = self.cameras[0]
             suggested = self._suggest_name(cam)
             path = filedialog.asksaveasfilename(parent=self, title=t("Backup speichern unter"),
-                                                filetypes=_BIN_TYPES, defaultextension=".bin",
+                                                filetypes=self._filetypes,
+                                                defaultextension=self._ext,
                                                 initialfile=suggested)
         if path:
             self._path.set(path)
 
-    @staticmethod
-    def _suggest_name(cam) -> str:
+    def _suggest_name(self, cam) -> str:
         base = (cam.get("Modell") or cam.get("Name") or "backup").strip() or "backup"
         safe = "".join(c if c.isalnum() or c in "-_." else "_" for c in base)
         ip = get_first_ip(cam) or ""
-        return f"{safe}_{ip}.bin" if ip else f"{safe}.bin"
+        return f"{safe}_{ip}{self._ext}" if ip else f"{safe}{self._ext}"
 
     # ------------------------------------------------------------------ apply
     def _apply(self):
@@ -160,9 +177,10 @@ class ConfigBackupDialog(ActionDialog):
             if not messagebox.askyesno(t(self.title_text), warn, parent=self):
                 return
             keep_net = self._keep_net.get()
+            import_mode = self._import_mode.get() or None
             self.run_per_camera(
                 lambda plugin, camera, creds: plugin.import_config_backup(
-                    camera, creds, path, keep_network=keep_net),
+                    camera, creds, path, keep_network=keep_net, import_mode=import_mode),
                 done_msg=t("Backup-Einspielung abgeschlossen."))
         else:
             first = self.cameras[0]
