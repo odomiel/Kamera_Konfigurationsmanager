@@ -594,6 +594,14 @@ def add_or_set_user(ip, username, password, new_user, new_password, role="viewer
                                           scheme, port, timeout, authenticate=auth)
                         + t(" (vorhandener Benutzer, Passwort gesetzt)"))
         except VapixError as exc:
+            # Lehnt das Geraet den *unauthentifizierten* Erstversuch mit einer echten
+            # Antwort ab (HTTP 200 + Fehlertext, kein 401) — etwa die Passwort-Policy von
+            # AXIS OS 13: „invalid password" —, ist DAS die maßgebliche Ursache. Nicht mit
+            # den Werks-Zugangsdaten weiterprobieren: die liefern auf einem Setup-Geraet
+            # ohnehin 401 und wuerden die eigentliche Meldung mit „Authentifizierung
+            # fehlgeschlagen" verschleiern.
+            if not auth and not getattr(exc, "auth_failed", False):
+                raise
             last = exc
     raise last if last is not None else VapixError("kein Zugang moeglich")
 

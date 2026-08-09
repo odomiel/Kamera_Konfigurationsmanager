@@ -82,6 +82,40 @@ Streaming-Parameter, `audiooutput`). Die genutzten `param.cgi`-Gruppen (`Network
 4. **Kein Handlungsbedarf:** OAuth 2.0 ist für dieses Konfig-Tool nicht nötig
    (interaktives Digest genügt).
 
+## An OS-13-Preview-Hardware verifiziert (2026-08-09)
+
+Getestet an einer **AXIS M7104, Firmware 13.0.33** (Preview), im LAN. Ergebnis: die vom
+Programm genutzten Axis-Funktionen laufen auf OS 13.
+
+- **Online-Prüfung**, **mDNS-Discovery** (findet das Gerät), **Ersteinrichtungserkennung**
+  (`is_unconfigured`): funktionieren. Werkszustand meldet weiterhin `pwdgrp.cgi` → HTTP 401
+  mit Header `axis-setup: vapix` und Body „initial admin user must be created first" — genau
+  das Muster, das `_is_setup_response()` erkennt.
+- **Ersteinrichtung** (`add_or_set_user(factory=True)`): legt den Erstadmin über den
+  unauthentifizierten `pwdgrp.cgi?action=add`-Weg an — funktioniert, **sofern das Passwort
+  die (verschärfte) OS-13-Policy erfüllt**.
+- **Geräteinfo** (`basicdeviceinfo.cgi`/`param.cgi`): liefert Modell/Serial/Firmware
+  (`13.0.33`) authentifiziert. **Konfig-Export** (`param.cgi?action=list`): 681 Parameter.
+- **ADM-Konfig-Import / Härtung**: OS 13 lehnt einen unbekannten Parameter mit **HTTP 200 +
+  `# Error: Error setting 'root.…'`** ab (Body-Fehler, **kein** 401). Die Härtung (dieses
+  Release) fährt korrekt parameterweise nach: **gültiger Parameter angewendet, obsoleter
+  übersprungen**, ohne den Import scheitern zu lassen — an echter OS-13-Hardware bestätigt.
+
+**Zwei neue Befunde:**
+1. **HTTPS-only.** Das OS-13-Gerät nimmt **kein HTTP** mehr an (Port 80 → „Connection
+   refused"), nur HTTPS (`Apache/2.4.68 OpenSSL/3.5.7`). Unser `scheme="auto"` (HTTPS
+   zuerst) ist damit kompatibel — der HTTP-Fallback wird nie gebraucht; nur eine *manuelle*
+   Wahl „http" würde scheitern.
+2. **Strengere Passwort-Policy beim Erstadmin.** Ein zu schwaches Passwort wird mit HTTP 200
+   + Body „Error: invalid password." abgelehnt. Das deckte einen **Programm-Bug** auf:
+   `add_or_set_user(factory=True)` verschleierte diese Ursache, weil es danach die
+   Werks-Zugangsdaten probierte und deren 401 als „Authentifizierung fehlgeschlagen"
+   meldete. **Behoben:** eine echte Geräte-Ablehnung (kein 401) beim unauth-Erstversuch
+   wird jetzt als maßgebliche Ursache durchgereicht.
+
+Noch offen (nur auf ausdrücklichen Wunsch, da zustandsverändernd): IP/DHCP setzen,
+Firmware-Flash, Werksreset an OS-13-Hardware.
+
 ## Quellen
 
 - [AXIS OS 13 breaking changes (Axis)](https://www.axis.com/for-developers/news/AXIS-OS-13-breaking-changes)

@@ -4,6 +4,23 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.09b5 — 2026-08-09
+
+- **Ersteinrichtung: klare Fehlermeldung bei zu schwachem Passwort (AXIS OS 13).** An
+  einer AXIS-M7104-Preview mit **Firmware 13.0.33** verifiziert. AXIS OS 13 prüft das
+  Passwort des Erstadmins strenger und lehnt ein zu schwaches mit „Error: invalid password"
+  (HTTP 200) ab. Bisher verschleierte `add_or_set_user(factory=True)` das: Es probierte
+  danach die Werks-Zugangsdaten und meldete deren 401 als „Authentifizierung
+  fehlgeschlagen". Jetzt wird eine **echte Geräte-Ablehnung** (Fehlertext statt 401) beim
+  unauthentifizierten Erstversuch als maßgebliche Ursache durchgereicht — der Nutzer sieht
+  den wahren Grund. Der Werks-Login-Rückfall für ältere Geräte (unauth → 401) bleibt.
+- **OS-13-Verifikation der bestehenden Axis-Funktionen** (Recherche/Ergebnisse in
+  `Plugin_Recherchen/AXIS_OS13_VAPIX_RECHERCHE.md`): Online-Prüfung, Discovery,
+  Werkszustandserkennung, Ersteinrichtung, Geräteinfo (Firmware 13.0.33), Konfig-Export
+  (681 Parameter) und die **Konfig-Import-Härtung** (obsoleter Parameter übersprungen,
+  gültiger angewendet) laufen. Neuer Hinweis: OS-13-Geräte sprechen **nur HTTPS** (Port 80
+  abgelehnt) — durch `scheme="auto"` bereits abgedeckt.
+
 ## 26.08.09b4 — 2026-08-09
 
 - **Axis-Konfig-Import robuster: einzelne abgelehnte Parameter überspringen statt alles
