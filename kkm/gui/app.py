@@ -297,10 +297,26 @@ class MainWindow(tk.Tk):
         # Suchbereich links und die Werkzeuge rechts bleiben fix.
         wrap = ttk.Frame(outer)
         wrap.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        canvas = tk.Canvas(wrap, highlightthickness=0, borderwidth=0, height=1)
-        canvas.pack(side=tk.TOP, fill=tk.X)
+        self._toolbar_wrap = wrap
+        wrap.columnconfigure(1, weight=1)
+        wrap.rowconfigure(0, weight=1)
+
+        # Statt Bildlaufleiste: ein Pfeil links von „IP-Adresse" und einer rechts von
+        # „Zeitzone". Sie scrollen den mittleren Canvas und erscheinen nur, wenn nicht
+        # alle Aktions-Buttons in die Breite passen (am jeweiligen Ende ausgegraut).
+        self._tb_left = ttk.Button(wrap, text="◀", width=2, takefocus=False,
+                                   command=lambda: self._toolbar_scroll(-1))
+        self._tb_right = ttk.Button(wrap, text="▶", width=2, takefocus=False,
+                                    command=lambda: self._toolbar_scroll(1))
+        canvas = tk.Canvas(wrap, highlightthickness=0, borderwidth=0, height=1,
+                           xscrollincrement=1)
         self._toolbar_canvas = canvas
         canvas.configure(xscrollcommand=self._toolbar_xscroll)
+        self._tb_left.grid(row=0, column=0, sticky="ns")
+        canvas.grid(row=0, column=1, sticky="ew")
+        self._tb_right.grid(row=0, column=2, sticky="ns")
+        self._tb_left.grid_remove()      # anfangs ist nichts zu scrollen
+        self._tb_right.grid_remove()
         bar = ttk.Frame(canvas, padding=(0, 6, 6, 6))
         self._toolbar_bar = bar
         self._toolbar_win = canvas.create_window((0, 0), window=bar, anchor="nw")
@@ -313,15 +329,6 @@ class MainWindow(tk.Tk):
             btn.pack(side=tk.LEFT, padx=(0, 4))
             self._action_buttons[cap] = btn
 
-        # Bildlaufleiste in eigener Zeile direkt UNTER der Toolbar — so hat sie garantiert
-        # Platz (in der einzeiligen Leiste selbst bliebe bei sehr schmalem Mittelteil
-        # keiner). Sie scrollt nur den mittleren Canvas; erscheint nur bei Bedarf.
-        scrollrow = ttk.Frame(self)
-        scrollrow.pack(side=tk.TOP, fill=tk.X)
-        self._toolbar_scrollrow = scrollrow
-        self._toolbar_hbar = ttk.Scrollbar(scrollrow, orient=tk.HORIZONTAL,
-                                            command=canvas.xview)
-
         self._update_lock_button()
         # Größte Schrift wählen, deren Button noch so hoch wie die Nachbarn ist.
         self._match_lock_height(settings_btn)
@@ -331,12 +338,31 @@ class MainWindow(tk.Tk):
         self.after_idle(self._sync_toolbar)
 
     def _toolbar_xscroll(self, first, last):
-        """Bildlaufleiste der Toolbar nur einblenden, wenn nicht alles sichtbar ist."""
-        self._toolbar_hbar.set(first, last)
-        if float(first) <= 0.0 and float(last) >= 1.0:
-            self._toolbar_hbar.pack_forget()
+        """xscrollcommand-Rückruf (beim Scrollen): nur die End-Ausgrauung der Pfeile.
+        Ob die Pfeile überhaupt sichtbar sind, entscheidet :meth:`_sync_toolbar`."""
+        if not self._tb_left.winfo_ismapped():
+            return
+        self._tb_left.config(state=tk.NORMAL if float(first) > 0.001 else tk.DISABLED)
+        self._tb_right.config(state=tk.NORMAL if float(last) < 0.999 else tk.DISABLED)
+
+    def _update_toolbar_arrows(self, need):
+        """Pfeile ein-/ausblenden. Sichtbar nur, wenn die mittleren Buttons breiter sind
+        als der verfügbare Platz; dann den Pfeil am jeweiligen Ende ausgrauen."""
+        if not need:
+            if self._tb_left.winfo_ismapped():
+                self._toolbar_canvas.xview_moveto(0.0)   # nichts verborgen zurücklassen
+            self._tb_left.grid_remove()
+            self._tb_right.grid_remove()
         else:
-            self._toolbar_hbar.pack(fill=tk.X)
+            self._tb_left.grid()
+            self._tb_right.grid()
+            first, last = self._toolbar_canvas.xview()
+            self._tb_left.config(state=tk.NORMAL if first > 0.001 else tk.DISABLED)
+            self._tb_right.config(state=tk.NORMAL if last < 0.999 else tk.DISABLED)
+
+    def _toolbar_scroll(self, direction):
+        """Mittleren Aktions-Bereich per Pfeil um etwa eine Button-Breite scrollen."""
+        self._toolbar_canvas.xview_scroll(direction * 120, "units")
 
     def _sync_toolbar(self, _evt=None):
         """Höhe/Breite/Scrollbereich des Toolbar-Canvas an den Inhalt anpassen. Die
@@ -354,6 +380,10 @@ class MainWindow(tk.Tk):
         target = max(bar.winfo_reqwidth(), c.winfo_width())
         if c.itemcget(self._toolbar_win, "width") != str(target):
             c.itemconfigure(self._toolbar_win, width=target)
+        # Pfeile nur, wenn die Buttons breiter sind als der verfügbare Mittelbereich
+        # (dessen Breite hängt NICHT von den Pfeilen ab -> kein Flackern an der Grenze).
+        need = bar.winfo_reqwidth() > self._toolbar_wrap.winfo_width() + 1
+        self._update_toolbar_arrows(need)
 
     def _build_body(self):
         paned = ttk.PanedWindow(self, orient=tk.HORIZONTAL)

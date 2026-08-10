@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.10b2 — 2026-08-10
+
+- **Toolbar: Scroll-Pfeile statt Bildlaufleiste.** Der mittlere Aktions-Bereich wird jetzt
+  über zwei Pfeile bewegt — **◀ links von „IP-Adresse"** und **▶ rechts von „Zeitzone"** —
+  statt über eine durchgehende Bildlaufleiste. Die Pfeile erscheinen nur, wenn nicht alle
+  Aktions-Buttons in die Breite passen, und sind am jeweiligen Ende ausgegraut; ein Klick
+  scrollt um etwa eine Button-Breite. Der Suchbereich links und die Werkzeuge rechts
+  bleiben wie zuvor fix sichtbar. Verifiziert an echtem Display.
+
 ## 26.08.10b1 — 2026-08-10
 
 - **Toolbar-Scroll verfeinert: nur die mittleren Aktions-Buttons sind scrollbar.** Die
