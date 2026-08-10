@@ -267,15 +267,39 @@ class MainWindow(tk.Tk):
                    command=self.start_online_check).pack(side=tk.LEFT, padx=(6, 0))
         ttk.Separator(fixed, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=10)
 
-        # Restliche Buttons in einem horizontal scrollbaren Bereich: passt bei kleinem/
-        # nicht maximiertem Fenster nicht alles in die Breite, erscheint eine
-        # Bildlaufleiste, statt Buttons abzuschneiden. Der Suchbereich links bleibt fix.
+        # Fixer Werkzeugbereich rechts (Export / Einstellungen / Schloss / Hilfe +
+        # Fortschritt) — bleibt IMMER sichtbar. Erst packen, damit er seinen Platz vor
+        # dem scrollbaren Mittelteil bekommt. Reihenfolge wie zuvor: von rechts nach
+        # links Hilfe, Schloss, Einstellungen, Exportieren, Fortschritt.
+        right = ttk.Frame(outer, padding=(0, 6, 6, 6))
+        right.pack(side=tk.RIGHT, fill=tk.Y)
+        ttk.Button(right, text=t("Hilfe"), command=self._open_help).pack(side=tk.RIGHT)
+        # Tresor-Schnellschalter: 🔒 gesperrt / 🔓 entsperrt, klickbar zum Umschalten.
+        # Das Symbol soll möglichst groß sein, der Button aber gleich hoch wie die
+        # anderen. Deshalb wählt _match_lock_height die größte Schriftgröße, deren
+        # Button-Naturhöhe noch in die Nachbar-Höhe passt — so zentriert ttk das
+        # Symbol von selbst (kein Beschneiden, kein Versatz).
+        ttk.Style().configure("Lock.TButton", font=("TkDefaultFont", 14), padding=0,
+                              anchor="center")
+        self._lock_btn = ttk.Button(right, width=2, style="Lock.TButton",
+                                    command=self._toggle_vault_lock)
+        self._lock_btn.pack(side=tk.RIGHT, padx=(0, 6))
+        settings_btn = ttk.Button(right, text=t("Einstellungen"), command=self._open_settings)
+        settings_btn.pack(side=tk.RIGHT, padx=(0, 6))
+        ttk.Button(right, text=t("Exportieren"), command=self._export).pack(
+            side=tk.RIGHT, padx=(0, 6))
+        self.progress = ttk.Progressbar(right, mode="indeterminate", length=140)
+        self.progress.pack(side=tk.RIGHT, padx=8)
+
+        # Nur die mittleren Aktions-Buttons (IP-Adresse … Zeitzone) kommen in den
+        # horizontal scrollbaren Bereich: passt bei kleinem/nicht maximiertem Fenster
+        # nicht alles, erscheint eine Bildlaufleiste, statt Buttons abzuschneiden. Der
+        # Suchbereich links und die Werkzeuge rechts bleiben fix.
         wrap = ttk.Frame(outer)
         wrap.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         canvas = tk.Canvas(wrap, highlightthickness=0, borderwidth=0, height=1)
         canvas.pack(side=tk.TOP, fill=tk.X)
         self._toolbar_canvas = canvas
-        self._toolbar_hbar = ttk.Scrollbar(wrap, orient=tk.HORIZONTAL, command=canvas.xview)
         canvas.configure(xscrollcommand=self._toolbar_xscroll)
         bar = ttk.Frame(canvas, padding=(0, 6, 6, 6))
         self._toolbar_bar = bar
@@ -289,23 +313,15 @@ class MainWindow(tk.Tk):
             btn.pack(side=tk.LEFT, padx=(0, 4))
             self._action_buttons[cap] = btn
 
-        ttk.Button(bar, text=t("Hilfe"), command=self._open_help).pack(side=tk.RIGHT)
-        # Tresor-Schnellschalter: 🔒 gesperrt / 🔓 entsperrt, klickbar zum Umschalten.
-        # Das Symbol soll möglichst groß sein, der Button aber gleich hoch wie die
-        # anderen. Deshalb wählt _match_lock_height die größte Schriftgröße, deren
-        # Button-Naturhöhe noch in die Nachbar-Höhe passt — so zentriert ttk das
-        # Symbol von selbst (kein Beschneiden, kein Versatz).
-        ttk.Style().configure("Lock.TButton", font=("TkDefaultFont", 14), padding=0,
-                              anchor="center")
-        self._lock_btn = ttk.Button(bar, width=2, style="Lock.TButton",
-                                    command=self._toggle_vault_lock)
-        self._lock_btn.pack(side=tk.RIGHT, padx=(0, 6))
-        settings_btn = ttk.Button(bar, text=t("Einstellungen"), command=self._open_settings)
-        settings_btn.pack(side=tk.RIGHT, padx=(0, 6))
-        ttk.Button(bar, text=t("Exportieren"), command=self._export).pack(
-            side=tk.RIGHT, padx=(0, 6))
-        self.progress = ttk.Progressbar(bar, mode="indeterminate", length=140)
-        self.progress.pack(side=tk.RIGHT, padx=8)
+        # Bildlaufleiste in eigener Zeile direkt UNTER der Toolbar — so hat sie garantiert
+        # Platz (in der einzeiligen Leiste selbst bliebe bei sehr schmalem Mittelteil
+        # keiner). Sie scrollt nur den mittleren Canvas; erscheint nur bei Bedarf.
+        scrollrow = ttk.Frame(self)
+        scrollrow.pack(side=tk.TOP, fill=tk.X)
+        self._toolbar_scrollrow = scrollrow
+        self._toolbar_hbar = ttk.Scrollbar(scrollrow, orient=tk.HORIZONTAL,
+                                            command=canvas.xview)
+
         self._update_lock_button()
         # Größte Schrift wählen, deren Button noch so hoch wie die Nachbarn ist.
         self._match_lock_height(settings_btn)
@@ -320,7 +336,7 @@ class MainWindow(tk.Tk):
         if float(first) <= 0.0 and float(last) >= 1.0:
             self._toolbar_hbar.pack_forget()
         else:
-            self._toolbar_hbar.pack(side=tk.BOTTOM, fill=tk.X)
+            self._toolbar_hbar.pack(fill=tk.X)
 
     def _sync_toolbar(self, _evt=None):
         """Höhe/Breite/Scrollbereich des Toolbar-Canvas an den Inhalt anpassen. Die

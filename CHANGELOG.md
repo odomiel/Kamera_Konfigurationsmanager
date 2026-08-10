@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.10b1 — 2026-08-10
+
+- **Toolbar-Scroll verfeinert: nur die mittleren Aktions-Buttons sind scrollbar.** Die
+  Bildlaufleiste gilt jetzt ausschließlich für die Buttons **IP-Adresse … Zeitzone**; die
+  Werkzeuge rechts (**Exportieren / Einstellungen / Schloss / Hilfe** + Fortschritt) bleiben
+  wie der Suchbereich links **immer sichtbar**. Die Bildlaufleiste liegt in einer eigenen
+  Zeile direkt unter der Toolbar, damit sie auch bei sehr schmalem Mittelteil zuverlässig
+  erscheint. Verifiziert an echtem Display (800/1000/1600 px): Ränder stets sichtbar, Mitte
+  ab ~800 px scrollbar.
+
 ## 26.08.10 — 2026-08-10
 
 - **Hauptfenster-Toolbar bei kleinem/nicht maximiertem Fenster scrollbar.** Passten die
