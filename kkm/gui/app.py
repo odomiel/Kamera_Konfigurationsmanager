@@ -312,9 +312,11 @@ class MainWindow(tk.Tk):
                            xscrollincrement=1)
         self._toolbar_canvas = canvas
         canvas.configure(xscrollcommand=self._toolbar_xscroll)
-        self._tb_left.grid(row=0, column=0, sticky="ns")
+        # Pfeile NICHT vertikal strecken (kein "ns") -> sie behalten ihre natürliche
+        # Höhe = Höhe der normalen Buttons und werden in der Zeile zentriert.
+        self._tb_left.grid(row=0, column=0)
         canvas.grid(row=0, column=1, sticky="ew")
-        self._tb_right.grid(row=0, column=2, sticky="ns")
+        self._tb_right.grid(row=0, column=2)
         self._tb_left.grid_remove()      # anfangs ist nichts zu scrollen
         self._tb_right.grid_remove()
         bar = ttk.Frame(canvas, padding=(0, 6, 6, 6))

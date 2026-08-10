@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.10b3 — 2026-08-10
+
+- **Toolbar: Scroll-Pfeile auf Button-Höhe.** Die Pfeile (◀/▶) wurden bisher über die
+  volle Höhe der Leiste gestreckt und waren dadurch höher als die übrigen Buttons. Jetzt
+  behalten sie ihre natürliche Höhe (= Höhe der normalen Buttons) und sind in der Zeile
+  zentriert.
+
 ## 26.08.10b2 — 2026-08-10
 
 - **Toolbar: Scroll-Pfeile statt Bildlaufleiste.** Der mittlere Aktions-Bereich wird jetzt
