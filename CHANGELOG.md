@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.10 — 2026-08-10
+
+- **Hauptfenster-Toolbar bei kleinem/nicht maximiertem Fenster scrollbar.** Passten die
+  vielen Buttons nicht in die Fensterbreite (gerade mit der neuen Aktion „Zeitzone"),
+  wurden sie rechts abgeschnitten. Jetzt bleibt der **Suchbereich** („Suchen/aktualisieren"
+  + „Online prüfen") **fix links immer sichtbar**, und die übrigen Aktions-/Werkzeug-Buttons
+  liegen in einem **horizontal scrollbaren Bereich**: passt nicht alles, erscheint eine
+  Bildlaufleiste, statt Buttons zu verstecken. Bei ausreichend breitem Fenster verhält
+  sich die Leiste wie zuvor (rechte Buttons rechts angedockt, keine Bildlaufleiste).
+
 ## 26.08.09b6 — 2026-08-09
 
 - **Neue Aktion „Zeitzone" (Axis) über die Time API.** Setzt die Zeitzone einer oder

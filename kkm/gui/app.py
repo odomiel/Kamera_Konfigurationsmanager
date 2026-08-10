@@ -255,14 +255,31 @@ class MainWindow(tk.Tk):
 
     # ------------------------------------------------------------------ UI
     def _build_toolbar(self):
-        bar = ttk.Frame(self, padding=6)
-        bar.pack(side=tk.TOP, fill=tk.X)
+        outer = ttk.Frame(self)
+        outer.pack(side=tk.TOP, fill=tk.X)
 
-        ttk.Button(bar, text=t("Suchen/aktualisieren"), command=self.start_search).pack(side=tk.LEFT)
-        ttk.Button(bar, text=t("Online prüfen"), command=self.start_online_check).pack(
-            side=tk.LEFT, padx=(6, 0))
+        # Fixer Suchbereich links — bleibt IMMER sichtbar, auch bei schmalem Fenster.
+        fixed = ttk.Frame(outer, padding=(6, 6, 0, 6))
+        fixed.pack(side=tk.LEFT, fill=tk.Y)
+        ttk.Button(fixed, text=t("Suchen/aktualisieren"),
+                   command=self.start_search).pack(side=tk.LEFT)
+        ttk.Button(fixed, text=t("Online prüfen"),
+                   command=self.start_online_check).pack(side=tk.LEFT, padx=(6, 0))
+        ttk.Separator(fixed, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=10)
 
-        ttk.Separator(bar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=10)
+        # Restliche Buttons in einem horizontal scrollbaren Bereich: passt bei kleinem/
+        # nicht maximiertem Fenster nicht alles in die Breite, erscheint eine
+        # Bildlaufleiste, statt Buttons abzuschneiden. Der Suchbereich links bleibt fix.
+        wrap = ttk.Frame(outer)
+        wrap.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        canvas = tk.Canvas(wrap, highlightthickness=0, borderwidth=0, height=1)
+        canvas.pack(side=tk.TOP, fill=tk.X)
+        self._toolbar_canvas = canvas
+        self._toolbar_hbar = ttk.Scrollbar(wrap, orient=tk.HORIZONTAL, command=canvas.xview)
+        canvas.configure(xscrollcommand=self._toolbar_xscroll)
+        bar = ttk.Frame(canvas, padding=(0, 6, 6, 6))
+        self._toolbar_bar = bar
+        self._toolbar_win = canvas.create_window((0, 0), window=bar, anchor="nw")
 
         # Front-view action buttons = former "Kameraeinstellungen" tabs.
         self._action_buttons: dict[str, ttk.Button] = {}
@@ -287,11 +304,40 @@ class MainWindow(tk.Tk):
         settings_btn.pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Button(bar, text=t("Exportieren"), command=self._export).pack(
             side=tk.RIGHT, padx=(0, 6))
+        self.progress = ttk.Progressbar(bar, mode="indeterminate", length=140)
+        self.progress.pack(side=tk.RIGHT, padx=8)
         self._update_lock_button()
         # Größte Schrift wählen, deren Button noch so hoch wie die Nachbarn ist.
         self._match_lock_height(settings_btn)
-        self.progress = ttk.Progressbar(bar, mode="indeterminate", length=140)
-        self.progress.pack(side=tk.RIGHT, padx=8)
+
+        bar.bind("<Configure>", self._sync_toolbar)
+        canvas.bind("<Configure>", self._sync_toolbar)
+        self.after_idle(self._sync_toolbar)
+
+    def _toolbar_xscroll(self, first, last):
+        """Bildlaufleiste der Toolbar nur einblenden, wenn nicht alles sichtbar ist."""
+        self._toolbar_hbar.set(first, last)
+        if float(first) <= 0.0 and float(last) >= 1.0:
+            self._toolbar_hbar.pack_forget()
+        else:
+            self._toolbar_hbar.pack(side=tk.BOTTOM, fill=tk.X)
+
+    def _sync_toolbar(self, _evt=None):
+        """Höhe/Breite/Scrollbereich des Toolbar-Canvas an den Inhalt anpassen. Die
+        innere Leiste bekommt mindestens die Canvas-Breite, damit die rechten Buttons wie
+        gewohnt rechts andocken; ist ihr natürlicher Bedarf größer (schmales Fenster),
+        wird sie scrollbar."""
+        c = getattr(self, "_toolbar_canvas", None)
+        if c is None or not c.winfo_exists():
+            return
+        bar = self._toolbar_bar
+        c.configure(scrollregion=c.bbox("all"))
+        h = bar.winfo_reqheight()
+        if h > 1 and c.winfo_height() != h:
+            c.configure(height=h)
+        target = max(bar.winfo_reqwidth(), c.winfo_width())
+        if c.itemcget(self._toolbar_win, "width") != str(target):
+            c.itemconfigure(self._toolbar_win, width=target)
 
     def _build_body(self):
         paned = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
