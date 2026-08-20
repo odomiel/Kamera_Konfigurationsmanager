@@ -94,12 +94,19 @@ border in the header; the setting is kept across program starts. Which columns a
 at all is set in the settings (chapter 12).
 
 **At the top** is the action bar. To the right of *Settings* a lock switch shows the state
-of the password vault: closed lock = locked, open lock = unlocked. A click toggles it.
+of the password vault: closed lock = locked, open lock = unlocked. A click toggles it. If
+the window is too narrow for all buttons, only the middle action buttons (IP address
+through Time zone) become horizontally scrollable — a **◀** to the left of *IP address*
+and a **▶** to the right of *Time zone* scroll through them; the tools on the right
+(Settings, lock, Export) always stay visible.
 
 You select multiple cameras with **Ctrl** or **Shift**. A **double-click** on a camera
 opens its web interface in the browser.
 
-All five actions are also available in the **right-click menu** of the device list.
+All seven actions (IP address, Users, ONVIF users, Firmware, Configuration, Config
+backup, Time zone) are — where the plugin supports them — also available in the
+**right-click menu** of the device list, which additionally offers *Reset to factory
+defaults*.
 
 ## 5 Device search and online status
 

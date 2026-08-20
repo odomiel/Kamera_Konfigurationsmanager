@@ -40,8 +40,13 @@ program language.
   (or not tall enough for all rows), a **scrollbar** appears automatically; the same
   applies to the group list on the left. **Column widths** can be changed by **dragging
   the column border** in the header; the chosen widths are kept across program starts.
-- **Top:** the action bar (see below). To the right of **"Settings"** there is a
-  **lock switch**: **🔒** = vault locked, **🔓** = unlocked. A click toggles it —
+- **Top:** the action bar (see below). If the window is not wide enough for all
+  buttons (narrow window, small screen), only the **middle action buttons**
+  (IP address through Time zone) become horizontally scrollable: a **◀** appears to
+  the left of "IP address" and a **▶** to the right of "Time zone" for scrolling (an
+  arrow is greyed out once that end is reached). The tools on the right (Settings,
+  lock switch, Export) always **stay visible**. To the right of **"Settings"** there
+  is a **lock switch**: **🔒** = vault locked, **🔓** = unlocked. A click toggles it —
   unlock (asks for the master password; creates a vault if needed) or lock the vault.
 
 Multiple cameras can be selected with **Ctrl**/**Shift**.
@@ -124,9 +129,10 @@ so the prompt does not come back.
 
 ## Actions (buttons in the action bar)
 
-The same five actions (IP address, Users, ONVIF users, Firmware, Configuration) are
-also available in the **right-click menu** of the device list and apply to the selected
-cameras there as well.
+The same seven actions (IP address, Users, ONVIF users, Firmware, Configuration,
+Config backup, Time zone) are — where the plugin supports them — also available in the
+**right-click menu** of the device list (which additionally offers "Reset to factory
+defaults") and apply to the selected cameras there as well.
 
 ### IP address
 Changes the network address of the selected cameras:

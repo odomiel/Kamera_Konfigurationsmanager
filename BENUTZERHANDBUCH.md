@@ -101,12 +101,18 @@ fest (Kapitel 12).
 
 **Oben** liegt die Aktionsleiste. Rechts neben *Einstellungen* zeigt ein Schloss-Schalter
 den Zustand des Passwort-Tresors: geschlossenes Schloss = gesperrt, offenes Schloss =
-entsperrt. Ein Klick schaltet um.
+entsperrt. Ein Klick schaltet um. Ist das Fenster zu schmal für alle Buttons, werden nur
+die mittleren Aktions-Buttons (IP-Adresse bis Zeitzone) horizontal scrollbar — ein **◀**
+links von *IP-Adresse* und ein **▶** rechts von *Zeitzone* blättern durch; die Werkzeuge
+rechts (Einstellungen, Schloss, Exportieren) bleiben immer sichtbar.
 
 Mehrere Kameras markieren Sie mit **Strg** oder **Umschalt**. Ein **Doppelklick** auf eine
 Kamera öffnet ihre Weboberfläche im Browser.
 
-Alle fünf Aktionen stehen auch im **Rechtsklick-Menü** der Geräteliste bereit.
+Alle sieben Aktionen (IP-Adresse, Benutzer, ONVIF-Benutzer, Firmware, Konfiguration,
+Konfig-Backup, Zeitzone) stehen — soweit das Plugin sie unterstützt — auch im
+**Rechtsklick-Menü** der Geräteliste bereit, dort zusätzlich *Auf Werkseinstellungen
+zurücksetzen*.
 
 ## 5 Gerätesuche und Online-Status
 

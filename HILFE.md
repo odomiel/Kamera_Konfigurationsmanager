@@ -45,7 +45,13 @@ ist nur auf Deutsch verfügbar.
   **Spaltenbreiten** lassen sich durch **Ziehen an der Spaltengrenze** in der
   Kopfzeile ändern; die eingestellten Breiten bleiben über Programmstarts hinweg
   erhalten.
-- **Oben:** die Aktionsleiste (siehe unten). Rechts neben **„Einstellungen"** ein
+- **Oben:** die Aktionsleiste (siehe unten). Reicht die Fensterbreite nicht für alle
+  Buttons (schmales Fenster, kleiner Bildschirm), werden nur die **mittleren
+  Aktions-Buttons** (IP-Adresse bis Zeitzone) horizontal scrollbar: links von
+  „IP-Adresse" erscheint ein **◀**, rechts von „Zeitzone" ein **▶** zum Blättern
+  (ein Pfeil wird ausgegraut, sobald das Ende erreicht ist). Die Werkzeuge rechts
+  (Einstellungen, Schloss-Schalter, Exportieren) bleiben dabei **immer sichtbar**.
+  Rechts neben **„Einstellungen"** ein
   **Schloss-Schalter**: **🔒** = Tresor gesperrt, **🔓** = entsperrt. Ein Klick
   schaltet um — entsperrt (fragt das Master-Passwort; legt bei Bedarf einen Tresor
   an) bzw. sperrt den Tresor.
@@ -138,9 +144,10 @@ aktualisieren** (Häkchen, standardmäßig an) — dann kommt die Nachfrage nich
 
 ## Aktionen (Buttons in der Aktionsleiste)
 
-Dieselben fünf Aktionen (IP-Adresse, Benutzer, ONVIF-Benutzer, Firmware,
-Konfiguration) stehen auch im **Rechtsklick-Menü** der Geräteliste bereit und
-wirken dort ebenfalls auf die markierten Kameras.
+Dieselben sieben Aktionen (IP-Adresse, Benutzer, ONVIF-Benutzer, Firmware,
+Konfiguration, Konfig-Backup, Zeitzone) stehen — soweit das Plugin sie unterstützt —
+auch im **Rechtsklick-Menü** der Geräteliste bereit (dort zusätzlich „Auf
+Werkseinstellungen zurücksetzen") und wirken auf die markierten Kameras.
 
 ### IP-Adresse
 Stellt die Netzwerk-Adresse der markierten Kameras um:
