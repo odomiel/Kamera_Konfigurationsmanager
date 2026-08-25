@@ -128,6 +128,16 @@ und vendort `zeroconf` + `cryptography` als Wheels (kein pip im Ergebnis nötig)
 ./build_appimage.sh --bump     # Version vorher hochzählen, dann bauen
 ```
 
+**Release** — nach `bump_version.py` + CHANGELOG-Eintrag den kompletten Vorgang
+(AppImage bauen falls nötig, Smoke-Test, Forgejo-Release mit Notes aus CHANGELOG.md
+und AppImage als Asset) in einem Schritt:
+
+```bash
+./release.sh                   # bauen (falls nötig) + testen + Release anlegen
+./release.sh --no-build        # vorhandenes AppImage der Version verwenden
+./release.sh --dry-run         # nur anzeigen, nichts hochladen
+```
+
 **Windows (portable .exe)** — muss auf Windows mit **Python 3.14** laufen
 (PyInstaller cross-kompiliert nicht). Anders als die AppImage nutzt die `.exe`
 das **Tcl/Tk 8.6** des python.org-Windows-Installers (dessen 3.14 bringt auf
