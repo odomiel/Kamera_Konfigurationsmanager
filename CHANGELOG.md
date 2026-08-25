@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.25 — 2026-08-25
+
+- **Abhängigkeiten geprüft; OpenSSL auf 3.5.8 angehoben** (vorher 3.5.7 — neuester Patch
+  des **LTS**-Zweigs 3.5.x). Alles andere ist bereits auf dem neuesten unterstützten
+  Stand: Python 3.14.7, Tcl/Tk 9.0.4 (9.1 nur Alpha), libffi 3.8.0 sowie — da
+  `requirements.txt` bewusst ungepinnt ist — zeroconf, cryptography, sv-ttk in ihrer
+  jeweils aktuellen Version. Wird beim nächsten AppImage-Build wirksam.
+
 ## 26.08.10b3 — 2026-08-10
 
 - **Toolbar: Scroll-Pfeile auf Button-Höhe.** Die Pfeile (◀/▶) wurden bisher über die
