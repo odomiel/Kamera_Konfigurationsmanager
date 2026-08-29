@@ -64,9 +64,12 @@ opens its web interface in the default browser (`http://<IP>`).
   - The **arrow** on the right of the button opens the sub-item **"Add camera
     manually…"**: for cameras the search does not find (e.g. in a different subnet).
     The dialog asks for name, IP address, port, hostname and **manufacturer** (the
-    manufacturer decides which plugin performs the actions). The entry stays in the
-    list permanently and is replaced automatically by a later search hit at the same
-    IP (groups and stored credentials are carried over).
+    manufacturer decides which plugin performs the actions). Right after adding, the
+    IP is **contacted immediately**: if the camera is reachable, firmware/model are
+    read and the factory state is detected — and credentials are requested if needed —
+    just like after a search. The entry stays in the list permanently and is replaced
+    automatically by a later search hit at the same IP (groups and stored credentials
+    are carried over).
   - If the **ONVIF plugin** finds a camera that a manufacturer plugin (Axis) already
     reported, the ONVIF hit is discarded — otherwise the same camera would appear twice.
     The specialized plugin wins because it can do more.

@@ -132,10 +132,15 @@ sie über den **Pfeil** rechts am Button *Suchen/aktualisieren* und den Unterpun
 Port, Hostname** und den **Hersteller** ab. Der Hersteller ist wichtig: Er legt fest,
 welches Plugin die Kamera anspricht (Axis, ONVIF, Hikvision …) — ohne ihn wüsste das
 Programm nicht, wie es IP-Adresse, Benutzer oder Firmware setzen soll. Die IP-Adresse
-wird geprüft; eine bereits vorhandene IP wird abgelehnt. Der Eintrag bleibt dauerhaft
-in der Liste (auch über Neustarts hinweg) und wird durch einen späteren Suchtreffer
-derselben IP automatisch ersetzt — Gruppenzuordnung und gespeicherte Zugangsdaten
-wandern dabei mit.
+wird geprüft; eine bereits vorhandene IP wird abgelehnt. Direkt nach dem Hinzufügen
+spricht das Programm die IP **sofort an (Erkennung)**: Zuerst wird die Erreichbarkeit
+geprüft, und ist die Kamera online, läuft dieselbe Auswertung wie nach einer Suche —
+Firmware und Modell werden ausgelesen, der Werkszustand wird erkannt, und bei Bedarf
+erscheint die Zugangsdaten-Abfrage. Ist die IP nicht erreichbar, bleibt die Kamera als
+Offline-Eintrag stehen (es wird nicht nach einem Passwort gefragt). Der Eintrag bleibt
+dauerhaft in der Liste (auch über Neustarts hinweg) und wird durch einen späteren
+Suchtreffer derselben IP automatisch ersetzt — Gruppenzuordnung und gespeicherte
+Zugangsdaten wandern dabei mit.
 
 > **Doppelte Einträge?** Sind Axis- und ONVIF-Plugin gleichzeitig aktiv, findet das
 > ONVIF-Plugin die Axis-Kameras ebenfalls. Das Programm verwirft solche Treffer

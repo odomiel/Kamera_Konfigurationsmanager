@@ -12,7 +12,12 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   Discovery-Tool — den **Hersteller** (bestimmt, welches Plugin die Aktionen
   ausführt). So lassen sich Kameras erfassen, die die Suche (mDNS/WS-Discovery) nicht
   findet, z. B. in einem anderen Subnetz. Die IP wird per `ipaddress` validiert,
-  Duplikate (gleiche IP) werden abgefangen. Der Eintrag landet im Roster (überlebt
+  Duplikate (gleiche IP) werden abgefangen. Direkt nach dem Hinzufügen wird die IP
+  **sofort angesprochen (Erkennung)**: erst die Erreichbarkeit, und ist die Kamera
+  online, läuft dieselbe Auswertung wie nach einer Suche — Firmware/Modell auslesen
+  bzw. Werkszustand erkennen und bei Bedarf nach Zugangsdaten fragen. Ist die IP
+  nicht erreichbar, bleibt der Eintrag als Offline-Zeile stehen (keine
+  Passwortabfrage für eine tote IP). Der Eintrag landet im Roster (überlebt
   Neustarts) und wird durch einen späteren Suchtreffer derselben IP automatisch
   ersetzt — Gruppenzugehörigkeit und gespeicherte Zugangsdaten wandern dabei mit.
 

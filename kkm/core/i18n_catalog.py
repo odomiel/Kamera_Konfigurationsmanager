@@ -576,6 +576,8 @@ EN: dict[str, str] = {
     'Kein Hersteller-Plugin verfügbar.': 'No manufacturer plugin available.',
     '(manuell hinzugefügt)': '(added manually)',
     'Kamera manuell hinzugefügt: {ip}': 'Camera added manually: {ip}',
+    'Erkenne Kamera {ip}…': 'Detecting camera {ip}…',
+    'Kamera {ip} nicht erreichbar — als Offline-Eintrag hinzugefügt.': 'Camera {ip} not reachable — added as an offline entry.',
     '○ Offline': '○ Offline',
     '● Online': '● Online',
     '● Status': '● Status',

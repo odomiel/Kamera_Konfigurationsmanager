@@ -126,9 +126,13 @@ manually…"*. The dialog asks for **name, IP address, port, hostname** and the
 **manufacturer**. The manufacturer matters: it determines which plugin talks to the
 camera (Axis, ONVIF, Hikvision …) — without it the program would not know how to set
 the IP address, users or firmware. The IP address is validated; an IP that is already
-present is rejected. The entry stays in the list permanently (across restarts too) and
-is replaced automatically by a later search hit at the same IP — group assignment and
-stored credentials are carried over.
+present is rejected. Right after adding, the program **contacts the IP immediately
+(detection)**: it first checks reachability, and if the camera is online, the same
+evaluation as after a search runs — firmware and model are read, the factory state is
+detected, and the credential prompt appears if needed. If the IP is not reachable, the
+camera stays as an offline entry (no password is requested). The entry stays in the
+list permanently (across restarts too) and is replaced automatically by a later search
+hit at the same IP — group assignment and stored credentials are carried over.
 
 > **Duplicate entries?** If the Axis and ONVIF plugins are active at the same time, the
 > ONVIF plugin also finds the Axis cameras. The program discards such hits automatically:

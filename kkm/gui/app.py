@@ -987,8 +987,25 @@ class MainWindow(tk.Tk):
         if self.table.exists(key):
             self.table.selection_set(key)
             self.table.see(key)
-        self.status.config(text=t("Kamera manuell hinzugefügt: {ip}",
-                                  ip=get_first_ip(cam)))
+        # Für die neue IP sofort eine Erkennung anstoßen — wie ein Suchtreffer.
+        self._detect_manual_camera(cam)
+
+    def _detect_manual_camera(self, cam):
+        """Direkt nach dem manuellen Hinzufügen die IP ansprechen: erst Erreichbarkeit
+        prüfen; ist die Kamera online, läuft dieselbe Erkennung wie nach einer Suche
+        (Firmware/Modell lesen bzw. Werkszustand prüfen und ggf. Zugangsdaten abfragen).
+        Ist sie nicht erreichbar, bleibt sie als Offline-Eintrag stehen (keine
+        Passwortabfrage für eine tote IP)."""
+        self.progress.start(12)
+        self.status.config(text=t("Erkenne Kamera {ip}…", ip=get_first_ip(cam)))
+        threading.Thread(target=self._worker_detect_manual, args=(cam,),
+                         daemon=True).start()
+
+    def _worker_detect_manual(self, cam):
+        plugin = self.registry.get(cam.get("_vendor", "axis"))
+        online = bool(plugin and plugin.check_online(cam, self.creds))
+        self._q.put(("online", (camera_key(cam), online)))
+        self._q.put(("manual_detected", (camera_key(cam), online)))
 
     def _merge_manual_duplicates(self, discovered) -> int:
         """Manuell angelegte Platzhalter durch echte Suchtreffer derselben IP ersetzen.
@@ -1259,6 +1276,20 @@ class MainWindow(tk.Tk):
                 elif kind == "online_done":
                     self.progress.stop()
                     self._refresh_table()
+                elif kind == "manual_detected":
+                    # Erkennung einer manuell hinzugefügten Kamera: bei Erreichbarkeit
+                    # in die reguläre Nach-Such-Pipeline geben (Firmware/Modell,
+                    # Werkszustand, ggf. Zugangsdaten-Abfrage).
+                    key, online = payload
+                    self.progress.stop()
+                    self._refresh_table()
+                    cam = self.store.roster.get(key)
+                    if cam is not None and online:
+                        self._after_search([cam])
+                    elif cam is not None:
+                        self.status.config(text=t(
+                            "Kamera {ip} nicht erreichbar — als Offline-Eintrag hinzugefügt.",
+                            ip=get_first_ip(cam)))
                 elif kind == "factory":
                     key, factory = payload
                     cam = self.store.roster.get(key)

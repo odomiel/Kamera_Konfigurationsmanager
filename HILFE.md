@@ -72,9 +72,12 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
   - Der **Pfeil** rechts am Button öffnet den Unterpunkt **„Kamera manuell
     hinzufügen…"**: für Kameras, die die Suche nicht findet (z. B. in einem anderen
     Subnetz). Der Dialog fragt Name, IP-Adresse, Port, Hostname und **Hersteller**
-    ab (der Hersteller bestimmt, welches Plugin die Aktionen ausführt). Der Eintrag
-    bleibt dauerhaft in der Liste und wird durch einen späteren Suchtreffer derselben
-    IP automatisch ersetzt (Gruppen und gespeicherte Zugangsdaten wandern mit).
+    ab (der Hersteller bestimmt, welches Plugin die Aktionen ausführt). Direkt nach
+    dem Hinzufügen wird die IP **gleich angesprochen**: ist die Kamera erreichbar,
+    werden — wie nach einer Suche — Firmware/Modell ausgelesen bzw. der Werkszustand
+    erkannt und bei Bedarf die Zugangsdaten abgefragt. Der Eintrag bleibt dauerhaft
+    in der Liste und wird durch einen späteren Suchtreffer derselben IP automatisch
+    ersetzt (Gruppen und gespeicherte Zugangsdaten wandern mit).
   - Findet das **ONVIF-Plugin** eine Kamera, die ein Hersteller-Plugin (Axis) schon
     gemeldet hat, wird der ONVIF-Treffer verworfen — sonst stünde dieselbe Kamera
     zweimal in der Liste. Das spezialisierte Plugin gewinnt, weil es mehr kann.
