@@ -54,6 +54,7 @@ from kkm.gui.widgets import add_scrollbars
 from kkm.gui.dialogs import ACTION_DIALOGS
 from kkm.gui.dialogs.settings_dialog import SettingsDialog
 from kkm.gui.dialogs.credentials_prompt import CredentialPromptDialog
+from kkm.gui.dialogs.manual_add import ManualAddDialog
 from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
 
 ONLINE_COL = "● Status"
@@ -261,8 +262,19 @@ class MainWindow(tk.Tk):
         # Fixer Suchbereich links — bleibt IMMER sichtbar, auch bei schmalem Fenster.
         fixed = ttk.Frame(outer, padding=(6, 6, 0, 6))
         fixed.pack(side=tk.LEFT, fill=tk.Y)
-        ttk.Button(fixed, text=t("Suchen/aktualisieren"),
+        # „Suchen/aktualisieren" als Split-Button: Hauptaktion links, anliegender
+        # Pfeil-Teil (Menubutton mit nativem Theme-Pfeil) öffnet den Unterpunkt
+        # „Kamera manuell hinzufügen…".
+        search_group = ttk.Frame(fixed)
+        search_group.pack(side=tk.LEFT)
+        ttk.Button(search_group, text=t("Suchen/aktualisieren"),
                    command=self.start_search).pack(side=tk.LEFT)
+        self._search_menu = tk.Menu(self, tearoff=0)
+        self._search_menu.add_command(
+            label=t("Kamera manuell hinzufügen…"), command=self._add_manual_camera)
+        search_menu_btn = ttk.Menubutton(search_group, direction="below")
+        search_menu_btn.configure(menu=self._search_menu)
+        search_menu_btn.pack(side=tk.LEFT)
         ttk.Button(fixed, text=t("Online prüfen"),
                    command=self.start_online_check).pack(side=tk.LEFT, padx=(6, 0))
         ttk.Separator(fixed, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=10)
@@ -950,6 +962,63 @@ class MainWindow(tk.Tk):
         self._refresh_table()
         self.status.config(text=t("{n} Kamera(s) vollständig entfernt", n=len(keys)))
 
+    # ------------------------------------------------- Kamera manuell hinzufügen
+    def _add_manual_camera(self):
+        """Unterpunkt des Suchen-Buttons: eine Kamera über ihre IP hinzufügen.
+
+        Der Eintrag geht ins Roster (überlebt damit auch Neustarts) und wird durch
+        einen späteren Suchtreffer derselben IP ersetzt (:meth:`_merge_manual_duplicates`)."""
+        existing = set()
+        for cam in self.store.roster.values():
+            existing |= _cam_ips(cam)
+        dlg = ManualAddDialog(self, self.registry, existing)
+        self.wait_window(dlg)
+        if not dlg.result:
+            return
+        cam = dlg.result
+        key = self.store.remember(cam)
+        self.store.save()
+        # In die aktuelle Ansicht aufnehmen: „Alle Kameras"/„Ohne Gruppe" zeigen sie
+        # sofort; in einer Benutzergruppe erst nach Zuweisung — dann in „Alle" wechseln.
+        if self._current_gid not in (ALL_CAMERAS_ID, UNGROUPED_ID):
+            self._current_gid = ALL_CAMERAS_ID
+            self._refresh_groups()
+        self._refresh_table()
+        if self.table.exists(key):
+            self.table.selection_set(key)
+            self.table.see(key)
+        self.status.config(text=t("Kamera manuell hinzugefügt: {ip}",
+                                  ip=get_first_ip(cam)))
+
+    def _merge_manual_duplicates(self, discovered) -> int:
+        """Manuell angelegte Platzhalter durch echte Suchtreffer derselben IP ersetzen.
+
+        Ein manueller Eintrag hat keine MAC/Seriennummer (Schlüssel = Name@IP); findet
+        die Suche dieselbe Kamera, trägt der Treffer die vollständige Identität. Dessen
+        Schlüssel gewinnt; Gruppen und (falls vorhanden) Zugangsdaten des manuellen
+        Eintrags wandern mit, der Platzhalter verschwindet. Kein Save — der Aufrufer
+        speichert gebündelt. Liefert die Anzahl der Ersetzungen."""
+        disc_by_ip: dict[str, str] = {}
+        for cam in discovered:
+            key = camera_key(cam)
+            if key in self.store.roster and not cam.get("_manual"):
+                for ip in _cam_ips(cam):
+                    disc_by_ip.setdefault(ip, key)
+        merged = 0
+        manual_keys = [k for k, c in self.store.roster.items() if c.get("_manual")]
+        for key in manual_keys:
+            cam = self.store.roster.get(key)
+            if cam is None:
+                continue
+            target_key = next((disc_by_ip[ip] for ip in _cam_ips(cam)
+                               if ip in disc_by_ip), None)
+            if not target_key or target_key == key:
+                continue
+            self.store.merge_camera(key, target_key)
+            self._transfer_creds(key, target_key)
+            merged += 1
+        return merged
+
     # -------------------------------------------------------------- search
     def start_search(self):
         self.progress.start(12)
@@ -1164,7 +1233,9 @@ class MainWindow(tk.Tk):
                     # Persistente Duplikate (Hersteller- vs. ONVIF-Identität
                     # derselben Kamera) zusammenführen.
                     merged, merge_targets = self._merge_generic_duplicates()
-                    if merged:
+                    # Manuell angelegte Platzhalter durch echte Treffer derselben IP ersetzen.
+                    manual_merged = self._merge_manual_duplicates(payload)
+                    if merged or manual_merged:
                         self.store.save()
                     self.progress.stop()
                     self._refresh_table()

@@ -119,6 +119,17 @@ Found cameras are set to **online**, known ones that are no longer found to **of
 cameras immediately; in addition an **automatic online check** with an interval can be
 enabled per group (chapter 12).
 
+**Add a camera manually.** If the search does not find a camera — because it is in a
+different subnet, or mDNS/WS-Discovery is blocked on the network — add it by hand via
+the **arrow** on the right of the *Search/refresh* button and the sub-item *"Add camera
+manually…"*. The dialog asks for **name, IP address, port, hostname** and the
+**manufacturer**. The manufacturer matters: it determines which plugin talks to the
+camera (Axis, ONVIF, Hikvision …) — without it the program would not know how to set
+the IP address, users or firmware. The IP address is validated; an IP that is already
+present is rejected. The entry stays in the list permanently (across restarts too) and
+is replaced automatically by a later search hit at the same IP — group assignment and
+stored credentials are carried over.
+
 > **Duplicate entries?** If the Axis and ONVIF plugins are active at the same time, the
 > ONVIF plugin also finds the Axis cameras. The program discards such hits automatically:
 > if one of the IP addresses was already reported by a manufacturer plugin, that one wins

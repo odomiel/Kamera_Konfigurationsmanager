@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.08.29 — 2026-08-29
+
+- **Kamera manuell hinzufügen.** „Suchen/aktualisieren" ist jetzt ein Split-Button:
+  der anliegende Pfeil öffnet den Unterpunkt **„Kamera manuell hinzufügen…"**. Der
+  Dialog nimmt Name, IP-Adresse, Port, Hostname und — anders als beim reinen
+  Discovery-Tool — den **Hersteller** (bestimmt, welches Plugin die Aktionen
+  ausführt). So lassen sich Kameras erfassen, die die Suche (mDNS/WS-Discovery) nicht
+  findet, z. B. in einem anderen Subnetz. Die IP wird per `ipaddress` validiert,
+  Duplikate (gleiche IP) werden abgefangen. Der Eintrag landet im Roster (überlebt
+  Neustarts) und wird durch einen späteren Suchtreffer derselben IP automatisch
+  ersetzt — Gruppenzugehörigkeit und gespeicherte Zugangsdaten wandern dabei mit.
+
 ## 26.08.25 — 2026-08-25
 
 - **Abhängigkeiten geprüft; OpenSSL auf 3.5.8 angehoben** (vorher 3.5.7 — neuester Patch

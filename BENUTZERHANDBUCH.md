@@ -125,6 +125,18 @@ Gefundene Kameras werden auf **online** gesetzt, bekannte aber nicht mehr gefund
 markierten Kameras sofort; zusätzlich lässt sich pro Gruppe eine **automatische
 Online-Prüfung** mit Intervall einschalten (Kapitel 12).
 
+**Kamera manuell hinzufügen.** Findet die Suche eine Kamera nicht — etwa weil sie in
+einem anderen Subnetz liegt oder mDNS/WS-Discovery im Netz blockiert ist —, fügen Sie
+sie über den **Pfeil** rechts am Button *Suchen/aktualisieren* und den Unterpunkt
+*„Kamera manuell hinzufügen…"* von Hand hinzu. Der Dialog fragt **Name, IP-Adresse,
+Port, Hostname** und den **Hersteller** ab. Der Hersteller ist wichtig: Er legt fest,
+welches Plugin die Kamera anspricht (Axis, ONVIF, Hikvision …) — ohne ihn wüsste das
+Programm nicht, wie es IP-Adresse, Benutzer oder Firmware setzen soll. Die IP-Adresse
+wird geprüft; eine bereits vorhandene IP wird abgelehnt. Der Eintrag bleibt dauerhaft
+in der Liste (auch über Neustarts hinweg) und wird durch einen späteren Suchtreffer
+derselben IP automatisch ersetzt — Gruppenzuordnung und gespeicherte Zugangsdaten
+wandern dabei mit.
+
 > **Doppelte Einträge?** Sind Axis- und ONVIF-Plugin gleichzeitig aktiv, findet das
 > ONVIF-Plugin die Axis-Kameras ebenfalls. Das Programm verwirft solche Treffer
 > automatisch: Wurde eine der IP-Adressen schon von einem Hersteller-Plugin gemeldet,

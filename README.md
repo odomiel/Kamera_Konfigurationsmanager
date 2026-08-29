@@ -10,7 +10,9 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
 
 - **Gerätesuche** im LAN (mDNS); Kameras per **Rechtsklick** einer oder mehreren
   Gruppen zuweisen (additiv), aus der aktuellen Gruppe entfernen oder **vollständig
-  entfernen**. Eigene Spalte **„Gruppe(n)"** zeigt die Zugehörigkeit.
+  entfernen**. Eigene Spalte **„Gruppe(n)"** zeigt die Zugehörigkeit. Nicht gefundene
+  Kameras (anderes Subnetz o. Ä.) lassen sich über den Pfeil am *Suchen*-Button
+  **manuell** per IP-Adresse und Hersteller hinzufügen.
 - **Gruppen ohne Datenbank** (JSON): nicht löschbare Gruppe „Alle Kameras“,
   darunter eigene Gruppen (anlegen/bearbeiten/löschen).
 - **Online-Status** als eigene Spalte, manueller Prüf-Button + konfigurierbare

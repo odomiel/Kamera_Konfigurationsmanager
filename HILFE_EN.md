@@ -61,6 +61,12 @@ opens its web interface in the default browser (`http://<IP>`).
 - **Search/refresh** — scans the local network for cameras (Axis: mDNS; with the ONVIF
   plugin active, additionally WS-Discovery) and adds them to "All cameras". Already known
   cameras are kept, even if they are currently offline.
+  - The **arrow** on the right of the button opens the sub-item **"Add camera
+    manually…"**: for cameras the search does not find (e.g. in a different subnet).
+    The dialog asks for name, IP address, port, hostname and **manufacturer** (the
+    manufacturer decides which plugin performs the actions). The entry stays in the
+    list permanently and is replaced automatically by a later search hit at the same
+    IP (groups and stored credentials are carried over).
   - If the **ONVIF plugin** finds a camera that a manufacturer plugin (Axis) already
     reported, the ONVIF hit is discarded — otherwise the same camera would appear twice.
     The specialized plugin wins because it can do more.

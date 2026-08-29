@@ -69,6 +69,12 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
 - **Suchen/aktualisieren** — durchsucht das lokale Netzwerk nach Kameras (Axis: mDNS;
   bei aktivem ONVIF-Plugin zusätzlich WS-Discovery) und nimmt sie in „Alle Kameras"
   auf. Bereits bekannte Kameras bleiben erhalten, auch wenn sie gerade offline sind.
+  - Der **Pfeil** rechts am Button öffnet den Unterpunkt **„Kamera manuell
+    hinzufügen…"**: für Kameras, die die Suche nicht findet (z. B. in einem anderen
+    Subnetz). Der Dialog fragt Name, IP-Adresse, Port, Hostname und **Hersteller**
+    ab (der Hersteller bestimmt, welches Plugin die Aktionen ausführt). Der Eintrag
+    bleibt dauerhaft in der Liste und wird durch einen späteren Suchtreffer derselben
+    IP automatisch ersetzt (Gruppen und gespeicherte Zugangsdaten wandern mit).
   - Findet das **ONVIF-Plugin** eine Kamera, die ein Hersteller-Plugin (Axis) schon
     gemeldet hat, wird der ONVIF-Treffer verworfen — sonst stünde dieselbe Kamera
     zweimal in der Liste. Das spezialisierte Plugin gewinnt, weil es mehr kann.
