@@ -36,6 +36,7 @@ import json
 import os
 import re
 import ssl
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -43,11 +44,64 @@ import uuid
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Forgejo-Instanz (selbstsigniert). Owner/Repo wie in der Remote-URL.
-API_HOST = "forgejo.example.invalid:3053"
+
+def _run_git(*args) -> str:
+    """git im Repo-Wurzelverzeichnis ausfuehren; leerer String bei Fehler."""
+    try:
+        out = subprocess.run(["git", *args], cwd=ROOT,
+                             capture_output=True, text=True, check=True)
+        return out.stdout.strip()
+    except Exception:  # noqa: BLE001 - fehlt git/Remote, faellt der Aufrufer zurueck
+        return ""
+
+
+def _resolve_host() -> str:
+    """Forgejo-API-Host (host:port) aus der Umgebung statt fest im Quelltext:
+    zuerst ``KKM_FORGEJO_HOST``, sonst eine lokale Datei ausserhalb des Repos.
+    Bewusst kein Vorgabewert im Code (das Repo wird oeffentlich gespiegelt)."""
+    h = os.environ.get("KKM_FORGEJO_HOST", "").strip()
+    if h:
+        return h
+    cfg = os.path.expanduser(
+        "~/.config/kamera_konfigurationsmanager/forgejo_host")
+    try:
+        h = open(cfg, encoding="utf-8").read().strip()
+    except OSError:
+        h = ""
+    if h:
+        return h
+    raise SystemExit(
+        "Forgejo-Host unbekannt. Setze die Umgebungsvariable KKM_FORGEJO_HOST "
+        "(z. B. host:port) oder lege ~/.config/kamera_konfigurationsmanager/"
+        "forgejo_host mit dieser einen Zeile an."
+    )
+
+
+def _resolve_owner_repo() -> tuple[str, str]:
+    """Owner/Repo aus der origin-URL ableiten (nicht fest im Quelltext).
+    Beherrscht ``scheme://[user@]host[:port]/owner/repo(.git)`` und die
+    scp-Kurzform ``[user@]host:owner/repo(.git)``; per KKM_FORGEJO_OWNER/REPO
+    ueberschreibbar."""
+    url = _run_git("config", "--get", "remote.origin.url")
+    if "://" in url:
+        rest = url.split("://", 1)[1].split("@", 1)[-1]
+        path = rest.split("/", 1)[1] if "/" in rest else ""
+    else:                                   # scp-Kurzform host:owner/repo.git
+        rest = url.split("@", 1)[-1]
+        path = rest.split(":", 1)[1] if ":" in rest else ""
+    path = path.strip("/")
+    if path.endswith(".git"):
+        path = path[:-4]
+    parts = [p for p in path.split("/") if p]
+    owner = os.environ.get("KKM_FORGEJO_OWNER") or (parts[0] if len(parts) >= 2 else "")
+    repo = os.environ.get("KKM_FORGEJO_REPO") or (parts[-1] if parts else "")
+    return owner, repo
+
+
+# Forgejo-Instanz (selbstsigniert). Host aus der Umgebung, Owner/Repo aus der Remote-URL.
+API_HOST = _resolve_host()
 API_BASE = f"https://{API_HOST}/api/v1"
-OWNER = "forgejouser"
-REPO = "Kamera_Konfigurationsmanager"
+OWNER, REPO = _resolve_owner_repo()
 
 _SSL = ssl.create_default_context()
 _SSL.check_hostname = False
