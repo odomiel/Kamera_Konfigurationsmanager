@@ -214,6 +214,17 @@ def delete_existing_asset(release: dict, name: str, auth: dict) -> None:
             _request("DELETE", url, auth)
 
 
+def sync_push_mirror(auth: dict) -> None:
+    """Stoesst Forgejos Push-Mirror sofort an (sonst laeuft er erst im Intervall).
+    Noetig, damit ein frisch per API angelegter Tag zeitnah bei GitHub ankommt."""
+    url = f"{API_BASE}/repos/{OWNER}/{REPO}/push_mirrors-sync"
+    status, body = _request("POST", url, auth)
+    if status not in (200, 201, 202, 204):
+        raise SystemExit(
+            f"Mirror-Sync fehlgeschlagen (HTTP {status}): "
+            f"{body[:400].decode(errors='replace')}")
+
+
 def upload_asset(release_id: int, path: str, auth: dict) -> dict:
     name = os.path.basename(path)
     boundary = uuid.uuid4().hex
@@ -240,11 +251,26 @@ def upload_asset(release_id: int, path: str, auth: dict) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Forgejo-Release anlegen + AppImage hochladen")
-    ap.add_argument("appimage", help="Pfad zur AppImage-Datei")
+    ap.add_argument("appimage", nargs="?", help="Pfad zur AppImage-Datei")
     ap.add_argument("--version", help="Version (Vorgabe: aus kkm/version.py)")
     ap.add_argument("--draft", action="store_true", help="Als Entwurf anlegen")
     ap.add_argument("--dry-run", action="store_true", help="Nur anzeigen, nichts senden")
+    ap.add_argument("--sync-mirror", action="store_true",
+                    help="Nur den Push-Mirror anstossen (kein Release)")
     args = ap.parse_args()
+
+    # Nur den Push-Mirror anstossen (fuer den GitHub-Release-Schritt in release.sh).
+    if args.sync_mirror:
+        if args.dry_run:
+            print("--dry-run: Mirror-Sync uebersprungen.")
+            return 0
+        user, token = read_credentials()
+        sync_push_mirror(_auth_header(user, token))
+        print("Push-Mirror angestossen.")
+        return 0
+
+    if not args.appimage:
+        ap.error("appimage ist erforderlich (ausser bei --sync-mirror)")
 
     version = args.version or read_version()
     tag = f"v{version}"

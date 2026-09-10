@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
 #
-# Formalisierter Release-Vorgang: (optional bauen) -> Smoke-Test -> Forgejo-Release.
+# Formalisierter Release-Vorgang: (optional bauen) -> Smoke-Test -> Forgejo-Release
+# -> (falls konfiguriert) GitHub-Release am oeffentlichen Push-Mirror.
 #
 # Setzt voraus, dass die Version bereits per bump_version.py hochgezaehlt und ein
 # CHANGELOG.md-Eintrag geschrieben wurde (Repo-Ritual). Dieses Skript baut das
 # AppImage der aktuellen Version (falls noch nicht vorhanden), testet es kurz und
 # legt daraus ein Forgejo-Release an (Tag v<version>, Release-Notes aus CHANGELOG,
-# AppImage als Asset).
+# AppImage als Asset). Ist ein GitHub-Mirror konfiguriert (Slug + Token, siehe
+# unten), wird der Push-Mirror angestossen und dort dasselbe Release angelegt
+# (Releases werden vom Mirror selbst NICHT uebertragen).
+#
+# GitHub-Konfiguration ausserhalb des Repos (das Repo wird oeffentlich gespiegelt):
+#   ~/.config/kamera_konfigurationsmanager/github_repo   (owner/repo)  oder $KKM_GITHUB_SLUG
+#   ~/.config/kamera_konfigurationsmanager/github_token  (Contents:RW) oder $GITHUB_TOKEN
 #
 # Aufruf:
-#   ./release.sh                 # bauen (falls noetig) + testen + Release anlegen
+#   ./release.sh                 # bauen (falls noetig) + testen + Forgejo + GitHub
 #   ./release.sh --no-build      # vorhandenes AppImage der Version verwenden
 #   ./release.sh --build         # Neubau erzwingen
 #   ./release.sh --no-test       # Smoke-Test ueberspringen
-#   ./release.sh --draft         # Release als Entwurf anlegen
+#   ./release.sh --no-github     # nur Forgejo, GitHub-Schritt auslassen
+#   ./release.sh --draft         # Release(s) als Entwurf anlegen
 #   ./release.sh --dry-run       # nichts hochladen, nur anzeigen
 #
 set -euo pipefail
@@ -24,15 +32,17 @@ cd "$ROOT"
 FORCE_BUILD=0
 NO_BUILD=0
 DO_TEST=1
-FORGEJO_ARGS=()
+GITHUB=1
+PASS_ARGS=()          # --draft / --dry-run, an alle Release-Tools durchgereicht
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --build)     FORCE_BUILD=1 ;;
     --no-build)  NO_BUILD=1 ;;
     --no-test)   DO_TEST=0 ;;
-    --draft)     FORGEJO_ARGS+=(--draft) ;;
-    --dry-run)   FORGEJO_ARGS+=(--dry-run) ;;
+    --no-github) GITHUB=0 ;;
+    --draft)     PASS_ARGS+=(--draft) ;;
+    --dry-run)   PASS_ARGS+=(--dry-run) ;;
     -h|--help)
       awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "$0"
       exit 0 ;;
@@ -40,6 +50,13 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+# GitHub-Schritt nur, wenn Slug UND Token konfiguriert sind (env oder lokale Datei).
+CFG="$HOME/.config/kamera_konfigurationsmanager"
+github_configured() {
+  { [ -n "${KKM_GITHUB_SLUG:-}" ] || [ -s "$CFG/github_repo" ]; } &&
+  { [ -n "${GITHUB_TOKEN:-}" ]    || [ -s "$CFG/github_token" ]; }
+}
 
 VERSION="$(python3 bump_version.py --print)"
 APPIMAGE="Kamerakonfigurationsmanager-${VERSION}-x86_64.AppImage"
@@ -78,4 +95,16 @@ fi
 
 # 3) Forgejo-Release ----------------------------------------------------------
 echo "-> Lege Forgejo-Release an ..."
-python3 tools/forgejo_release.py "$APPIMAGE" --version "$VERSION" "${FORGEJO_ARGS[@]}"
+python3 tools/forgejo_release.py "$APPIMAGE" --version "$VERSION" "${PASS_ARGS[@]}"
+
+# 4) GitHub-Release am Push-Mirror (Releases werden nicht mitgespiegelt) -------
+if [ "$GITHUB" = 1 ]; then
+  if github_configured; then
+    echo "-> Stosse Forgejo-Push-Mirror an ..."
+    python3 tools/forgejo_release.py --sync-mirror "${PASS_ARGS[@]}"
+    echo "-> Lege GitHub-Release an ..."
+    python3 tools/github_release.py "$APPIMAGE" --version "$VERSION" "${PASS_ARGS[@]}"
+  else
+    echo "-> GitHub-Release uebersprungen (kein Slug/Token konfiguriert; siehe --help)."
+  fi
+fi
