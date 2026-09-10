@@ -7,9 +7,12 @@
 # CHANGELOG.md-Eintrag geschrieben wurde (Repo-Ritual). Dieses Skript baut das
 # AppImage der aktuellen Version (falls noch nicht vorhanden), testet es kurz und
 # legt daraus ein Forgejo-Release an (Tag v<version>, Release-Notes aus CHANGELOG,
-# AppImage als Asset). Ist ein GitHub-Mirror konfiguriert (Slug + Token, siehe
-# unten), wird der Push-Mirror angestossen und dort dasselbe Release angelegt
-# (Releases werden vom Mirror selbst NICHT uebertragen).
+# AppImage als Asset). Liegt zusaetzlich ein Windows-Build gleicher Version unter
+# dist/Kamerakonfigurationsmanager_<version>.exe (separat auf Windows gebaut), wird
+# er als weiteres Asset mitveroeffentlicht. Ist ein GitHub-Mirror konfiguriert
+# (Slug + Token, siehe unten), wird der Push-Mirror angestossen und dort dasselbe
+# Release mit denselben Assets angelegt (Releases werden vom Mirror selbst NICHT
+# uebertragen).
 #
 # GitHub-Konfiguration ausserhalb des Repos (das Repo wird oeffentlich gespiegelt):
 #   ~/.config/kamera_konfigurationsmanager/github_repo   (owner/repo)  oder $KKM_GITHUB_SLUG
@@ -93,17 +96,29 @@ if [ "$DO_TEST" = 1 ]; then
   fi
 fi
 
-# 3) Forgejo-Release ----------------------------------------------------------
-echo "-> Lege Forgejo-Release an ..."
-python3 tools/forgejo_release.py "$APPIMAGE" --version "$VERSION" "${PASS_ARGS[@]}"
+# 3) Assets zusammenstellen: AppImage + (falls vorhanden) Windows-.exe gleicher
+#    Version aus dem dist/-Ordner. Die .exe wird separat auf Windows gebaut; liegt
+#    sie zur aktuellen Version bereit, kommt sie ins selbe Release.
+WINEXE="dist/Kamerakonfigurationsmanager_${VERSION}.exe"
+ASSETS=("$APPIMAGE")
+if [ -f "$WINEXE" ]; then
+  echo "-> Windows-Build gefunden: $WINEXE ($(stat -c%s "$WINEXE") Bytes) — wird mitveroeffentlicht."
+  ASSETS+=("$WINEXE")
+else
+  echo "-> Kein Windows-Build fuer $VERSION in dist/ — nur AppImage."
+fi
 
-# 4) GitHub-Release am Push-Mirror (Releases werden nicht mitgespiegelt) -------
+# 4) Forgejo-Release ----------------------------------------------------------
+echo "-> Lege Forgejo-Release an ..."
+python3 tools/forgejo_release.py "${ASSETS[@]}" --version "$VERSION" "${PASS_ARGS[@]}"
+
+# 5) GitHub-Release am Push-Mirror (Releases werden nicht mitgespiegelt) -------
 if [ "$GITHUB" = 1 ]; then
   if github_configured; then
     echo "-> Stosse Forgejo-Push-Mirror an ..."
     python3 tools/forgejo_release.py --sync-mirror "${PASS_ARGS[@]}"
     echo "-> Lege GitHub-Release an ..."
-    python3 tools/github_release.py "$APPIMAGE" --version "$VERSION" "${PASS_ARGS[@]}"
+    python3 tools/github_release.py "${ASSETS[@]}" --version "$VERSION" "${PASS_ARGS[@]}"
   else
     echo "-> GitHub-Release uebersprungen (kein Slug/Token konfiguriert; siehe --help)."
   fi

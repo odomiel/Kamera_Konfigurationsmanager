@@ -251,7 +251,8 @@ def upload_asset(release_id: int, path: str, auth: dict) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Forgejo-Release anlegen + AppImage hochladen")
-    ap.add_argument("appimage", nargs="?", help="Pfad zur AppImage-Datei")
+    ap.add_argument("assets", nargs="*",
+                    help="Asset-Dateien (AppImage; optional Windows-.exe)")
     ap.add_argument("--version", help="Version (Vorgabe: aus kkm/version.py)")
     ap.add_argument("--draft", action="store_true", help="Als Entwurf anlegen")
     ap.add_argument("--dry-run", action="store_true", help="Nur anzeigen, nichts senden")
@@ -269,24 +270,24 @@ def main() -> int:
         print("Push-Mirror angestossen.")
         return 0
 
-    if not args.appimage:
-        ap.error("appimage ist erforderlich (ausser bei --sync-mirror)")
+    if not args.assets:
+        ap.error("mindestens eine Asset-Datei ist erforderlich (ausser bei --sync-mirror)")
 
     version = args.version or read_version()
     tag = f"v{version}"
-    asset = os.path.abspath(args.appimage)
-    if not os.path.exists(asset):
-        raise SystemExit(f"AppImage nicht gefunden: {asset}")
-
-    # Plausibilitaet: passt die AppImage zur Version?
-    if version not in os.path.basename(asset):
-        print(f"WARNUNG: '{os.path.basename(asset)}' enthaelt die Version {version} nicht.",
-              file=sys.stderr)
+    assets = [os.path.abspath(a) for a in args.assets]
+    for a in assets:
+        if not os.path.exists(a):
+            raise SystemExit(f"Asset nicht gefunden: {a}")
+        # Plausibilitaet: passt die Datei zur Version?
+        if version not in os.path.basename(a):
+            print(f"WARNUNG: '{os.path.basename(a)}' enthaelt die Version {version} nicht.",
+                  file=sys.stderr)
 
     notes = changelog_notes(version)
-    size = os.path.getsize(asset)
-    print(f"Release {tag}  Asset {os.path.basename(asset)} ({size} Bytes)"
-          + ("  [Entwurf]" if args.draft else ""))
+    print(f"Release {tag}" + ("  [Entwurf]" if args.draft else "") + "  Assets:")
+    for a in assets:
+        print(f"  - {os.path.basename(a)} ({os.path.getsize(a)} Bytes)")
     if notes:
         print("Release-Notes aus CHANGELOG.md uebernommen "
               f"({len(notes.splitlines())} Zeilen).")
@@ -304,13 +305,14 @@ def main() -> int:
     if existing:
         print(f"Release {tag} existiert bereits (id {existing['id']}) — wird wiederverwendet.")
         release = existing
-        delete_existing_asset(release, os.path.basename(asset), auth)
     else:
         release = create_release(version, notes, args.draft, auth)
         print(f"Release angelegt: id {release['id']}, tag {release['tag_name']}")
 
-    up = upload_asset(release["id"], asset, auth)
-    print(f"Asset hochgeladen: {up.get('name')} {up.get('size')} {up.get('browser_download_url', '')}")
+    for a in assets:
+        delete_existing_asset(release, os.path.basename(a), auth)   # idempotent
+        up = upload_asset(release["id"], a, auth)
+        print(f"Asset hochgeladen: {up.get('name')} {up.get('size')} Bytes")
     print(f"Fertig: {API_BASE.replace('/api/v1','')}/{OWNER}/{REPO}/releases/tag/{tag}")
     return 0
 

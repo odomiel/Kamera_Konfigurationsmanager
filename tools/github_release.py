@@ -207,7 +207,8 @@ def verify_asset(browser_url: str, local_path: str) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="GitHub-Release anlegen + AppImage hochladen (Push-Mirror-Gegenstueck)")
-    ap.add_argument("appimage", help="Pfad zur AppImage-Datei")
+    ap.add_argument("assets", nargs="+",
+                    help="Asset-Dateien (AppImage; optional Windows-.exe)")
     ap.add_argument("--version", help="Version (Vorgabe: aus kkm/version.py)")
     ap.add_argument("--draft", action="store_true", help="Als Entwurf anlegen")
     ap.add_argument("--dry-run", action="store_true", help="Nur anzeigen, nichts senden")
@@ -217,18 +218,19 @@ def main() -> int:
 
     version = args.version or read_version()
     tag = f"v{version}"
-    asset = os.path.abspath(args.appimage)
-    if not os.path.exists(asset):
-        raise SystemExit(f"AppImage nicht gefunden: {asset}")
-    if version not in os.path.basename(asset):
-        print(f"WARNUNG: '{os.path.basename(asset)}' enthaelt die Version {version} nicht.",
-              file=sys.stderr)
+    assets = [os.path.abspath(a) for a in args.assets]
+    for a in assets:
+        if not os.path.exists(a):
+            raise SystemExit(f"Asset nicht gefunden: {a}")
+        if version not in os.path.basename(a):
+            print(f"WARNUNG: '{os.path.basename(a)}' enthaelt die Version {version} nicht.",
+                  file=sys.stderr)
 
     slug = resolve_slug()
     notes = changelog_notes(version)
-    size = os.path.getsize(asset)
-    print(f"GitHub-Release {slug} {tag}  Asset {os.path.basename(asset)} ({size} Bytes)"
-          + ("  [Entwurf]" if args.draft else ""))
+    print(f"GitHub-Release {slug} {tag}" + ("  [Entwurf]" if args.draft else "") + "  Assets:")
+    for a in assets:
+        print(f"  - {os.path.basename(a)} ({os.path.getsize(a)} Bytes)")
     if not notes:
         print("WARNUNG: kein CHANGELOG-Abschnitt fuer diese Version gefunden.", file=sys.stderr)
 
@@ -247,18 +249,17 @@ def main() -> int:
     if existing:
         print(f"Release {tag} existiert bereits (id {existing['id']}) — wird wiederverwendet.")
         release = existing
-        delete_existing_asset(slug, release, os.path.basename(asset), token)
     else:
         release = create_release(slug, version, notes, args.draft, token)
         print(f"Release angelegt: id {release['id']}, tag {release['tag_name']}")
 
-    up = upload_asset(slug, release["id"], asset, token)
-    print(f"Asset hochgeladen: {up.get('name')} {up.get('size')} Bytes")
-
-    if verify_asset(up.get("browser_download_url", ""), asset):
-        print("SHA-256-Gegenprobe: OK")
-    else:
-        raise SystemExit("SHA-256-Gegenprobe FEHLGESCHLAGEN — Anhang stimmt nicht ueberein.")
+    for a in assets:
+        delete_existing_asset(slug, release, os.path.basename(a), token)   # idempotent
+        up = upload_asset(slug, release["id"], a, token)
+        if verify_asset(up.get("browser_download_url", ""), a):
+            print(f"Asset hochgeladen + SHA-256 OK: {up.get('name')} {up.get('size')} Bytes")
+        else:
+            raise SystemExit(f"SHA-256-Gegenprobe FEHLGESCHLAGEN fuer {up.get('name')}.")
     print(f"Fertig: https://github.com/{slug}/releases/tag/{tag}")
     return 0
 
