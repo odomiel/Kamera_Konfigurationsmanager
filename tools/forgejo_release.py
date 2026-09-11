@@ -214,15 +214,22 @@ def delete_existing_asset(release: dict, name: str, auth: dict) -> None:
             _request("DELETE", url, auth)
 
 
-def sync_push_mirror(auth: dict) -> None:
+def sync_push_mirror(auth: dict, attempts: int = 3, delay: float = 6.0) -> None:
     """Stoesst Forgejos Push-Mirror sofort an (sonst laeuft er erst im Intervall).
-    Noetig, damit ein frisch per API angelegter Tag zeitnah bei GitHub ankommt."""
+    Noetig, damit ein frisch per API angelegter Tag zeitnah bei GitHub ankommt.
+    Der Endpunkt liefert gelegentlich ein transientes HTTP 500 (z. B. wenn gerade
+    ein Sync laeuft) -> ein paar Mal wiederholen, bevor aufgegeben wird."""
+    import time
     url = f"{API_BASE}/repos/{OWNER}/{REPO}/push_mirrors-sync"
-    status, body = _request("POST", url, auth)
-    if status not in (200, 201, 202, 204):
-        raise SystemExit(
-            f"Mirror-Sync fehlgeschlagen (HTTP {status}): "
-            f"{body[:400].decode(errors='replace')}")
+    last = ""
+    for i in range(max(1, attempts)):
+        status, body = _request("POST", url, auth)
+        if status in (200, 201, 202, 204):
+            return
+        last = f"HTTP {status}: {body[:200].decode(errors='replace')}"
+        if i < attempts - 1:
+            time.sleep(delay)
+    raise SystemExit(f"Mirror-Sync fehlgeschlagen ({last})")
 
 
 def upload_asset(release_id: int, path: str, auth: dict) -> dict:

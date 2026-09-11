@@ -116,7 +116,12 @@ python3 tools/forgejo_release.py "${ASSETS[@]}" --version "$VERSION" "${PASS_ARG
 if [ "$GITHUB" = 1 ]; then
   if github_configured; then
     echo "-> Stosse Forgejo-Push-Mirror an ..."
-    python3 tools/forgejo_release.py --sync-mirror "${PASS_ARGS[@]}"
+    # Nicht fatal: der Sync-Endpunkt liefert gelegentlich ein transientes HTTP 500,
+    # und der GitHub-Schritt wartet ohnehin selbst auf den Tag (sync_on_commit hat
+    # ihn i. d. R. schon uebertragen).
+    if ! python3 tools/forgejo_release.py --sync-mirror "${PASS_ARGS[@]}"; then
+      echo "   WARNUNG: Mirror-Sync-Anstoss fehlgeschlagen — fahre fort, GitHub-Schritt wartet auf den Tag."
+    fi
     echo "-> Lege GitHub-Release an ..."
     python3 tools/github_release.py "${ASSETS[@]}" --version "$VERSION" "${PASS_ARGS[@]}"
   else
