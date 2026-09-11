@@ -43,12 +43,13 @@ from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 # Parallele Netzwerk-Zugriffe (Firmware/Online/Zugangsdaten) je Suche.
 NET_WORKERS = 12
 
-from kkm.version import APP_NAME, __version__
+from kkm.version import APP_NAME, __version__, PROJECT_URL
 from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
                       UNGROUPED_ID, VIRTUAL_GROUP_IDS, camera_key, PasswordVault,
                       AppSettings, VaultError, FIELD_NAMES, get_first_ip,
                       export_results, t, set_language, get_language)
 from kkm.plugins import build_registry
+from kkm.core import updates
 from kkm.gui import theme
 from kkm.gui.widgets import add_scrollbars
 from kkm.gui.dialogs import ACTION_DIALOGS
@@ -238,6 +239,10 @@ class MainWindow(tk.Tk):
             self.after(10, self._maximize_window)
         # Haftungshinweis anzeigen, bis er dauerhaft bestätigt wurde.
         self.after(120, self._show_disclaimer)
+        # Optionaler Update-Check gegen GitHub (abschaltbar: Einstellungen → Über).
+        # Verzögert, damit er den Start nicht ausbremst; Ergebnis nur bei neuerer Version.
+        if self.settings.get("check_updates", True):
+            self.after(1500, self._start_update_check)
 
     def _show_disclaimer(self):
         from kkm.gui.dialogs.disclaimer import show_if_needed
@@ -1347,6 +1352,8 @@ class MainWindow(tk.Tk):
                     self.store.save()
                     self._refresh_table()
                     self.after(0, self._prompt_next_credentials)   # nächste/erneute Abfrage
+                elif kind == "update":
+                    self._notify_update(payload)
                 elif kind == "error":
                     self.progress.stop()
                     messagebox.showerror(APP_NAME, payload, parent=self)
@@ -1579,6 +1586,35 @@ class MainWindow(tk.Tk):
             threading.Thread(target=self._worker_online, args=(cams,), daemon=True).start()
         # reschedule the next tick
         self._schedule_online_autocheck()
+
+    # ------------------------------------------------- Update-Check (GitHub)
+    def _start_update_check(self):
+        """Fragt im Hintergrund GitHub nach einer neueren Version (still bei
+        Offline/Fehler). Meldet nur einen echten Treffer über die Queue."""
+        threading.Thread(target=self._worker_update_check, daemon=True).start()
+
+    def _worker_update_check(self):
+        try:
+            rel = updates.check_for_update()
+        except Exception:  # noqa: BLE001 - Update-Check darf den Start nie stören
+            rel = None
+        if rel:
+            self._q.put(("update", rel))
+
+    def _notify_update(self, rel):
+        """Neuere Version gefunden: dezenter Hinweis + Angebot, die Seite zu öffnen."""
+        self.status.config(text=t("Update verfügbar: {v} (Einstellungen → Über)",
+                                  v=rel["version"]))
+        if messagebox.askyesno(
+                APP_NAME,
+                t("Eine neue Version ist verfügbar: {v}\n"
+                  "Sie verwenden {cur}.\n\nJetzt die Projektseite öffnen?",
+                  v=rel["version"], cur=__version__),
+                parent=self):
+            try:
+                webbrowser.open(rel.get("url", PROJECT_URL))
+            except Exception:  # noqa: BLE001
+                pass
 
 
 def main():

@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.09.11 — 2026-09-11
+
+- **Projektseite + Update-Prüfung.** Der Reiter *Einstellungen → Über* zeigt jetzt die
+  **GitHub-Projektseite** als anklickbaren Link. Neu darunter eine **Update-Prüfung**,
+  die die öffentlichen GitHub-Releases als Quelle nutzt: „Jetzt nach Updates suchen"
+  meldet, ob eine neuere Version vorliegt (mit Download-Link), und die Option **„Beim
+  Programmstart nach Updates suchen"** (standardmäßig an, jederzeit **abschaltbar**)
+  prüft beim Start im Hintergrund und weist nur bei einer tatsächlich neueren Version
+  dezent darauf hin. Offline/ohne Verbindung passiert nichts (kein Fehler). Die Abfrage
+  wertet nur **stabile** Releases (keine `bN`-Vorabversionen).
+
 ## 26.08.29 — 2026-08-29
 
 - **Kamera manuell hinzufügen.** „Suchen/aktualisieren" ist jetzt ein Split-Button:

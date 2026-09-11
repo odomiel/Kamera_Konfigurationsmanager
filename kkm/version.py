@@ -20,5 +20,10 @@ Version scheme follows the Discovery tool: ``JJ.MM.TT`` (2-digit year);
 multiple releases the same day get an incrementing ``bN`` suffix.
 """
 
-__version__ = "26.08.29"
+__version__ = "26.09.11"
 APP_NAME = "Kamera_Konfigurationsmanager"
+
+# Oeffentliche Projektseite (GitHub-Spiegel) — Quelle fuer den About-Link und die
+# Update-Pruefung. Bewusst oeffentlich, anders als die private Forgejo-Instanz.
+GITHUB_SLUG = "odomiel/Kamera_Konfigurationsmanager"
+PROJECT_URL = f"https://github.com/{GITHUB_SLUG}"

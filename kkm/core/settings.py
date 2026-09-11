@@ -44,6 +44,7 @@ DEFAULTS = {
     "start_maximized": False,    # Hauptfenster beim Start maximiert öffnen
     "disclaimer_accepted": False, # Haftungshinweis dauerhaft bestätigt (nicht wieder zeigen)
     "language": "de",            # UI-Sprache: "de" | "en" (wirkt beim nächsten Start)
+    "check_updates": True,       # beim Start GitHub nach einer neueren Version fragen
 }
 
 

@@ -34,6 +34,8 @@ from __future__ import annotations
 
 import os
 import platform
+import threading
+import webbrowser
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
@@ -41,8 +43,9 @@ from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 from kkm.core import (VIRTUAL_GROUP_IDS, VaultError, Capability,
                       t, LANGUAGES, get_language, language_label)
 from kkm.core.backup import create_backup, restore_backup, BackupError
+from kkm.core import updates
 from kkm.gui.dialogs.vault_access import ensure_vault_unlocked
-from kkm.version import __version__, APP_NAME
+from kkm.version import __version__, APP_NAME, PROJECT_URL
 
 
 def _dep_version(dist_name: str, module_name: str | None = None) -> str:
@@ -833,6 +836,13 @@ class SettingsDialog(tk.Toplevel):
         ttk.Label(tab, text=t("Version {v}", v=__version__)).pack(anchor=tk.W, pady=(0, 2))
         ttk.Label(tab, text=t("Erstellt von Mirik · GPL-3.0-or-later")).pack(anchor=tk.W)
 
+        prow = ttk.Frame(tab)
+        prow.pack(anchor=tk.W, pady=(2, 0))
+        ttk.Label(prow, text=t("Projektseite:")).pack(side=tk.LEFT, padx=(0, 6))
+        plink = ttk.Label(prow, text=PROJECT_URL)
+        plink.pack(side=tk.LEFT)
+        self._make_link(plink, PROJECT_URL)
+
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
         ttk.Label(tab, text=t("Verwendete Komponenten"),
                   font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 4))
@@ -856,6 +866,22 @@ class SettingsDialog(tk.Toplevel):
             ttk.Label(grid, text=ver).grid(row=i, column=1, sticky=tk.W, pady=1)
 
         ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
+        ttk.Label(tab, text=t("Updates"),
+                  font=("TkDefaultFont", 10, "bold")).pack(anchor=tk.W, pady=(0, 4))
+        self._check_updates_var = tk.BooleanVar(
+            value=bool(self.settings.get("check_updates", True)))
+        ttk.Checkbutton(tab, text=t("Beim Programmstart nach Updates suchen (fragt GitHub)"),
+                        variable=self._check_updates_var,
+                        command=self._save_check_updates).pack(anchor=tk.W)
+        urow = ttk.Frame(tab)
+        urow.pack(anchor=tk.W, pady=(4, 0))
+        self._update_btn = ttk.Button(urow, text=t("Jetzt nach Updates suchen"),
+                                      command=self._check_updates_now)
+        self._update_btn.pack(side=tk.LEFT)
+        self._update_status = ttk.Label(tab, wraplength=460, justify=tk.LEFT)
+        self._update_status.pack(anchor=tk.W, pady=(4, 0))
+
+        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 8))
         from kkm.gui import theme
         from kkm.gui.dialogs.disclaimer import DISCLAIMER_TEXT
         ttk.Label(tab, justify=tk.LEFT, wraplength=460, text=t(DISCLAIMER_TEXT),
@@ -867,6 +893,49 @@ class SettingsDialog(tk.Toplevel):
             "Dieses Programm wurde mit Unterstützung von künstlicher Intelligenz "
             "(Claude von Anthropic) entwickelt.")).pack(anchor=tk.W)
         return tab
+
+    # ------------------------------------------------------------- links/updates
+    @staticmethod
+    def _open_url(url: str) -> None:
+        try:
+            webbrowser.open(url)
+        except Exception:  # noqa: BLE001 - Browser-Start darf nie zum Absturz fuehren
+            pass
+
+    def _make_link(self, label: tk.Widget, url: str) -> None:
+        """Ein Label wie einen Link aussehen und beim Klick den Browser oeffnen lassen."""
+        label.configure(foreground="#2f81f7", cursor="hand2",
+                        font=("TkDefaultFont", 10, "underline"))
+        label.bind("<Button-1>", lambda _e: self._open_url(url))
+
+    def _save_check_updates(self) -> None:
+        self.settings.set("check_updates", bool(self._check_updates_var.get()))
+
+    def _check_updates_now(self) -> None:
+        self._update_btn.config(state=tk.DISABLED)
+        self._update_status.config(text=t("Suche nach Updates …"))
+        # Netzabfrage im Hintergrund, Ergebnis ueber after() zurueck in den UI-Thread.
+        threading.Thread(target=self._worker_check_updates, daemon=True).start()
+
+    def _worker_check_updates(self) -> None:
+        rel = updates.latest_release()
+        self.after(0, lambda: self._show_update_result(rel))
+
+    def _show_update_result(self, rel: dict | None) -> None:
+        if not self.winfo_exists():
+            return
+        self._update_btn.config(state=tk.NORMAL)
+        lbl = self._update_status
+        lbl.unbind("<Button-1>")
+        lbl.configure(foreground="", cursor="", font=("TkDefaultFont", 10))
+        if rel is None:
+            lbl.config(text=t("Keine Verbindung zu GitHub — bitte später erneut versuchen."))
+        elif updates.is_newer(rel["version"]):
+            lbl.config(text=t("Neue Version verfügbar: {v} — hier herunterladen.",
+                              v=rel["version"]))
+            self._make_link(lbl, rel.get("url", PROJECT_URL))
+        else:
+            lbl.config(text=t("Sie verwenden die aktuelle Version ({v}).", v=__version__))
 
     # ---------------------------------------------------------------- lizenzen
     @staticmethod
