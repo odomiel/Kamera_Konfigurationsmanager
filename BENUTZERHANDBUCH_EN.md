@@ -430,7 +430,13 @@ visible).
 > **Keep the backup password safe** — without it the backup cannot be restored.
 
 **About** — shows the program and component versions, the author and the license, as well as
-the note about the AI-supported development.
+the note about the AI-supported development. It also shows the **project page** as a
+clickable link (opens the GitHub page in the browser). Below it, the **update check**:
+*"Check for updates now"* queries the public GitHub releases and reports whether a newer
+version is available (with a download link). The option *"Check for updates at startup"*
+(on by default, can be turned off any time) checks in the background at startup and points
+it out discreetly only when there really is a newer version; nothing happens without an
+internet connection. Only final versions are considered, not pre-releases.
 
 **Licenses** — lists, in a scrollable field, the licenses of **all bundled components**
 (Python, Tcl/Tk, OpenSSL, zeroconf, cryptography, etc. — the third-party licenses) as well

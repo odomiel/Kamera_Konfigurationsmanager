@@ -454,7 +454,13 @@ sichtbar).
 > **Backup-Passwort gut aufbewahren** — ohne es ist die Sicherung nicht wiederherstellbar.
 
 **Über** — zeigt Programm- und Komponentenversionen, Ersteller und Lizenz sowie den Hinweis
-auf die KI-gestützte Entwicklung.
+auf die KI-gestützte Entwicklung. Hier steht auch die **Projektseite** als anklickbarer
+Link (öffnet die GitHub-Seite im Browser). Darunter die **Update-Prüfung**: *„Jetzt nach
+Updates suchen"* fragt die öffentlichen GitHub-Releases ab und meldet, ob eine neuere
+Version vorliegt (mit Download-Link). Die Option *„Beim Programmstart nach Updates suchen"*
+(standardmäßig an, jederzeit abschaltbar) prüft beim Start im Hintergrund und weist nur bei
+einer tatsächlich neueren Version dezent darauf hin; ohne Internetverbindung passiert
+nichts. Berücksichtigt werden nur fertige Versionen, keine Vorabversionen.
 
 **Lizenzen** — listet in einem scrollbaren Feld die Lizenzen **aller mitgelieferten
 Komponenten** (Python, Tcl/Tk, OpenSSL, zeroconf, cryptography u. a. — die

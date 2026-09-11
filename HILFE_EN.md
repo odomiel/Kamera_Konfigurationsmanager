@@ -380,7 +380,11 @@ Several areas:
 
 - **About** — shows the program version, the versions of the components used (Python,
   Tcl/Tk, zeroconf, cryptography, sv-ttk), the author and the license, as well as the note
-  that the program was developed with the support of artificial intelligence.
+  that the program was developed with the support of artificial intelligence. It also shows
+  the **project page** as a clickable link and an **update check** (source: the public
+  GitHub releases): "Check for updates now" reports a newer version with a download link;
+  the option "Check for updates at startup" is on by default and **can be turned off**
+  (nothing happens offline, pre-releases are ignored).
 
 ---
 

@@ -414,7 +414,11 @@ Mehrere Bereiche:
 - **Über** — zeigt die Programmversion, die Versionen der verwendeten Komponenten
   (Python, Tcl/Tk, zeroconf, cryptography, sv-ttk), den Ersteller und die Lizenz
   sowie den Hinweis, dass das Programm mit Unterstützung von künstlicher Intelligenz
-  entwickelt wurde.
+  entwickelt wurde. Zusätzlich die **Projektseite** als anklickbarer Link und eine
+  **Update-Prüfung** (Quelle: öffentliche GitHub-Releases): „Jetzt nach Updates suchen"
+  meldet eine neuere Version mit Download-Link; die Option „Beim Programmstart nach
+  Updates suchen" ist standardmäßig an und **abschaltbar** (offline passiert nichts,
+  Vorabversionen werden ignoriert).
 
 ---
 
