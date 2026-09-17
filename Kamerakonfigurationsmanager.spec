@@ -15,7 +15,7 @@ import re
 import sys
 import glob
 import zipfile
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files, copy_metadata
 
 # Version aus kkm/version.py lesen (einzige Quelle der Wahrheit) — per Regex statt
 # per Import, damit die Spec nicht vom Suchpfad des bauenden Interpreters abhaengt.
@@ -36,6 +36,17 @@ datas = [
 ]
 # sv_ttk liefert seine Tcl-Theme-Dateien als Paketdaten -> mitnehmen.
 datas += collect_data_files("sv_ttk")
+
+# Lizenz-Metadaten der gebuendelten Wheels mit ins .exe (die dist-info/licenses/-
+# Dateien, u. a. der LGPL-Text von zeroconf und die Apache/BSD-Texte von
+# cryptography). Sonst traegt nur THIRD_PARTY_LICENSES.md die Texte; mit diesen
+# Original-Lizenzdateien ist die Distribution auch dann vollstaendig, wenn die
+# Datei einmal fehlt. Fehlende Metadaten einzelner Pakete nicht fatal werden lassen.
+for _pkg in ("zeroconf", "cryptography", "cffi", "pycparser", "ifaddr", "sv_ttk"):
+    try:
+        datas += copy_metadata(_pkg)
+    except Exception:
+        pass
 
 # WORKAROUND: Der Windows-Installer von Python 3.14 buendelt Tcl/Tk 9 nicht mehr
 # als lose Dateien, sondern in zwei ZIPs (<PythonRoot>\tcl\libtcl9.x.zip /
