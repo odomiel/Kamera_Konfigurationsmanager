@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.09.17 — 2026-09-17
+
+- **Lizenzdokumentation vervollständigt.** `THIRD_PARTY_LICENSES.md` bettet jetzt die
+  vollständigen Lizenztexte von **PSF** (CPython), **Apache-2.0** (OpenSSL, cryptography)
+  und **LGPL-2.1** (zeroconf) als Anhang ein — damit liegen alle geforderten Lizenztexte
+  jeder Distribution bei (wichtig für den Windows-Build, der die LGPL-Textdatei bisher
+  nicht mitbrachte). Korrigiert: libffi **3.6.0 → 3.8.0**, cffi als **MIT-0**; ergänzt:
+  Hinweis auf CPython-interne Fremdteile (libmpdec/HACL*/BLAKE2). Der Windows-Spec
+  bündelt über `copy_metadata` zusätzlich die Original-Lizenzdateien der Wheels. Ein
+  vollständiges Lizenz-Audit bestätigte die durchgehende GPL-3.0-Kompatibilität aller
+  gebündelten Komponenten (OpenSSL 3.x = Apache-2.0, daher keine OpenSSL-Ausnahme nötig).
+
 ## 26.09.11 — 2026-09-11
 
 - **Projektseite + Update-Prüfung.** Der Reiter *Einstellungen → Über* zeigt jetzt die
