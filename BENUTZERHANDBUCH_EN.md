@@ -194,9 +194,12 @@ afterwards.
 
 Manages the regular camera users: **Create** (name, password, role
 *administrator/operator/viewer*, option *Factory-default state* for brand-new cameras),
-**Change password** and **Batch import** from a text file in the format
+**Change password** and **Batch import** from a file in the format
 `name,password[,role]`. The file is validated once up front — if a line fails, nothing is
-created at all.
+created at all. The source may be a plain-text `.txt`/`.csv` **or** a
+**password-protected ZIP archive** (AES-256, e.g. created with 7-Zip or WinZip): if you
+pick a ZIP, the program asks for its password and reads the contained text/CSV file
+decrypted — so the users' plain-text passwords need not sit unprotected as a file.
 
 The option *"Store password in the vault"* saves the credentials encrypted.
 

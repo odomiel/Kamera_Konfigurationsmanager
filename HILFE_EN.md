@@ -165,7 +165,9 @@ Manage regular camera users:
   **Factory-default state (factory)** for brand-new cameras.
 - **Change password** — set the password of an existing user.
 - **Batch import** — user list from a file (`name,password[,role]`), applied to all
-  selected cameras.
+  selected cameras. The list may be a plain-text `.txt`/`.csv` **or** a
+  **password-protected ZIP** (AES-256, e.g. created with 7-Zip/WinZip) — for a ZIP the
+  archive password is prompted, so the plain-text passwords don't sit unprotected on disk.
 
 The option **"Store password in the vault"** saves the credentials encrypted.
 

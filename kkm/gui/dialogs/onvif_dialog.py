@@ -31,7 +31,6 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk, messagebox
-from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import Capability, t
 from .base import ActionDialog
@@ -56,6 +55,7 @@ class OnvifDialog(ActionDialog):
         self.user_pw = tk.StringVar()
         self.level = tk.StringVar(value="User")
         self.import_path = tk.StringVar()
+        self._zip_password = None     # Passwort eines verschlüsselten ZIP (falls gewählt)
         self.store_vault = tk.BooleanVar(value=False)
 
         self._dynamic = ttk.Frame(parent)
@@ -102,20 +102,21 @@ class OnvifDialog(ActionDialog):
 
     # ------------------------------------------------------------------ import
     def _choose_list(self):
-        path = filedialog.askopenfilename(
-            parent=self, title=t("ONVIF-Benutzerliste wählen"),
-            filetypes=[(t("Textliste/CSV"), "*.txt *.csv"), (t("Alle Dateien"), "*.*")])
+        path, zip_password = self.choose_user_list(t("ONVIF-Benutzerliste wählen"))
         if not path:
             return
         self.import_path.set(path)
+        self._zip_password = zip_password
         try:
-            users = self.plugin0().parse_user_list(path, onvif=True)
+            users = self.plugin0().parse_user_list(path, onvif=True,
+                                                   zip_password=zip_password)
             self._import_info.config(text=t("{n} Benutzer in der Datei: ", n=len(users))
                                           + ", ".join(u["name"] for u in users[:6])
                                           + (" …" if len(users) > 6 else ""))
         except Exception as exc:  # noqa: BLE001
             self._import_info.config(text=t("Ungültig: {err}", err=exc))
             self.import_path.set("")
+            self._zip_password = None
 
     # ------------------------------------------------------------------- apply
     def _apply(self):
@@ -149,7 +150,8 @@ class OnvifDialog(ActionDialog):
             messagebox.showinfo(t(self.title_text), t("Bitte zuerst eine Benutzerliste wählen."), parent=self)
             return
         try:
-            users = self.plugin0().parse_user_list(path, onvif=True)  # validate once
+            users = self.plugin0().parse_user_list(  # validate once
+                path, onvif=True, zip_password=self._zip_password)
         except Exception as exc:  # noqa: BLE001
             messagebox.showerror(t(self.title_text), str(exc), parent=self)
             return

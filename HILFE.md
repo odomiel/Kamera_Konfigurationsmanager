@@ -182,7 +182,10 @@ Reguläre Kamera-Benutzer verwalten:
   **Auslieferungszustand (factory)** für fabrikneue Kameras.
 - **Passwort ändern** — Passwort eines bestehenden Benutzers setzen.
 - **Stapel-Import** — Benutzerliste aus einer Datei (`Name,Passwort[,Rolle]`),
-  wird auf alle markierten Kameras angewendet.
+  wird auf alle markierten Kameras angewendet. Die Liste darf eine Klartext-`.txt`/`.csv`
+  **oder** ein **passwortgeschütztes ZIP** (AES-256, z. B. mit 7-Zip/WinZip erstellt)
+  sein — bei einem ZIP wird das Archiv-Passwort abgefragt, sodass die Klartext-Passwörter
+  nicht ungeschützt auf der Platte liegen.
 
 Option **„Passwort im Tresor speichern"** legt den Zugang verschlüsselt ab.
 

@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.09.20 — 2026-09-20
+
+- **Verschlüsselte Benutzerlisten (Stapel-Import).** Der Benutzer- und der
+  ONVIF-Benutzer-Dialog akzeptieren als Import-Quelle jetzt neben einer Klartext-`.txt`/
+  `.csv` auch ein **passwortgeschütztes ZIP-Archiv** (WinZip-AES-256, z. B. mit
+  7-Zip/WinZip erstellt) — so liegen die Klartext-Passwörter nicht ungeschützt auf der
+  Platte. Wird eine ZIP-Datei gewählt (an der Signatur erkannt), fragt das Programm das
+  Archiv-Passwort maskiert ab und liest die enthaltene Text-/CSV-Datei entschlüsselt ein.
+  Übernommen aus dem Axis-Discovery-Tool (via `pyzipper` + `pycryptodomex`, beide im
+  AppImage/`.exe` gebündelt). Format und Vorab-Validierung bleiben unverändert.
+
 ## 26.09.17 — 2026-09-17
 
 - **Lizenzdokumentation vervollständigt.** `THIRD_PARTY_LICENSES.md` bettet jetzt die

@@ -42,7 +42,8 @@ datas += collect_data_files("sv_ttk")
 # cryptography). Sonst traegt nur THIRD_PARTY_LICENSES.md die Texte; mit diesen
 # Original-Lizenzdateien ist die Distribution auch dann vollstaendig, wenn die
 # Datei einmal fehlt. Fehlende Metadaten einzelner Pakete nicht fatal werden lassen.
-for _pkg in ("zeroconf", "cryptography", "cffi", "pycparser", "ifaddr", "sv_ttk"):
+for _pkg in ("zeroconf", "cryptography", "cffi", "pycparser", "ifaddr", "sv_ttk",
+             "pyzipper", "pycryptodomex"):
     try:
         datas += copy_metadata(_pkg)
     except Exception:
@@ -100,7 +101,11 @@ if tcltk_info is not None and tcltk_info.available and str(tcltk_info.tcl_data_d
 hiddenimports = (collect_submodules("zeroconf")
                  + collect_submodules("ifaddr")
                  + collect_submodules("cryptography")
-                 + collect_submodules("sv_ttk"))
+                 + collect_submodules("sv_ttk")
+                 # pyzipper (+ pycryptodomex -> importiert als "Cryptodome") fuer
+                 # verschluesselte AES-ZIP-Benutzerlisten.
+                 + collect_submodules("pyzipper")
+                 + collect_submodules("Cryptodome"))
 
 # Eigenes Paket einsammeln, falls noch nicht installiert/auf dem Pfad.
 hiddenimports += collect_submodules("kkm")

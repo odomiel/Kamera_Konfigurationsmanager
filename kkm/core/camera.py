@@ -29,6 +29,7 @@ second plugin fills the same dict and the GUI keeps working.
 from __future__ import annotations
 
 import csv
+import io
 import re
 
 # Basisfelder eines Kamera-Dicts. Die Discovery jedes Plugins fuellt sie; die
@@ -85,19 +86,78 @@ def next_ip(ip_str: str, step: int = 1) -> str:
     return ".".join(str((value >> shift) & 0xFF) for shift in (24, 16, 8, 0))
 
 
-def parse_user_list(path, valid_roles, default_role):
+def looks_like_zip(path) -> bool:
+    """True, wenn die Datei mit der ZIP-Signatur (``PK\\x03\\x04``) beginnt."""
+    try:
+        with open(path, "rb") as fh:
+            return fh.read(4) == b"PK\x03\x04"
+    except OSError:
+        return False
+
+
+def _read_userlist_zip(path, password) -> str:
+    """Liest die (erste) Textdatei aus einem passwortgeschuetzten ZIP-Archiv.
+
+    Unterstuetzt WinZip-AES-256 (wie von 7-Zip/WinZip erzeugt) via ``pyzipper``;
+    ein herkoemmlich (ZipCrypto) oder gar nicht verschluesseltes ZIP geht auch.
+    """
+    try:
+        import pyzipper
+    except ImportError:
+        raise ValueError(
+            "Verschlüsselte ZIP-Dateien benötigen das Modul 'pyzipper' (im "
+            "AppImage/der EXE enthalten). Sonst eine unverschlüsselte .txt/.csv "
+            "verwenden.")
+    if not password:
+        raise ValueError("Für die verschlüsselte ZIP-Datei wird ein Passwort benötigt.")
+    try:
+        with pyzipper.AESZipFile(path) as zf:
+            zf.setpassword(password.encode("utf-8"))
+            names = [n for n in zf.namelist() if not n.endswith("/")]
+            if not names:
+                raise ValueError("Das ZIP-Archiv enthält keine Datei.")
+            entry = next((n for n in names if n.lower().endswith((".txt", ".csv"))),
+                         names[0])
+            data = zf.read(entry)
+    except ValueError:
+        raise
+    except Exception:  # falsches Passwort / beschaedigt / bad CRC
+        raise ValueError(
+            "ZIP-Archiv nicht lesbar — falsches Passwort oder beschädigte Datei.")
+    for enc in ("utf-8-sig", "utf-8", "latin-1"):
+        try:
+            return data.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    raise ValueError("Textkodierung der Datei im ZIP-Archiv nicht erkannt.")
+
+
+def _read_userlist_text(path, zip_password=None) -> str:
+    """Rohtext der Benutzerliste: aus einer Klartext-.txt/.csv oder — bei
+    ZIP-Signatur — aus einem passwortgeschuetzten ZIP (mit *zip_password*)."""
+    if looks_like_zip(path):
+        return _read_userlist_zip(path, zip_password)
+    try:
+        with open(path, encoding="utf-8-sig") as fh:
+            return fh.read()
+    except OSError as exc:
+        raise ValueError(f"Datei nicht lesbar: {exc}") from exc
+
+
+def parse_user_list(path, valid_roles, default_role, zip_password=None):
     """Liest eine Benutzerliste fuer den Stapel-Import: ``Name,Passwort[,Rolle]``.
+
+    Quelle ist entweder eine **Klartext**-Datei (.txt/.csv) oder ein
+    **passwortgeschuetztes ZIP** (WinZip-AES-256, z. B. mit 7-Zip/WinZip erstellt);
+    ein ZIP wird an seiner Signatur erkannt und mit *zip_password* entschluesselt.
 
     Leerzeilen und ``#``-Zeilen werden uebersprungen; fehlt die Rolle, gilt
     *default_role*. *valid_roles* sind die erlaubten Rollen/Stufen des Plugins
     (Gross-/Kleinschreibung egal). Wirft ValueError mit Zeilennummern, damit nichts
     Halbfertiges angelegt wird. Liefert eine Liste von ``{name, password, role}``.
     """
-    try:
-        with open(path, newline="", encoding="utf-8-sig") as fh:
-            rows = list(csv.reader(fh))
-    except OSError as exc:
-        raise ValueError(f"Datei nicht lesbar: {exc}") from exc
+    text = _read_userlist_text(path, zip_password)
+    rows = list(csv.reader(io.StringIO(text)))
 
     valid = {str(r).lower(): r for r in valid_roles}
     users, errors = [], []

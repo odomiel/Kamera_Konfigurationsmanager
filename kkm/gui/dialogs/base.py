@@ -36,9 +36,10 @@ import threading
 import time
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
+from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Credentials, camera_key, get_first_ip, t
+from kkm.core import Credentials, camera_key, get_first_ip, looks_like_zip, t
 from .vault_access import ensure_vault_unlocked
 from .reauth_prompt import ReauthPromptDialog
 
@@ -196,6 +197,28 @@ class ActionDialog(tk.Toplevel):
         dem eigentlichen Durchlauf vom Hersteller braucht (Rollen, ONVIF-Stufen,
         Dateiformate). Die Aktion ist ohnehin nur wählbar, wenn das Plugin sie meldet."""
         return self.plugin_for(self.cameras[0]) if self.cameras else None
+
+    def choose_user_list(self, title):
+        """Datei-Auswahl für eine Benutzerliste inkl. optionaler ZIP-Entschlüsselung.
+
+        Liefert ``(path, zip_password)`` oder ``(None, None)`` bei Abbruch. Ist die
+        gewählte Datei ein passwortgeschütztes ZIP (WinZip-AES-256, z. B. mit
+        7-Zip/WinZip erstellt), wird das Archiv-Passwort maskiert abgefragt."""
+        path = filedialog.askopenfilename(
+            parent=self, title=title,
+            filetypes=[(t("Textliste/CSV"), "*.txt *.csv"),
+                       (t("Verschlüsseltes ZIP"), "*.zip"),
+                       (t("Alle Dateien"), "*.*")])
+        if not path:
+            return None, None
+        zip_password = None
+        if looks_like_zip(path):
+            zip_password = simpledialog.askstring(
+                t("ZIP-Passwort"), t("Passwort des verschlüsselten ZIP-Archivs:"),
+                show="*", parent=self)
+            if zip_password is None:      # Abbruch der Passwortabfrage
+                return None, None
+        return path, zip_password
 
     # ----------------------------------------------------------------- to override
     def build_body(self, parent):  # pragma: no cover - overridden

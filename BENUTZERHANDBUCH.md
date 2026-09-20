@@ -205,9 +205,13 @@ ist — suchen Sie danach erneut.
 
 Verwaltet die regulären Kamera-Benutzer: **Anlegen** (Name, Passwort, Rolle
 *administrator/operator/viewer*, Option *Auslieferungszustand* für fabrikneue Kameras),
-**Passwort ändern** und **Stapel-Import** aus einer Textdatei im Format
+**Passwort ändern** und **Stapel-Import** aus einer Datei im Format
 `Name,Passwort[,Rolle]`. Die Datei wird einmal vorab geprüft — schlägt eine Zeile fehl,
-wird gar nichts angelegt.
+wird gar nichts angelegt. Als Quelle dient wahlweise eine Klartext-`.txt`/`.csv` **oder**
+ein **passwortgeschütztes ZIP-Archiv** (AES-256, z. B. mit 7-Zip oder WinZip erstellt):
+Wählt man ein ZIP, fragt das Programm dessen Passwort ab und liest die enthaltene
+Text-/CSV-Datei entschlüsselt ein — so müssen die Klartext-Passwörter der Benutzer nicht
+ungeschützt als Datei vorliegen.
 
 Die Option *„Passwort im Tresor speichern"* legt den Zugang verschlüsselt ab.
 

@@ -155,13 +155,15 @@ class VendorPlugin(abc.ABC):
         return bool(getattr(exc, "auth_failed", False))
 
     # --- neutrale Helfer (Plugins duerfen ueberschreiben) --------------------
-    def parse_user_list(self, path, onvif: bool = False):
+    def parse_user_list(self, path, onvif: bool = False, zip_password=None):
         """Benutzerliste ``Name,Passwort[,Rolle]`` fuer den Stapel-Import lesen.
-        Validiert gegen die Rollen/Stufen *dieses* Plugins."""
+        Validiert gegen die Rollen/Stufen *dieses* Plugins. Quelle ist eine
+        Klartext-.txt/.csv oder ein passwortgeschuetztes ZIP (*zip_password*)."""
         roles = self.ONVIF_LEVELS if onvif else self.USER_ROLES
         if not roles:
             raise NotImplementedError
-        return camera.parse_user_list(path, roles, roles[-1])   # niedrigster Rang
+        return camera.parse_user_list(path, roles, roles[-1],  # niedrigster Rang
+                                      zip_password=zip_password)
 
     # --- configuration files (Capability.CONFIG) ----------------------------
     # Format und Aufbau der Konfigurationsdatei sind herstellerspezifisch; die GUI

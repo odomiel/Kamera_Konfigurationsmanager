@@ -17,7 +17,7 @@
 """Vendor-agnostic core: plugin API, group store, password vault."""
 
 from .camera import (FIELD_NAMES, get_first_ip, next_ip, version_tuple,
-                     export_results)
+                     export_results, looks_like_zip)
 from .plugins import (VendorPlugin, PluginRegistry, Credentials, Capability,
                       FirmwareInfo, FirmwareRelease)
 from .groups import (GroupStore, Group, ALL_CAMERAS_ID, UNGROUPED_ID,
@@ -31,6 +31,7 @@ __all__ = [
     "VendorPlugin", "PluginRegistry", "Credentials", "Capability",
     "FirmwareInfo", "FirmwareRelease",
     "FIELD_NAMES", "get_first_ip", "next_ip", "version_tuple", "export_results",
+    "looks_like_zip",
     "GroupStore", "Group", "ALL_CAMERAS_ID", "UNGROUPED_ID",
     "VIRTUAL_GROUP_IDS", "camera_key",
     "PasswordVault", "VaultLocked", "VaultError",

@@ -141,12 +141,16 @@ wheel cffi         "'cp314-cp314-' in n and 'manylinux' in n and 'x86_64' in n"
 wheel pycparser    "n.endswith('.whl')"
 # Modernes Sun-Valley-Theme (reines py3-none-any-Wheel inkl. Tcl-Dateien)
 wheel sv-ttk       "n.endswith('.whl')"
+# Verschluesselte Benutzerlisten: pyzipper liest AES-256-ZIPs (WinZip/7-Zip),
+# braucht pycryptodomex (abi3-Wheel -> laeuft auf 3.14) fuer die AES-Krypto.
+wheel pyzipper      "n.endswith('.whl')"
+wheel pycryptodomex "'abi3' in n and 'manylinux' in n and 'x86_64' in n"
 
 echo ">> Importtest der gebuendelten Pakete:"
-"$PYBIN" -c "import zeroconf, ifaddr, cryptography, sv_ttk; \
+"$PYBIN" -c "import zeroconf, ifaddr, cryptography, sv_ttk, pyzipper; \
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM; \
 print('  zeroconf', zeroconf.__version__, '| cryptography', cryptography.__version__, \
-'| sv_ttk ok')"
+'| sv_ttk ok | pyzipper ok')"
 
 # --------------------------------------------------------------- 7. App + AppDir
 echo "==== AppDir zusammenstellen ===="
@@ -240,6 +244,13 @@ rm -rf "$PREFIX/lib/"itcl* "$PREFIX/lib/"tdbc* "$PREFIX/lib/"thread* \
        "$PREFIX/lib/"sqlite3.* 2>/dev/null || true
 rm -rf "$PREFIX/lib/python$PY_XY/sqlite3" \
        "$PREFIX/lib/python$PY_XY/lib-dynload/"_sqlite3*.so 2>/dev/null || true
+# (4c) pycryptodomex: fuer die AES-ZIP-Benutzerlisten (via pyzipper) wird nur
+#      AES/SHA1/KDF/Util gebraucht. Asymmetrik/Signaturen/Big-Int-Math/Selbsttest
+#      entfernen -> spart Platz UND Attributionsflaeche.
+_SITE="$PREFIX/lib/python$PY_XY/site-packages"
+rm -rf "$_SITE"/Cryptodome/PublicKey "$_SITE"/Cryptodome/SelfTest \
+       "$_SITE"/Cryptodome/Signature "$_SITE"/Cryptodome/Math \
+       "$_SITE"/Cryptodome/IO 2>/dev/null || true
 
 # (5) Debug-Symbole aus allen mitgelieferten Binaerdateien strippen (.so + python).
 #     --strip-unneeded ist fuer shared libs sicher (behaelt exportierte Symbole).

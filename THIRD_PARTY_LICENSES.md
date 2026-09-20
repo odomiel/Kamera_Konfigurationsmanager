@@ -21,6 +21,8 @@ eigene Programmcode (Paket `kkm/`, `main.py`, `bump_version.py`,
 | cffi | aktuell | MIT-0 | AppImage + .exe |
 | pycparser | aktuell | BSD-3-Clause | AppImage + .exe |
 | sv-ttk (Sun Valley) | aktuell | MIT | AppImage + .exe |
+| pyzipper | aktuell | MIT | AppImage + .exe |
+| pycryptodomex | aktuell | BSD-2-Clause + Public Domain | AppImage + .exe |
 
 > Die genauen Versionen der Wheels (zeroconf, ifaddr, cryptography, cffi,
 > pycparser) werden zur Bauzeit von PyPI in ihrer jeweils aktuellen Fassung
@@ -197,6 +199,30 @@ Lizenziert unter der **MIT-Lizenz** (Wortlaut wie bei *ifaddr* oben). Quellcode:
 https://github.com/rdbende/Sun-Valley-ttk-theme bzw.
 https://github.com/rdbende/sv-ttk . Liefert das moderne Hell/Dunkel-Design der
 Oberfläche (reines Tcl-Theme, als Paketdaten gebündelt).
+
+---
+
+## pyzipper
+
+Copyright © Daniel Hillier und weitere Mitwirkende.
+
+Lizenziert unter der **MIT-Lizenz** (Wortlaut wie bei *ifaddr* oben). Quellcode:
+https://github.com/danifus/pyzipper . Liest passwortgeschützte AES-256-ZIP-Archive
+(WinZip/7-Zip) für den Stapel-Import verschlüsselter Benutzerlisten
+(`kkm/core/camera.py`). Nutzt intern **pycryptodomex** (siehe unten).
+
+---
+
+## pycryptodomex
+
+Copyright © Legrandin und weitere Mitwirkende; enthält gemeinfreien Code des
+ursprünglichen PyCrypto-Projekts (Public Domain).
+
+Dual lizenziert unter der **BSD-2-Clause-Lizenz** und als **Public Domain**.
+Vollständige Texte:
+https://github.com/Legrandin/pycryptodome/blob/master/LICENSE.rst . Liefert die
+AES-Krypto für `pyzipper` (nur AES/SHA1/KDF/Util werden gebündelt; asymmetrische
+Verfahren, Signaturen und die Selbsttests werden beim Bau entfernt).
 
 ---
 
