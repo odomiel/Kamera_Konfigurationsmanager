@@ -48,6 +48,9 @@ import os
 import tarfile
 import hashlib
 
+from .groups import open_private
+from .vault import MIN_KDF_ITERATIONS, MAX_KDF_ITERATIONS
+
 MAGIC = b"KKMBACKUP1\n"        # Formatkennung + Versions-Tag (zugleich AES-AAD)
 KDF_ITERATIONS = 600_000       # wie der Tresor (OWASP-Floor fuer PBKDF2-SHA256)
 KEY_LEN = 32                   # AES-256
@@ -107,7 +110,7 @@ def create_backup(out_path: str, password: str, config_dir: str) -> list[str]:
     ct = _aesgcm()(key).encrypt(nonce, plain, MAGIC)
 
     tmp = out_path + ".tmp"
-    with open(tmp, "wb") as fh:
+    with open_private(tmp, "wb") as fh:
         fh.write(MAGIC)
         fh.write(salt)
         fh.write(nonce)
@@ -138,6 +141,11 @@ def read_backup(in_path: str, password: str) -> dict[str, bytes]:
     nonce = data[off:off + NONCE_LEN]; off += NONCE_LEN
     iterations = int.from_bytes(data[off:off + 4], "big"); off += 4
     ct = data[off:]
+    # Die Iterationszahl steht ungeschuetzt im Header: begrenzen, sonst friert eine
+    # praeparierte Datei (bis ~4 Mrd. Iterationen) die Oberflaeche ein.
+    if not MIN_KDF_ITERATIONS <= iterations <= MAX_KDF_ITERATIONS:
+        raise BackupError(
+            f"Keine gültige Backup-Datei (unzulässige Iterationszahl {iterations}).")
 
     key = _derive(password, salt, iterations)
     try:
@@ -175,7 +183,7 @@ def restore_backup(in_path: str, password: str, config_dir: str) -> list[str]:
     for name, content in files.items():
         dst = os.path.join(config_dir, name)
         tmp = dst + ".tmp"
-        with open(tmp, "wb") as fh:
+        with open_private(tmp, "wb") as fh:
             fh.write(content)
         os.replace(tmp, dst)
         restored.append(name)

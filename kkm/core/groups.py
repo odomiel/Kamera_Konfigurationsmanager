@@ -60,8 +60,53 @@ def config_dir() -> str:
             os.path.expanduser("~"), ".config"
         )
     path = os.path.join(base, "kamera_konfigurationsmanager")
-    os.makedirs(path, exist_ok=True)
+    os.makedirs(path, mode=PRIVATE_DIR_MODE, exist_ok=True)
+    _harden_permissions(path)
     return path
+
+
+# Rechte fuer das Config-Verzeichnis und seine Dateien (Tresor, Auto-Entsperr-Token,
+# Kameraliste): nur der Eigentuemer darf lesen/schreiben. Ohne das legt Python die
+# Dateien gemaess umask meist 0644/0664 an — lesbar fuer jeden lokalen Benutzer.
+# Unter Windows greifen POSIX-Rechte nicht (dort schuetzt das Profil/ACL); no-op.
+PRIVATE_DIR_MODE = 0o700
+PRIVATE_FILE_MODE = 0o600
+_hardened: set[str] = set()
+
+
+def _harden_permissions(path: str) -> None:
+    """Setzt einmal pro Prozess 0700 auf *path* und 0600 auf die Dateien darin
+    (Nachruesten fuer Installationen, die vor dieser Absicherung angelegt wurden)."""
+    if os.name == "nt" or path in _hardened:
+        return
+    _hardened.add(path)
+    try:
+        os.chmod(path, PRIVATE_DIR_MODE)
+        for name in os.listdir(path):
+            full = os.path.join(path, name)
+            if os.path.isfile(full) and not os.path.islink(full):
+                os.chmod(full, PRIVATE_FILE_MODE)
+    except OSError:
+        pass   # z. B. fremder Eigentuemer — App laeuft trotzdem weiter
+
+
+def open_private(path: str, mode: str = "w", encoding: str = "utf-8"):
+    """Wie ``open(path, mode)`` zum Schreiben, aber die Datei entsteht mit 0600.
+
+    Auch eine schon vorhandene Datei (z. B. ein liegengebliebenes ``.tmp``) wird
+    auf 0600 gesetzt. Gedacht fuer das atomare Muster ``tmp`` + ``os.replace`` —
+    ``os.replace`` uebernimmt die Rechte der tmp-Datei."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_BINARY", 0)
+    fd = os.open(path, flags, PRIVATE_FILE_MODE)
+    try:
+        if os.name != "nt":
+            os.fchmod(fd, PRIVATE_FILE_MODE)
+        if "b" in mode:
+            return os.fdopen(fd, mode)
+        return os.fdopen(fd, mode, encoding=encoding)
+    except BaseException:
+        os.close(fd)
+        raise
 
 
 def camera_key(camera: dict) -> str:
@@ -159,7 +204,7 @@ class GroupStore:
             "roster": self.roster,
         }
         tmp = self.path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
+        with open_private(tmp) as fh:
             json.dump(data, fh, indent=2, ensure_ascii=False)
         os.replace(tmp, self.path)
 

@@ -457,6 +457,10 @@ Stored are the groups and the known device list (`groups.json`), the settings
 | Windows (from source) | `%APPDATA%\kamera_konfigurationsmanager` |
 | Linux | `~/.config/kamera_konfigurationsmanager` |
 
+On Linux the folder is accessible to your own user account only (`0700`, files `0600`) —
+other users of the computer cannot read the device list, the vault or the auto-unlock
+token. Older installations are upgraded automatically at start.
+
 Downloaded firmware is kept in the subfolder `firmware_cache` and can be cleared in the
 settings at any time.
 

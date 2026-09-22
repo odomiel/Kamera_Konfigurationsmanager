@@ -482,6 +482,11 @@ Ordner `kamera_konfigurationsmanager`:
 | Windows (aus dem Quelltext) | `%APPDATA%\kamera_konfigurationsmanager` |
 | Linux | `~/.config/kamera_konfigurationsmanager` |
 
+Unter Linux ist der Ordner nur für das eigene Benutzerkonto zugänglich (`0700`, Dateien
+`0600`) — andere Benutzer des Rechners können Geräteliste, Tresor und
+Auto-Entsperr-Token nicht lesen. Ältere Installationen werden beim Start automatisch
+nachgerüstet.
+
 Heruntergeladene Firmware liegt im Unterordner `firmware_cache` und lässt sich in den
 Einstellungen jederzeit löschen.
 

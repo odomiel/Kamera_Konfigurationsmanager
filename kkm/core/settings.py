@@ -29,7 +29,7 @@ from __future__ import annotations
 import json
 import os
 
-from .groups import config_dir
+from .groups import config_dir, open_private
 
 DEFAULTS = {
     "enabled_plugins": None,     # None -> all on
@@ -67,7 +67,7 @@ class AppSettings:
     def save(self) -> None:
         try:
             tmp = self.path + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as fh:
+            with open_private(tmp) as fh:
                 json.dump(self._data, fh, indent=2, ensure_ascii=False)
             os.replace(tmp, self.path)
         except OSError:

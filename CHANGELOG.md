@@ -4,6 +4,27 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.09.22 — 2026-09-22
+
+- **Dateirechte abgesichert (Linux).** Das Konfigurationsverzeichnis wird jetzt mit
+  `0700` angelegt, alle darin geschriebenen Dateien (`groups.json`, `settings.json`,
+  `vault.enc`, `vault.auto`) mit `0600`; ebenso exportierte `.kkmbackup`-Dateien und
+  wiederhergestellte Dateien. Bisher entstanden sie gemäß `umask` meist mit `0664` —
+  für andere lokale Benutzer lesbar. Besonders kritisch war das beim
+  **Auto-Entsperr-Token**: dessen Schlüssel stammt aus öffentlich bekannten Merkmalen
+  (Rechner-/Benutzername), ein lesbares Token gab damit das Master-Passwort preis.
+  Bestehende Installationen werden beim Programmstart einmalig nachgerüstet.
+- **Tresor beachtet die gespeicherte Iterationszahl.** `vault.enc` wird mit der
+  PBKDF2-Iterationszahl aus der Datei geöffnet statt mit der Programmkonstante — alte
+  Tresore bleiben so auch nach einer künftigen Erhöhung lesbar und werden beim
+  Entsperren automatisch auf den aktuellen Wert angehoben. Unbekannte Verfahren
+  (`kdf`) werden klar abgewiesen; das Auto-Entsperr-Token speichert seine
+  Iterationszahl nun ebenfalls (ältere Token ohne Feld funktionieren weiter).
+- **Iterationszahl aus Dateien wird begrenzt (100.000–10.000.000).** Tresor,
+  Auto-Entsperr-Token und `.kkmbackup` prüfen den Wert vor der Schlüsselableitung. Eine
+  präparierte Sicherung mit ~4 Mrd. Iterationen konnte die Oberfläche bisher faktisch
+  einfrieren; sie wird jetzt sofort als ungültig abgelehnt.
+
 ## 26.09.20 — 2026-09-20
 
 - **Verschlüsselte Benutzerlisten (Stapel-Import).** Der Benutzer- und der

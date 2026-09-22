@@ -399,3 +399,9 @@ Groups (`groups.json`), settings (`settings.json`) and the encrypted password va
 - **Windows (started from source):** in the user profile under
   `%APPDATA%\kamera_konfigurationsmanager`.
 - **Linux:** in the user profile under `~/.config/kamera_konfigurationsmanager`.
+
+On Linux the folder is **accessible to your own user account only** (folder `0700`,
+files `0600`); other users on the same computer can read neither the camera list nor
+the vault or the auto-unlock token. Older installations are secured accordingly at
+program start. Exported backups (`.kkmbackup`) are likewise created readable for your
+own account only.

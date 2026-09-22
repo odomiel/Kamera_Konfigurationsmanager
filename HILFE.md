@@ -435,3 +435,9 @@ verschlüsselte Passwort-Tresor (`vault.enc`) im Unterordner
 - **Windows (aus dem Quellcode gestartet):** im Benutzerprofil unter
   `%APPDATA%\kamera_konfigurationsmanager`.
 - **Linux:** im Benutzerprofil unter `~/.config/kamera_konfigurationsmanager`.
+
+Unter Linux ist der Ordner **nur für das eigene Benutzerkonto** zugänglich (Ordner
+`0700`, Dateien `0600`); andere Benutzer desselben Rechners können weder die
+Kameraliste noch den Tresor oder das Auto-Entsperr-Token lesen. Ältere Installationen
+werden beim Programmstart automatisch entsprechend abgesichert. Auch exportierte
+Sicherungen (`.kkmbackup`) werden nur für das eigene Konto lesbar angelegt.

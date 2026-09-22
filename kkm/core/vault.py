@@ -42,9 +42,15 @@ import json
 import os
 import platform
 
-from .groups import config_dir
+from .groups import config_dir, open_private
 
 PBKDF2_ITERATIONS = 600_000   # OWASP-recommended floor for PBKDF2-HMAC-SHA256
+KDF_NAME = "pbkdf2-hmac-sha256"
+# Plausibilitaetsgrenzen fuer eine aus einer Datei gelesene Iterationszahl: nach
+# unten gegen absichtlich geschwaechte Dateien, nach oben gegen manipulierte Werte,
+# die die Schluesselableitung minuten- bis stundenlang blockieren wuerden.
+MIN_KDF_ITERATIONS = 100_000
+MAX_KDF_ITERATIONS = 10_000_000
 KEY_LEN = 32                  # AES-256
 SALT_LEN = 16
 NONCE_LEN = 12
@@ -65,13 +71,23 @@ def _getuser() -> str:
         return "user"
 
 
-def _machine_key(salt: bytes) -> bytes:
+def check_iterations(value) -> int:
+    """Validiert eine aus einer Datei gelesene PBKDF2-Iterationszahl.
+    Wirft ValueError, wenn sie kein int oder ausserhalb der Grenzen ist."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"ungültige Iterationszahl: {value!r}")
+    if not MIN_KDF_ITERATIONS <= value <= MAX_KDF_ITERATIONS:
+        raise ValueError(f"Iterationszahl außerhalb des zulässigen Bereichs: {value}")
+    return value
+
+
+def _machine_key(salt: bytes, iterations: int = AUTO_ITERATIONS) -> bytes:
     ident = "\x1f".join([
         platform.node(), _getuser(), platform.system(),
         "kkm-vault-autounlock-v1",
     ])
     return hashlib.pbkdf2_hmac("sha256", ident.encode("utf-8"), salt,
-                               AUTO_ITERATIONS, KEY_LEN)
+                               iterations, KEY_LEN)
 
 
 class VaultLocked(Exception):
@@ -93,9 +109,9 @@ def _aesgcm():
     return AESGCM
 
 
-def _derive(master: str, salt: bytes) -> bytes:
+def _derive(master: str, salt: bytes, iterations: int = PBKDF2_ITERATIONS) -> bytes:
     return hashlib.pbkdf2_hmac(
-        "sha256", master.encode("utf-8"), salt, PBKDF2_ITERATIONS, KEY_LEN
+        "sha256", master.encode("utf-8"), salt, iterations, KEY_LEN
     )
 
 
@@ -109,6 +125,7 @@ class PasswordVault:
         self.auto_path = os.path.join(os.path.dirname(self.path), AUTO_FILENAME)
         self._key: bytes | None = None
         self._salt: bytes | None = None
+        self._iterations = PBKDF2_ITERATIONS   # der zum aktuellen _key gehoerige Wert
         self._data: dict[str, dict] = {}
 
     # --- state --------------------------------------------------------------
@@ -130,6 +147,7 @@ class PasswordVault:
         if self.exists:
             raise VaultError("Tresor existiert bereits.")
         self._salt = os.urandom(SALT_LEN)
+        self._iterations = PBKDF2_ITERATIONS
         self._key = _derive(master, self._salt)
         self._data = {}
         self._flush()
@@ -141,19 +159,36 @@ class PasswordVault:
         try:
             with open(self.path, encoding="utf-8") as fh:
                 blob = json.load(fh)
+            if blob.get("kdf", KDF_NAME) != KDF_NAME:
+                raise VaultError(f"Unbekanntes Tresor-Verfahren: {blob.get('kdf')}")
+            # Gespeicherte Iterationszahl verwenden (nicht die Konstante): so bleiben
+            # alte Tresore lesbar, wenn PBKDF2_ITERATIONS spaeter erhoeht wird.
+            # Aeltere Dateien ohne Feld wurden mit dem Vorgabewert angelegt.
+            iterations = check_iterations(blob.get("iterations", PBKDF2_ITERATIONS))
             salt = base64.b64decode(blob["salt"])
             nonce = base64.b64decode(blob["nonce"])
             ct = base64.b64decode(blob["ct"])
-        except (OSError, ValueError, KeyError, TypeError) as exc:
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             raise VaultError(f"Tresor-Datei nicht lesbar oder beschädigt: {exc}") from exc
-        key = _derive(master, salt)
+        key = _derive(master, salt, iterations)
         try:
             plain = _aesgcm()(key).decrypt(nonce, ct, None)
         except Exception as exc:  # InvalidTag etc. -> wrong password / tampered
             raise VaultError("Falsches Master-Passwort oder beschädigter Tresor.") from exc
         self._salt = salt
+        self._iterations = iterations
         self._key = key
         self._data = json.loads(plain.decode("utf-8"))
+        if iterations < PBKDF2_ITERATIONS:
+            # Schwaecher als die aktuelle Vorgabe -> mit neuem Salt/aktueller
+            # Iterationszahl neu verschluesseln (Passwort liegt ja gerade vor).
+            try:
+                self._salt = os.urandom(SALT_LEN)
+                self._iterations = PBKDF2_ITERATIONS
+                self._key = _derive(master, self._salt)
+                self._flush()
+            except OSError:
+                pass   # nicht beschreibbar -> Datei bleibt beim alten Stand lesbar
 
     def lock(self) -> None:
         self._key = None
@@ -162,6 +197,7 @@ class PasswordVault:
     def change_master(self, old: str, new: str) -> None:
         self.unlock(old)
         self._salt = os.urandom(SALT_LEN)
+        self._iterations = PBKDF2_ITERATIONS
         self._key = _derive(new, self._salt)
         self._flush()
         # Auto-Entsperrung (falls aktiv) auf das neue Passwort umschreiben.
@@ -183,12 +219,13 @@ class PasswordVault:
         ct = _aesgcm()(_machine_key(salt)).encrypt(nonce, master.encode("utf-8"), None)
         blob = {
             "version": 1,
+            "iterations": AUTO_ITERATIONS,
             "salt": base64.b64encode(salt).decode(),
             "nonce": base64.b64encode(nonce).decode(),
             "ct": base64.b64encode(ct).decode(),
         }
         tmp = self.auto_path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
+        with open_private(tmp) as fh:
             json.dump(blob, fh, indent=2)
         os.replace(tmp, self.auto_path)
 
@@ -207,10 +244,12 @@ class PasswordVault:
         try:
             with open(self.auto_path, encoding="utf-8") as fh:
                 blob = json.load(fh)
+            iterations = check_iterations(blob.get("iterations", AUTO_ITERATIONS))
             salt = base64.b64decode(blob["salt"])
             nonce = base64.b64decode(blob["nonce"])
             ct = base64.b64decode(blob["ct"])
-            master = _aesgcm()(_machine_key(salt)).decrypt(nonce, ct, None).decode("utf-8")
+            master = _aesgcm()(_machine_key(salt, iterations)).decrypt(
+                nonce, ct, None).decode("utf-8")
             self.unlock(master)
             return True
         except Exception:  # noqa: BLE001 - Token ungültig/fremder Rechner -> gesperrt bleiben
@@ -274,14 +313,14 @@ class PasswordVault:
         ct = _aesgcm()(self._key).encrypt(nonce, plain, None)
         blob = {
             "version": 1,
-            "kdf": "pbkdf2-hmac-sha256",
-            "iterations": PBKDF2_ITERATIONS,
+            "kdf": KDF_NAME,
+            "iterations": self._iterations,
             "cipher": "aes-256-gcm",
             "salt": base64.b64encode(self._salt).decode(),
             "nonce": base64.b64encode(nonce).decode(),
             "ct": base64.b64encode(ct).decode(),
         }
         tmp = self.path + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as fh:
+        with open_private(tmp) as fh:
             json.dump(blob, fh, indent=2)
         os.replace(tmp, self.path)

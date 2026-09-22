@@ -23,7 +23,9 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
   Konfig-Backup (Komplett-Sicherung: Axis via Device-Configuration-API `.json`,
   Hikvision/Dahua/Hanwha als `.bin`), Zeitzone (Axis Time API, IANA).
 - **Passwort-Tresor**: Master-Passwort → PBKDF2 → AES-256-GCM (eine Datei,
-  portabel, kein OS-Keyring, keine DB).
+  portabel, kein OS-Keyring, keine DB). Iterationszahl wird mit gespeichert und beim
+  Öffnen geprüft; Konfig-Ordner/-Dateien unter Linux nur für den Besitzer lesbar
+  (`0700`/`0600`).
 - **Plugin-System** je Hersteller, an-/abschaltbar — **Axis** (voller Funktionsumfang),
   ein generisches **ONVIF**-Plugin (Standard-Geräte: Suche, Info, IP, ONVIF-Benutzer,
   Werksreset; ab Werk ausgeschaltet) und **Hikvision** (ISAPI/SADP; Suche, Info, IP,

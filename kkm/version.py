@@ -20,7 +20,7 @@ Version scheme follows the Discovery tool: ``JJ.MM.TT`` (2-digit year);
 multiple releases the same day get an incrementing ``bN`` suffix.
 """
 
-__version__ = "26.09.20"
+__version__ = "26.09.22"
 APP_NAME = "Kamera_Konfigurationsmanager"
 
 # Oeffentliche Projektseite (GitHub-Spiegel) — Quelle fuer den About-Link und die
