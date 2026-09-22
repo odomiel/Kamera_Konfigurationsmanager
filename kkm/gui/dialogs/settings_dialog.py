@@ -170,6 +170,7 @@ class SettingsDialog(tk.Toplevel):
         nb.add(self._build_appearance_tab(nb), text=t("Darstellung"))
         nb.add(self._build_vault_tab(nb), text=t("Tresor"))
         nb.add(self._build_plugins_tab(nb), text=t("Plugins"))
+        nb.add(self._build_security_tab(nb), text=t("Verbindungssicherheit"))
         nb.add(self._build_online_tab(nb), text=t("Online-Prüfung"))
         nb.add(self._build_columns_tab(nb), text=t("Spalten"))
         nb.add(self._build_firmware_tab(nb), text=t("Firmwareupdates"))
@@ -417,44 +418,52 @@ class SettingsDialog(tk.Toplevel):
                        "geprüft — Schreib-Aktionen (IP, Benutzer, Firmware, Reset) auf "
                        "eigene Gefahr verwenden."),
             ).pack(anchor=tk.W, pady=(8, 0))
+        return tab
 
+    # ---------------------------------------------------------------- security
+    def _build_security_tab(self, parent):
         from kkm.gui import theme
-        ttk.Separator(tab).pack(fill=tk.X, pady=10)
-        ttk.Label(tab, text=t("Verbindungssicherheit:")).pack(anchor=tk.W)
-        self._basic_http_var = tk.BooleanVar(
-            value=bool(self.settings.get("allow_basic_over_http", False)))
-        ttk.Checkbutton(tab, text=t("Basic-Anmeldung über unverschlüsseltes HTTP erlauben "
-                                    "(unsicher)"),
-                        variable=self._basic_http_var,
-                        command=self._save_basic_http).pack(anchor=tk.W, pady=2)
-        ttk.Label(
-            tab, wraplength=460, justify=tk.LEFT,
-            foreground=theme.CURRENT.get("warn", "#c0392b"),
-            text=t("Bei Basic-Anmeldung über HTTP geht das Kamera-Passwort im Klartext "
-                   "über das Netz. Ohne Haken wird über HTTP nur Digest verwendet; nur "
-                   "für alte Geräte aktivieren, die weder HTTPS noch Digest können."),
-        ).pack(anchor=tk.W, pady=(2, 0))
+        tab = ttk.Frame(parent, padding=10)
 
+        cert = ttk.LabelFrame(tab, text=t("Zertifikatsprüfung (Trust-on-First-Use)"),
+                              padding=8)
+        cert.pack(fill=tk.X)
         self._pinning_var = tk.BooleanVar(value=bool(self.settings.get("cert_pinning", True)))
-        ttk.Checkbutton(tab, text=t("Kamera-Zertifikate beim ersten Kontakt merken und bei "
-                                    "Änderung nachfragen (empfohlen)"),
+        ttk.Checkbutton(cert, text=t("Kamera-Zertifikate beim ersten Kontakt merken und bei "
+                                     "Änderung nachfragen (empfohlen)"),
                         variable=self._pinning_var,
-                        command=self._save_pinning).pack(anchor=tk.W, pady=(10, 2))
+                        command=self._save_pinning).pack(anchor=tk.W, pady=(0, 2))
         ttk.Label(
-            tab, wraplength=460, justify=tk.LEFT,
+            cert, wraplength=460, justify=tk.LEFT,
             text=t("Schützt vor dem Abfangen der Verbindung (Man-in-the-Middle): Ändert "
                    "sich das HTTPS-Zertifikat einer bekannten Kamera, werden keine "
                    "Zugangsdaten gesendet und das Programm fragt nach. Nach Werksreset "
                    "und Firmware-Update über das Programm wird das neue Zertifikat "
                    "automatisch übernommen."),
         ).pack(anchor=tk.W, pady=(2, 0))
-        row = ttk.Frame(tab)
+        row = ttk.Frame(cert)
         row.pack(anchor=tk.W, pady=(6, 0))
         self._pinned_label = ttk.Label(row)
         self._pinned_label.pack(side=tk.LEFT)
         ttk.Button(row, text=t("Alle vergessen"), command=self._forget_all_certs).pack(
             side=tk.LEFT, padx=8)
         self._render_pinned()
+
+        basic = ttk.LabelFrame(tab, text=t("Anmeldung über HTTP"), padding=8)
+        basic.pack(fill=tk.X, pady=(10, 0))
+        self._basic_http_var = tk.BooleanVar(
+            value=bool(self.settings.get("allow_basic_over_http", False)))
+        ttk.Checkbutton(basic, text=t("Basic-Anmeldung über unverschlüsseltes HTTP erlauben "
+                                      "(unsicher)"),
+                        variable=self._basic_http_var,
+                        command=self._save_basic_http).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(
+            basic, wraplength=460, justify=tk.LEFT,
+            foreground=theme.CURRENT.get("warn", "#c0392b"),
+            text=t("Bei Basic-Anmeldung über HTTP geht das Kamera-Passwort im Klartext "
+                   "über das Netz. Ohne Haken wird über HTTP nur Digest verwendet; nur "
+                   "für alte Geräte aktivieren, die weder HTTPS noch Digest können."),
+        ).pack(anchor=tk.W, pady=(2, 0))
         return tab
 
     def _save_pinning(self):

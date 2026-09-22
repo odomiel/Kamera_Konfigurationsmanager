@@ -109,7 +109,7 @@ opens its web interface in the default browser (`http://<IP>`).
   deletes the camera from the device list and all groups, as well as its stored password.
   On the next search a reachable camera reappears.
 - **Forget certificate** — right-click → **"Forget certificate"**: discards the stored
-  HTTPS certificate of the selected cameras (see *Settings → Plugins*); it is stored again
+  HTTPS certificate of the selected cameras (see *Settings → Connection security*); it is stored again
   at next contact. Useful when the certificate was replaced on purpose outside the program.
 
 ---
@@ -349,20 +349,22 @@ Several areas:
     computer/account. Clearing the checkbox deletes the token again.
 - **Plugins** — enable/disable plugins: **Axis** (on) and **ONVIF (generic)** (off by
   default). The selection is saved.
-  Below, under **Connection security**: **"Allow Basic authentication over unencrypted
-  HTTP (insecure)"** — **off** by default. The program then authenticates over HTTP with
-  **Digest** only and never sends a password in plain text; if a camera demands Basic over
-  HTTP, the action is aborted with a notice. Basic over HTTPS remains allowed. Enable only
-  for old devices that support neither HTTPS nor Digest.
-  Also there: **"Remember camera certificates at first contact and ask when they change
-  (recommended)"** — **on** by default. At the first HTTPS contact the program stores the
-  fingerprint (SHA-256) of the camera certificate. If it changes later, the connection is
-  aborted **before** any credentials are sent and the action dialog asks: **"Trust new
-  certificate and retry"** or cancel. This protects against intercepted connections
-  (man-in-the-middle). Once a certificate is known, connection mode *auto* no longer falls
-  back to unencrypted HTTP when HTTPS suddenly becomes unreachable. After a **factory
-  reset** or **firmware update** performed by the program, the new certificate is adopted
-  automatically. **"Forget all"** deletes all stored certificates.
+- **Connection security** — two areas:
+  - **Certificate check (trust on first use):** **"Remember camera certificates at first
+    contact and ask when they change (recommended)"** — **on** by default. At the first
+    HTTPS contact the program stores the fingerprint (SHA-256) of the camera certificate.
+    If it changes later, the connection is aborted **before** any credentials are sent and
+    the action dialog asks: **"Trust new certificate and retry"** or cancel. This protects
+    against intercepted connections (man-in-the-middle). Once a certificate is known,
+    connection mode *auto* no longer falls back to unencrypted HTTP when HTTPS suddenly
+    becomes unreachable. After a **factory reset** or **firmware update** performed by the
+    program, the new certificate is adopted automatically. The number of stored
+    certificates is shown; **"Forget all"** deletes them.
+  - **Authentication over HTTP:** **"Allow Basic authentication over unencrypted HTTP
+    (insecure)"** — **off** by default. The program then authenticates over HTTP with
+    **Digest** only and never sends a password in plain text; if a camera demands Basic
+    over HTTP, the action is aborted with a notice. Basic over HTTPS remains allowed.
+    Enable only for old devices that support neither HTTPS nor Digest.
 - **Online check** — enable/disable the automatic online check per group and set the
   interval.
 - **Columns** — show/hide individual columns of the device list (the "Name" column always

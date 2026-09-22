@@ -4,6 +4,14 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.09.22b3 — 2026-09-22
+
+- **Eigener Einstellungs-Reiter „Verbindungssicherheit".** Zertifikatsprüfung
+  (Trust-on-First-Use, inkl. Zähler und „Alle vergessen") und der Schalter für
+  Basic-Anmeldung über HTTP stehen jetzt gebündelt in einem eigenen Reiter direkt hinter
+  „Plugins", statt unten im Plugins-Reiter. Die Hinweismeldung bei abgelehnter
+  Basic-Anmeldung verweist entsprechend auf *Einstellungen → Verbindungssicherheit*.
+
 ## 26.09.22b2 — 2026-09-22
 
 - **Kamera-Zertifikate werden gemerkt (Trust-on-First-Use).** Da Kameras selbstsignierte

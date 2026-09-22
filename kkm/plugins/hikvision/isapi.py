@@ -79,7 +79,7 @@ class _BasicAuthHandler(urllib.request.HTTPBasicAuthHandler):
             if "digest" in schemes:
                 return None   # Digest war schon dran (z. B. falsches Passwort) -> 401
             if "basic" in schemes:
-                raise BasicOverHttpRefused(t("Die Kamera verlangt eine Basic-Anmeldung über unverschlüsseltes HTTP (Passwort im Klartext) — abgelehnt. HTTPS verwenden oder unter Einstellungen → Plugins ausdrücklich erlauben."))
+                raise BasicOverHttpRefused(t("Die Kamera verlangt eine Basic-Anmeldung über unverschlüsseltes HTTP (Passwort im Klartext) — abgelehnt. HTTPS verwenden oder unter Einstellungen → Verbindungssicherheit ausdrücklich erlauben."))
         return super().http_error_401(req, fp, code, msg, headers)
 
 
