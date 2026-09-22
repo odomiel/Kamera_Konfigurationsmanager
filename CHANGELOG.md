@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.09.22b1 — 2026-09-22
+
+- **Keine Basic-Anmeldung mehr über unverschlüsseltes HTTP.** Alle HTTP-Clients (Axis,
+  Hikvision, Dahua, Hanwha, ONVIF) senden Zugangsdaten über `http://` nur noch per
+  **Digest**. Bisher genügte es einem Mithörer, „Basic" zu verlangen (oder Port 443 zu
+  blockieren und so den HTTP-Rückfall zu erzwingen), um das Kamera-Passwort im Klartext
+  zu erhalten. Verlangt eine Kamera über HTTP nur Basic, bricht die Aktion mit klarer
+  Meldung ab — ohne Passwort-Nachfrage und ohne Fehl-Erfolg bei Firmware-Uploads. Über
+  HTTPS bleibt Basic erlaubt. Für Altgeräte **abschaltbar** unter *Einstellungen →
+  Plugins → Verbindungssicherheit* (ab Werk aus). Ausnahme: die Werkszustands-Prüfung
+  mit dem öffentlich bekannten `root/pass` bleibt unverändert.
+
 ## 26.09.22 — 2026-09-22
 
 - **Dateirechte abgesichert (Linux).** Das Konfigurationsverzeichnis wird jetzt mit

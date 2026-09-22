@@ -595,6 +595,10 @@ EN: dict[str, str] = {
     '● Online': '● Online',
     '● Status': '● Status',
     '⚠ Experimentelle Plugins sind noch nicht an echter Hardware geprüft — Schreib-Aktionen (IP, Benutzer, Firmware, Reset) auf eigene Gefahr verwenden.': '⚠ Experimental plugins have not yet been verified on real hardware — use write actions (IP, users, firmware, reset) at your own risk.',
+    'Die Kamera verlangt eine Basic-Anmeldung über unverschlüsseltes HTTP (Passwort im Klartext) — abgelehnt. HTTPS verwenden oder unter Einstellungen → Plugins ausdrücklich erlauben.': 'The camera requires Basic authentication over unencrypted HTTP (password in plain text) — refused. Use HTTPS or explicitly allow it under Settings → Plugins.',
+    'Verbindungssicherheit:': 'Connection security:',
+    'Basic-Anmeldung über unverschlüsseltes HTTP erlauben (unsicher)': 'Allow Basic authentication over unencrypted HTTP (insecure)',
+    'Bei Basic-Anmeldung über HTTP geht das Kamera-Passwort im Klartext über das Netz. Ohne Haken wird über HTTP nur Digest verwendet; nur für alte Geräte aktivieren, die weder HTTPS noch Digest können.': 'With Basic authentication over HTTP the camera password travels over the network in plain text. When unchecked, only Digest is used over HTTP; enable only for old devices that support neither HTTPS nor Digest.',
 }
 
 CATALOG: dict[str, dict[str, str]] = {"en": EN}

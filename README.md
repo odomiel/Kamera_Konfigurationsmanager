@@ -26,6 +26,8 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
   portabel, kein OS-Keyring, keine DB). Iterationszahl wird mit gespeichert und beim
   Öffnen geprüft; Konfig-Ordner/-Dateien unter Linux nur für den Besitzer lesbar
   (`0700`/`0600`).
+- **Kein Klartext-Passwort über HTTP**: über HTTP nur Digest-Anmeldung, Basic nur über
+  HTTPS (für Altgeräte in den Einstellungen abschaltbar).
 - **Plugin-System** je Hersteller, an-/abschaltbar — **Axis** (voller Funktionsumfang),
   ein generisches **ONVIF**-Plugin (Standard-Geräte: Suche, Info, IP, ONVIF-Benutzer,
   Werksreset; ab Werk ausgeschaltet) und **Hikvision** (ISAPI/SADP; Suche, Info, IP,

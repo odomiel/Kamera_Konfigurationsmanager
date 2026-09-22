@@ -402,6 +402,10 @@ maximized at startup*.
 **Vault** — see chapter 9.
 
 **Plugins** — enable and disable manufacturer plugins (Axis, ONVIF). The selection is saved.
+Also the switch **"Allow Basic authentication over unencrypted HTTP (insecure)"** (off by
+default): when unchecked, the program authenticates over HTTP with Digest only, so a password
+never travels over the network in plain text. Enable only for old devices that support
+neither HTTPS nor Digest.
 
 **Online check** — enable/disable the automatic check per group and set the interval.
 

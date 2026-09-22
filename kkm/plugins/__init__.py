@@ -33,6 +33,11 @@ from .onvif import OnvifPlugin
 from .hikvision import HikvisionPlugin
 from .dahua import DahuaPlugin
 from .hanwha import HanwhaPlugin
+from .axis import vapix as _vapix
+from .hikvision import isapi as _isapi
+from .dahua import httpapi as _httpapi
+from .hanwha import sunapi as _sunapi
+from .onvif import soap as _soap
 
 #: Plugins, die ohne gespeicherte Auswahl ausgeschaltet bleiben (generisches ONVIF
 #: sowie noch nicht an Hardware verifizierte, experimentelle Hersteller-Plugins).
@@ -52,5 +57,12 @@ def build_registry(enabled_ids: list[str] | None = None) -> PluginRegistry:
     return registry
 
 
-__all__ = ["build_registry", "AxisPlugin", "OnvifPlugin", "HikvisionPlugin",
+def set_basic_over_http(allowed: bool) -> None:
+    """Basic-Auth ueber unverschluesseltes HTTP in allen HTTP-Clients erlauben
+    (``True``, Passwort im Klartext) oder verbieten (``False``, Vorgabe)."""
+    for mod in (_vapix, _isapi, _httpapi, _sunapi, _soap):
+        mod.ALLOW_BASIC_OVER_HTTP = bool(allowed)
+
+
+__all__ = ["build_registry", "set_basic_over_http", "AxisPlugin", "OnvifPlugin", "HikvisionPlugin",
            "DahuaPlugin", "HanwhaPlugin"]

@@ -48,7 +48,7 @@ from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
                       UNGROUPED_ID, VIRTUAL_GROUP_IDS, camera_key, PasswordVault,
                       AppSettings, VaultError, FIELD_NAMES, get_first_ip,
                       export_results, t, set_language, get_language)
-from kkm.plugins import build_registry
+from kkm.plugins import build_registry, set_basic_over_http
 from kkm.core import updates
 from kkm.gui import theme
 from kkm.gui.widgets import add_scrollbars
@@ -203,6 +203,7 @@ class MainWindow(tk.Tk):
         self._theme = self.settings.get("theme", "dark")
         theme.apply_theme(self, self._theme)
         self.registry = build_registry(self.settings.get("enabled_plugins"))
+        set_basic_over_http(self.settings.get("allow_basic_over_http", False))
         self.vault = PasswordVault()
         # Tresor beim Start automatisch entsperren, falls der Nutzer das in den
         # Einstellungen aktiviert hat (hinterlegtes, geräte­gebundenes Token).

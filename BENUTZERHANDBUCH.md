@@ -424,7 +424,10 @@ unverändert. Zusätzlich: *Beim Start maximiert öffnen*.
 **Tresor** — siehe Kapitel 9.
 
 **Plugins** — Hersteller-Plugins ein- und ausschalten (Axis, ONVIF). Die Auswahl wird
-gespeichert.
+gespeichert. Außerdem der Schalter **„Basic-Anmeldung über unverschlüsseltes HTTP
+erlauben (unsicher)"** (ab Werk aus): Ohne Haken meldet sich das Programm über HTTP nur per
+Digest an, ein Passwort geht nie im Klartext über das Netz. Nur für alte Geräte einschalten,
+die weder HTTPS noch Digest beherrschen.
 
 **Online-Prüfung** — pro Gruppe die automatische Prüfung ein-/ausschalten und das Intervall
 festlegen.

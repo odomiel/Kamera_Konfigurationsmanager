@@ -417,12 +417,35 @@ class SettingsDialog(tk.Toplevel):
                        "geprüft — Schreib-Aktionen (IP, Benutzer, Firmware, Reset) auf "
                        "eigene Gefahr verwenden."),
             ).pack(anchor=tk.W, pady=(8, 0))
+
+        from kkm.gui import theme
+        ttk.Separator(tab).pack(fill=tk.X, pady=10)
+        ttk.Label(tab, text=t("Verbindungssicherheit:")).pack(anchor=tk.W)
+        self._basic_http_var = tk.BooleanVar(
+            value=bool(self.settings.get("allow_basic_over_http", False)))
+        ttk.Checkbutton(tab, text=t("Basic-Anmeldung über unverschlüsseltes HTTP erlauben "
+                                    "(unsicher)"),
+                        variable=self._basic_http_var,
+                        command=self._save_basic_http).pack(anchor=tk.W, pady=2)
+        ttk.Label(
+            tab, wraplength=460, justify=tk.LEFT,
+            foreground=theme.CURRENT.get("warn", "#c0392b"),
+            text=t("Bei Basic-Anmeldung über HTTP geht das Kamera-Passwort im Klartext "
+                   "über das Netz. Ohne Haken wird über HTTP nur Digest verwendet; nur "
+                   "für alte Geräte aktivieren, die weder HTTPS noch Digest können."),
+        ).pack(anchor=tk.W, pady=(2, 0))
         return tab
 
     def _save_plugins(self):
         for pid, var in self._plugin_vars.items():
             self.registry.set_enabled(pid, var.get())
         self.settings.set("enabled_plugins", self.registry.enabled_ids())
+
+    def _save_basic_http(self):
+        from kkm.plugins import set_basic_over_http
+        allowed = self._basic_http_var.get()
+        self.settings.set("allow_basic_over_http", allowed)
+        set_basic_over_http(allowed)
 
     # ----------------------------------------------------------------- online
     def _build_online_tab(self, parent):

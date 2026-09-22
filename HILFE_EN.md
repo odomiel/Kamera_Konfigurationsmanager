@@ -346,6 +346,11 @@ Several areas:
     computer/account. Clearing the checkbox deletes the token again.
 - **Plugins** — enable/disable plugins: **Axis** (on) and **ONVIF (generic)** (off by
   default). The selection is saved.
+  Below, under **Connection security**: **"Allow Basic authentication over unencrypted
+  HTTP (insecure)"** — **off** by default. The program then authenticates over HTTP with
+  **Digest** only and never sends a password in plain text; if a camera demands Basic over
+  HTTP, the action is aborted with a notice. Basic over HTTPS remains allowed. Enable only
+  for old devices that support neither HTTPS nor Digest.
 - **Online check** — enable/disable the automatic online check per group and set the
   interval.
 - **Columns** — show/hide individual columns of the device list (the "Name" column always

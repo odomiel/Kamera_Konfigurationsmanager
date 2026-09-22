@@ -59,6 +59,36 @@ DEFAULT_PORTS = {"http": 80, "https": 443}
 # Kameras haben meist selbstsignierte Zertifikate -> Pruefung aus (wie im Axis-Plugin).
 _SSL_CONTEXT = ssl._create_unverified_context()
 
+# Basic-Auth ueber unverschluesseltes HTTP schickt das Passwort im Klartext (ein
+# Mithoerer muss nur "Basic" verlangen bzw. Port 443 blockieren). Ab Werk daher nur
+# Digest ueber HTTP; per Einstellung abschaltbar -> kkm.plugins.set_basic_over_http().
+ALLOW_BASIC_OVER_HTTP = False
+
+
+class BasicOverHttpRefused(Exception):
+    """Gegenstelle verlangt Basic-Auth ueber HTTP — Anmeldung verweigert.
+
+    Bewusst KEIN URLError/OSError: die Upload-Routinen werten Verbindungsfehler als
+    "Geraet startet neu" (Erfolg) — diese Ablehnung darf dort nicht verschluckt werden."""
+
+
+class _BasicAuthHandler(urllib.request.HTTPBasicAuthHandler):
+    """HTTPBasicAuthHandler, der ueber ``http://`` keine Zugangsdaten sendet."""
+
+    def __init__(self, password_mgr=None, allow_http=False):
+        super().__init__(password_mgr)
+        self.allow_http = allow_http
+
+    def http_error_401(self, req, fp, code, msg, headers):
+        if req.type == "http" and not (ALLOW_BASIC_OVER_HTTP or self.allow_http):
+            schemes = [h.strip().split(" ", 1)[0].lower()
+                       for h in headers.get_all("WWW-Authenticate") or []]
+            if "digest" in schemes:
+                return None   # Digest war schon dran (z. B. falsches Passwort) -> 401
+            if "basic" in schemes:
+                raise BasicOverHttpRefused(t("Die Kamera verlangt eine Basic-Anmeldung über unverschlüsseltes HTTP (Passwort im Klartext) — abgelehnt. HTTPS verwenden oder unter Einstellungen → Plugins ausdrücklich erlauben."))
+        return super().http_error_401(req, fp, code, msg, headers)
+
 _ENVELOPE = (
     '<?xml version="1.0" encoding="UTF-8"?>'
     '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"'
@@ -139,7 +169,7 @@ def _opener(url: str, username: str, password: str):
         pwmgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         pwmgr.add_password(None, url, username, password)
         handlers = [urllib.request.HTTPDigestAuthHandler(pwmgr),
-                    urllib.request.HTTPBasicAuthHandler(pwmgr)] + handlers
+                    _BasicAuthHandler(pwmgr)] + handlers
     return urllib.request.build_opener(*handlers)
 
 

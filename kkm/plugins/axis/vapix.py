@@ -42,6 +42,36 @@ except Exception:                          # eigenstaendig lauffaehig (stdlib-on
 # Axis-Geraete haben meist selbstsignierte Zertifikate -> Zertifikatspruefung aus.
 _SSL_CONTEXT = ssl._create_unverified_context()
 
+# Basic-Auth ueber unverschluesseltes HTTP schickt das Passwort im Klartext (ein
+# Mithoerer muss nur "Basic" verlangen bzw. Port 443 blockieren). Ab Werk daher nur
+# Digest ueber HTTP; per Einstellung abschaltbar -> kkm.plugins.set_basic_over_http().
+ALLOW_BASIC_OVER_HTTP = False
+
+
+class BasicOverHttpRefused(Exception):
+    """Gegenstelle verlangt Basic-Auth ueber HTTP — Anmeldung verweigert.
+
+    Bewusst KEIN URLError/OSError: die Upload-Routinen werten Verbindungsfehler als
+    "Geraet startet neu" (Erfolg) — diese Ablehnung darf dort nicht verschluckt werden."""
+
+
+class _BasicAuthHandler(urllib.request.HTTPBasicAuthHandler):
+    """HTTPBasicAuthHandler, der ueber ``http://`` keine Zugangsdaten sendet."""
+
+    def __init__(self, password_mgr=None, allow_http=False):
+        super().__init__(password_mgr)
+        self.allow_http = allow_http
+
+    def http_error_401(self, req, fp, code, msg, headers):
+        if req.type == "http" and not (ALLOW_BASIC_OVER_HTTP or self.allow_http):
+            schemes = [h.strip().split(" ", 1)[0].lower()
+                       for h in headers.get_all("WWW-Authenticate") or []]
+            if "digest" in schemes:
+                return None   # Digest war schon dran (z. B. falsches Passwort) -> 401
+            if "basic" in schemes:
+                raise BasicOverHttpRefused(t("Die Kamera verlangt eine Basic-Anmeldung über unverschlüsseltes HTTP (Passwort im Klartext) — abgelehnt. HTTPS verwenden oder unter Einstellungen → Plugins ausdrücklich erlauben."))
+        return super().http_error_401(req, fp, code, msg, headers)
+
 # Standard-Ports je Schema
 DEFAULT_PORTS = {"http": 80, "https": 443}
 
@@ -67,11 +97,12 @@ def _auth_error(msg):
     return e
 
 
-def _build_opener(host_port, username, password, auth=True):
+def _build_opener(host_port, username, password, auth=True, allow_insecure_basic=False):
     """Opener mit ungepruefter HTTPS-Verbindung.
 
     Mit auth=True zusaetzlich Digest-/Basic-Auth; mit auth=False ganz ohne
     Authentifizierung (fuer werksneue Geraete ohne gesetztes Passwort).
+    Basic ueber HTTP nur mit ALLOW_BASIC_OVER_HTTP oder *allow_insecure_basic*.
     """
     handlers = [urllib.request.HTTPSHandler(context=_SSL_CONTEXT)]
     if auth:
@@ -80,12 +111,13 @@ def _build_opener(host_port, username, password, auth=True):
         pwmgr.add_password(None, host_port, username, password)
         handlers = [
             urllib.request.HTTPDigestAuthHandler(pwmgr),
-            urllib.request.HTTPBasicAuthHandler(pwmgr),
+            _BasicAuthHandler(pwmgr, allow_http=allow_insecure_basic),
         ] + handlers
     return urllib.request.build_opener(*handlers)
 
 
-def _request(ip, username, password, path, scheme="http", port=None, timeout=10, auth=True):
+def _request(ip, username, password, path, scheme="http", port=None, timeout=10, auth=True,
+             allow_insecure_basic=False):
     """Fuehrt einen GET-Aufruf aus und liefert den Antworttext (str).
 
     Wirft VapixError bei Netzwerk-/Auth-/HTTP-Fehlern. Mit auth=False ohne
@@ -95,7 +127,8 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
         port = DEFAULT_PORTS[scheme]
     host_port = f"{ip}:{port}"
     url = f"{scheme}://{host_port}{path}"
-    opener = _build_opener(host_port, username, password, auth=auth)
+    opener = _build_opener(host_port, username, password, auth=auth,
+                           allow_insecure_basic=allow_insecure_basic)
     try:
         with opener.open(url, timeout=timeout) as resp:
             return resp.read().decode("utf-8", errors="replace")
@@ -268,10 +301,12 @@ def _default_login_works(ip, scheme, port, timeout) -> bool:
     aber noch mit den Standard-Zugangsdaten erreichbar. Ein konfiguriertes Geraet
     weist sie mit 401 ab.
     """
+    # root/pass ist oeffentlich bekannt -> Basic ueber HTTP hier unbedenklich (sonst
+    # fiele die Werkszustands-Erkennung alter Basic-only-Firmware weg).
     try:
         _request(ip, FACTORY_DEFAULT_USER, FACTORY_DEFAULT_PASSWORD,
                  "/axis-cgi/pwdgrp.cgi?action=get", scheme=scheme, port=port,
-                 timeout=timeout, auth=True)
+                 timeout=timeout, auth=True, allow_insecure_basic=True)
         return True
     except VapixError:
         return False

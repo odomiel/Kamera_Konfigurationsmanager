@@ -377,6 +377,11 @@ Mehrere Bereiche:
     anderen Rechner/Konto. Häkchen entfernen löscht das Token wieder.
 - **Plugins** — Plugins aktivieren/deaktivieren: **Axis** (an) und **ONVIF (generisch)**
   (ab Werk aus). Die Auswahl wird gespeichert.
+  Darunter unter **Verbindungssicherheit**: **„Basic-Anmeldung über unverschlüsseltes
+  HTTP erlauben (unsicher)"** — ab Werk **aus**. Dann meldet sich das Programm über HTTP
+  nur per **Digest** an und sendet nie ein Passwort im Klartext; verlangt eine Kamera über
+  HTTP ausschließlich Basic, bricht die Aktion mit einem Hinweis ab. Über HTTPS bleibt
+  Basic erlaubt. Nur für alte Geräte einschalten, die weder HTTPS noch Digest können.
 - **Online-Prüfung** — pro Gruppe die automatische Online-Prüfung ein-/ausschalten
   und das Intervall festlegen.
 - **Spalten** — einzelne Spalten der Geräteliste ein-/ausblenden (die Spalte
