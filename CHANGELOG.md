@@ -4,6 +4,29 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.09.22b2 — 2026-09-22
+
+- **Kamera-Zertifikate werden gemerkt (Trust-on-First-Use).** Da Kameras selbstsignierte
+  Zertifikate nutzen, war HTTPS bisher ungeprüft und damit für einen Mithörer im Netz
+  abfangbar. Jetzt speichert das Programm beim ersten HTTPS-Kontakt den SHA-256-
+  Fingerabdruck des Zertifikats **pro Kamera** (MAC/Seriennummer, nicht IP) in
+  `known_certs.json` (`0600`, Teil der `.kkmbackup`-Sicherung). Weicht er später ab, wird
+  die Verbindung direkt nach dem TLS-Handshake verworfen — **bevor** eine Anfrage und damit
+  Zugangsdaten gesendet werden. Der Aktionsdialog zeigt dann alten und neuen Fingerabdruck
+  und bietet **„Neuem Zertifikat vertrauen und wiederholen"** an. Ist ein Zertifikat
+  bekannt, fällt *auto* bei unerreichbarem HTTPS nicht mehr auf HTTP zurück
+  (Downgrade-Schutz; explizit gewähltes *http* bleibt möglich).
+- Nach **Werksreset** und **Firmware-Update** über das Programm wird das neue Zertifikat
+  automatisch übernommen (auch während des Wartens auf den Neustart). Rechtsklick →
+  **„Zertifikat vergessen"** für bewusste Zertifikatswechsel außerhalb des Programms;
+  beim vollständigen Entfernen einer Kamera wird ihr Zertifikat mit gelöscht, bei
+  IP-Wechsel MAC-loser Kameras mit umgeschlüsselt.
+- Abschaltbar unter *Einstellungen → Plugins → „Kamera-Zertifikate beim ersten Kontakt
+  merken und bei Änderung nachfragen"* (ab Werk an), dort auch **„Alle vergessen"**. Eine
+  eingespielte Sicherung übernimmt beide Sicherheitsschalter sofort.
+- Hintergrund-Lesezugriffe (Firmware/Modell nachladen, Zugangsdaten-Prüfung) prüfen
+  ebenfalls; ein geändertes Zertifikat zählt dort still als Lesefehler (keine Rückfrage).
+
 ## 26.09.22b1 — 2026-09-22
 
 - **Keine Basic-Anmeldung mehr über unverschlüsseltes HTTP.** Alle HTTP-Clients (Axis,

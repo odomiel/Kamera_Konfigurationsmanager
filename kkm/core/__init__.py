@@ -25,6 +25,7 @@ from .groups import (GroupStore, Group, ALL_CAMERAS_ID, UNGROUPED_ID,
 from .vault import PasswordVault, VaultLocked, VaultError
 from .settings import AppSettings
 from .i18n import t, set_language, get_language, language_label, LANGUAGES
+from . import certpin
 
 __all__ = [
     "t", "set_language", "get_language", "language_label", "LANGUAGES",
@@ -35,5 +36,5 @@ __all__ = [
     "GroupStore", "Group", "ALL_CAMERAS_ID", "UNGROUPED_ID",
     "VIRTUAL_GROUP_IDS", "camera_key",
     "PasswordVault", "VaultLocked", "VaultError",
-    "AppSettings",
+    "AppSettings", "certpin",
 ]

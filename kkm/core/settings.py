@@ -46,6 +46,7 @@ DEFAULTS = {
     "language": "de",            # UI-Sprache: "de" | "en" (wirkt beim nächsten Start)
     "check_updates": True,       # beim Start GitHub nach einer neueren Version fragen
     "allow_basic_over_http": False,  # Basic-Auth über HTTP (Klartext-Passwort) erlauben
+    "cert_pinning": True,        # Kamera-Zertifikate merken (TOFU), bei Änderung nachfragen
 }
 
 

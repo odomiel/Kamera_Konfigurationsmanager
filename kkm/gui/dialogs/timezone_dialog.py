@@ -30,7 +30,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from kkm.core import Capability, t
+from kkm.core import Capability, camera_key, certpin, t
 from .base import ActionDialog
 
 # Fallback, falls die Laufzeit keine tz-Datenbank hat (zoneinfo leer). Die Combobox ist
@@ -88,13 +88,15 @@ class TimezoneDialog(ActionDialog):
             return
         creds = self.creds_for(cam)
         try:
-            current = plugin.get_timezone(cam, creds)
+            with certpin.bound(camera_key(cam), creds.scheme):
+                current = plugin.get_timezone(cam, creds)
         except Exception as exc:  # noqa: BLE001 - Netz-/Auth-Fehler dem Nutzer zeigen
             messagebox.showerror(t(self.title_text),
                                  t("Abruf fehlgeschlagen: {err}", err=exc), parent=self)
             return
         try:
-            zones = plugin.list_timezones(cam, creds)
+            with certpin.bound(camera_key(cam), creds.scheme):
+                zones = plugin.list_timezones(cam, creds)
             if zones:
                 self._combo.config(values=sorted(zones))
         except Exception:  # noqa: BLE001 - optionale Geräte-Liste

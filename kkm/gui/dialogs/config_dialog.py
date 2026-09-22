@@ -44,7 +44,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Capability, t
+from kkm.core import Capability, camera_key, certpin, t
 from kkm.core import get_first_ip
 from .base import ActionDialog
 from .vault_access import ensure_vault_unlocked
@@ -176,7 +176,8 @@ class ConfigDialog(ActionDialog):
 
     def _worker_read(self, plugin, camera, creds):
         try:
-            cfg = plugin.read_config(camera, creds)
+            with certpin.bound(camera_key(camera), creds.scheme):
+                cfg = plugin.read_config(camera, creds)
             self._read_q.put(("ok", cfg))
         except Exception as exc:  # noqa: BLE001 - surfaced on the main thread
             self._read_q.put(("err", str(exc)))

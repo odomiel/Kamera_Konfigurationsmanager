@@ -162,6 +162,8 @@ Gruppen sind reine Ordnungshilfe — eine Kamera darf in mehreren Gruppen sein.
 - **Aus Gruppe entfernen** löst nur die Zuordnung, die Kamera bleibt bekannt.
 - **Kamera(s) vollständig entfernen** löscht die Kamera aus allen Gruppen **und** ihr
   gespeichertes Passwort. Bei der nächsten Suche taucht eine erreichbare Kamera wieder auf.
+- **Zertifikat vergessen** verwirft das gespeicherte HTTPS-Zertifikat der markierten Kameras;
+  beim nächsten Kontakt wird es neu gespeichert (nach bewusstem Zertifikatstausch).
 
 ## 7 Zugangsdaten in den Aktionsdialogen
 
@@ -428,6 +430,13 @@ gespeichert. Außerdem der Schalter **„Basic-Anmeldung über unverschlüsselte
 erlauben (unsicher)"** (ab Werk aus): Ohne Haken meldet sich das Programm über HTTP nur per
 Digest an, ein Passwort geht nie im Klartext über das Netz. Nur für alte Geräte einschalten,
 die weder HTTPS noch Digest beherrschen.
+
+Darunter **„Kamera-Zertifikate beim ersten Kontakt merken und bei Änderung nachfragen"**
+(ab Werk an): Das Programm merkt sich beim ersten HTTPS-Kontakt den Fingerabdruck des
+Kamera-Zertifikats. Ändert er sich, werden **keine Zugangsdaten gesendet**; der
+Aktionsdialog zeigt alten und neuen Fingerabdruck und bietet *„Neuem Zertifikat vertrauen
+und wiederholen"* an. Nach Werksreset und Firmware-Update über das Programm wird das neue
+Zertifikat automatisch übernommen. *„Alle vergessen"* löscht alle gemerkten Zertifikate.
 
 **Online-Prüfung** — pro Gruppe die automatische Prüfung ein-/ausschalten und das Intervall
 festlegen.

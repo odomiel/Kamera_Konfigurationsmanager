@@ -434,7 +434,49 @@ class SettingsDialog(tk.Toplevel):
                    "über das Netz. Ohne Haken wird über HTTP nur Digest verwendet; nur "
                    "für alte Geräte aktivieren, die weder HTTPS noch Digest können."),
         ).pack(anchor=tk.W, pady=(2, 0))
+
+        self._pinning_var = tk.BooleanVar(value=bool(self.settings.get("cert_pinning", True)))
+        ttk.Checkbutton(tab, text=t("Kamera-Zertifikate beim ersten Kontakt merken und bei "
+                                    "Änderung nachfragen (empfohlen)"),
+                        variable=self._pinning_var,
+                        command=self._save_pinning).pack(anchor=tk.W, pady=(10, 2))
+        ttk.Label(
+            tab, wraplength=460, justify=tk.LEFT,
+            text=t("Schützt vor dem Abfangen der Verbindung (Man-in-the-Middle): Ändert "
+                   "sich das HTTPS-Zertifikat einer bekannten Kamera, werden keine "
+                   "Zugangsdaten gesendet und das Programm fragt nach. Nach Werksreset "
+                   "und Firmware-Update über das Programm wird das neue Zertifikat "
+                   "automatisch übernommen."),
+        ).pack(anchor=tk.W, pady=(2, 0))
+        row = ttk.Frame(tab)
+        row.pack(anchor=tk.W, pady=(6, 0))
+        self._pinned_label = ttk.Label(row)
+        self._pinned_label.pack(side=tk.LEFT)
+        ttk.Button(row, text=t("Alle vergessen"), command=self._forget_all_certs).pack(
+            side=tk.LEFT, padx=8)
+        self._render_pinned()
         return tab
+
+    def _save_pinning(self):
+        from kkm.core import certpin
+        enabled = self._pinning_var.get()
+        self.settings.set("cert_pinning", enabled)
+        certpin.set_enabled(enabled)
+
+    def _render_pinned(self):
+        from kkm.core import certpin
+        self._pinned_label.config(
+            text=t("Gespeicherte Zertifikate: {n}", n=len(certpin.STORE.keys())))
+
+    def _forget_all_certs(self):
+        from kkm.core import certpin
+        if not messagebox.askyesno(
+                t("Einstellungen"),
+                t("Alle gespeicherten Kamera-Zertifikate vergessen? Sie werden beim "
+                  "nächsten Kontakt neu gespeichert (ohne Prüfung)."), parent=self):
+            return
+        certpin.STORE.clear()
+        self._render_pinned()
 
     def _save_plugins(self):
         for pid, var in self._plugin_vars.items():
@@ -822,6 +864,14 @@ class SettingsDialog(tk.Toplevel):
         # save() die gerade eingespielten Daten wieder überschreiben).
         self.store.load()
         self.settings.load()
+        # Verbindungssicherheit aus der Sicherung sofort wirksam machen.
+        from kkm.core import certpin
+        from kkm.plugins import set_basic_over_http
+        self._basic_http_var.set(bool(self.settings.get("allow_basic_over_http", False)))
+        self._pinning_var.set(bool(self.settings.get("cert_pinning", True)))
+        set_basic_over_http(self._basic_http_var.get())
+        certpin.set_enabled(self._pinning_var.get())
+        self._render_pinned()        # known_certs.json liest der CertStore ohnehin frisch
         if self.vault is not None:
             self.vault.lock()   # neuer Tresor -> mit Backup-Master-Passwort entsperren
             if "vault.enc" in restored:

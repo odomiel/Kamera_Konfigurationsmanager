@@ -153,6 +153,8 @@ Groups are purely an organizational aid — a camera may be in several groups.
 - **Remove from a group** only releases the assignment, the camera stays known.
 - **Remove camera(s) completely** deletes the camera from all groups **and** its stored
   password. On the next search a reachable camera reappears.
+- **Forget certificate** discards the stored HTTPS certificate of the selected cameras; it is
+  stored again at next contact (after a deliberate certificate replacement).
 
 ## 7 Credentials in the action dialogs
 
@@ -406,6 +408,13 @@ Also the switch **"Allow Basic authentication over unencrypted HTTP (insecure)"*
 default): when unchecked, the program authenticates over HTTP with Digest only, so a password
 never travels over the network in plain text. Enable only for old devices that support
 neither HTTPS nor Digest.
+
+Below: **"Remember camera certificates at first contact and ask when they change"** (on by
+default): the program stores the fingerprint of the camera certificate at the first HTTPS
+contact. If it changes, **no credentials are sent**; the action dialog shows the old and new
+fingerprint and offers *"Trust new certificate and retry"*. After a factory reset or firmware
+update performed by the program, the new certificate is adopted automatically. *"Forget
+all"* deletes all remembered certificates.
 
 **Online check** — enable/disable the automatic check per group and set the interval.
 

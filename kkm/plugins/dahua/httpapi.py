@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import os
 import re
+import http.client
 import ssl
 import urllib.error
 import urllib.parse
@@ -79,6 +80,48 @@ class _BasicAuthHandler(urllib.request.HTTPBasicAuthHandler):
             if "basic" in schemes:
                 raise BasicOverHttpRefused(t("Die Kamera verlangt eine Basic-Anmeldung über unverschlüsseltes HTTP (Passwort im Klartext) — abgelehnt. HTTPS verwenden oder unter Einstellungen → Plugins ausdrücklich erlauben."))
         return super().http_error_401(req, fp, code, msg, headers)
+
+
+# Connect-Hook fuer die Zertifikatspruefung (Trust-on-First-Use), gesetzt von
+# kkm.plugins.set_connect_hook(): ``hook(scheme, host, port, der)``. Aufgerufen
+# direkt nach dem TLS-Handshake (der = DER-Zertifikat), nach einem gescheiterten
+# HTTPS-Aufbau (der = None) und vor jedem HTTP-Aufbau. Wirft der Hook, wird die
+# Verbindung verworfen, BEVOR eine Anfrage (und damit ein Passwort) gesendet wird.
+CONNECT_HOOK = None
+
+
+class _HookedHTTPSConnection(http.client.HTTPSConnection):
+    def connect(self):
+        hook = CONNECT_HOOK
+        try:
+            super().connect()
+        except OSError:
+            if hook is not None:
+                hook("https", self.host, self.port, None)
+            raise
+        if hook is not None:
+            try:
+                hook("https", self.host, self.port, self.sock.getpeercert(binary_form=True))
+            except BaseException:
+                self.close()
+                raise
+
+
+class _HookedHTTPConnection(http.client.HTTPConnection):
+    def connect(self):
+        if CONNECT_HOOK is not None:
+            CONNECT_HOOK("http", self.host, self.port, None)
+        super().connect()
+
+
+class _HookedHTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_HookedHTTPSConnection, req, context=self._context)
+
+
+class _HookedHTTPHandler(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_HookedHTTPConnection, req)
 
 DEFAULT_PORTS = {"http": 80, "https": 443}
 CGI = "/cgi-bin"
@@ -143,7 +186,7 @@ def _dahua_error(body: str) -> str:
 
 # ------------------------------------------------------------------- HTTP
 def _opener(host_port: str, username: str, password: str, auth: bool = True):
-    handlers = [urllib.request.HTTPSHandler(context=_SSL_CONTEXT)]
+    handlers = [_HookedHTTPSHandler(context=_SSL_CONTEXT), _HookedHTTPHandler()]
     if auth:
         pwmgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         pwmgr.add_password(None, host_port, username, password)

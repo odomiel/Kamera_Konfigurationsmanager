@@ -47,8 +47,8 @@ from kkm.version import APP_NAME, __version__, PROJECT_URL
 from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
                       UNGROUPED_ID, VIRTUAL_GROUP_IDS, camera_key, PasswordVault,
                       AppSettings, VaultError, FIELD_NAMES, get_first_ip,
-                      export_results, t, set_language, get_language)
-from kkm.plugins import build_registry, set_basic_over_http
+                      export_results, t, set_language, get_language, certpin)
+from kkm.plugins import build_registry, set_basic_over_http, set_connect_hook
 from kkm.core import updates
 from kkm.gui import theme
 from kkm.gui.widgets import add_scrollbars
@@ -204,6 +204,10 @@ class MainWindow(tk.Tk):
         theme.apply_theme(self, self._theme)
         self.registry = build_registry(self.settings.get("enabled_plugins"))
         set_basic_over_http(self.settings.get("allow_basic_over_http", False))
+        # Zertifikatspruefung (Trust-on-First-Use): Hook immer einhaengen, die
+        # Einstellung schaltet nur die Pruefung selbst an/aus.
+        set_connect_hook(certpin.check_connection)
+        certpin.set_enabled(self.settings.get("cert_pinning", True))
         self.vault = PasswordVault()
         # Tresor beim Start automatisch entsperren, falls der Nutzer das in den
         # Einstellungen aktiviert hat (hinterlegtes, geräte­gebundenes Token).
@@ -719,6 +723,7 @@ class MainWindow(tk.Tk):
             new_key = camera_key(cam)
             if new_key != old_key:
                 self.store.rekey_camera(old_key, new_key)
+                certpin.STORE.rekey(old_key, new_key)
                 self._move_key(old_key, new_key)
             changed = True
         if changed:
@@ -902,6 +907,10 @@ class MainWindow(tk.Tk):
         menu.add_command(label=t("Auf Werkseinstellungen zurücksetzen…"), state=fr_state,
                          command=lambda: self._open_action(Capability.FACTORY_RESET,
                                                            "Werkseinstellungen"))
+        pinned = certpin.STORE.keys().intersection(keys)
+        menu.add_command(label=t("Zertifikat vergessen ({n})", n=len(pinned)),
+                         state=tk.NORMAL if pinned else tk.DISABLED,
+                         command=lambda: self._forget_certs(pinned))
         menu.add_command(label=t("Kamera(s) vollständig entfernen ({n})", n=len(cams)),
                          command=lambda: self._remove_selected(cams, keys))
         try:
@@ -965,8 +974,16 @@ class MainWindow(tk.Tk):
         self.store.forget_many(keys)            # ein Speichervorgang statt N
         if self.vault and not self.vault.is_locked:
             self.vault.delete_many(keys)
+        certpin.STORE.forget(keys)
         self._refresh_table()
         self.status.config(text=t("{n} Kamera(s) vollständig entfernt", n=len(keys)))
+
+    def _forget_certs(self, keys):
+        """Gespeicherte HTTPS-Zertifikate verwerfen (z. B. nach bewusstem Zertifikats-
+        tausch außerhalb des Programms) — beim nächsten Kontakt wird neu gelernt."""
+        n = certpin.STORE.forget(keys)
+        self.status.config(text=t("Zertifikat von {n} Kamera(s) vergessen — wird beim "
+                                  "nächsten Kontakt neu gespeichert", n=n))
 
     # ------------------------------------------------- Kamera manuell hinzufügen
     def _add_manual_camera(self):
@@ -1182,7 +1199,8 @@ class MainWindow(tk.Tk):
                 creds = self._creds_for(cam)
                 if not plugin or not creds:
                     raise ValueError("keine Zugangsdaten")
-                info = plugin.device_info(cam, creds)
+                with certpin.bound(camera_key(cam), creds.scheme):
+                    info = plugin.device_info(cam, creds)
                 self._q.put(("device_info", (camera_key(cam), info)))
                 with lock:
                     stats["fw" if info.get("firmware") else "nofw"] += 1
@@ -1235,7 +1253,8 @@ class MainWindow(tk.Tk):
             if not plugin:
                 return
             try:
-                info = plugin.device_info(cam, creds)
+                with certpin.bound(camera_key(cam), creds.scheme):
+                    info = plugin.device_info(cam, creds)
                 self._q.put(("cred_ok", (camera_key(cam), user, pw, info)))
             except Exception:  # noqa: BLE001 - Zugangsdaten passen (noch) nicht
                 self._q.put(("cred_fail", camera_key(cam)))

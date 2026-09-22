@@ -64,5 +64,13 @@ def set_basic_over_http(allowed: bool) -> None:
         mod.ALLOW_BASIC_OVER_HTTP = bool(allowed)
 
 
-__all__ = ["build_registry", "set_basic_over_http", "AxisPlugin", "OnvifPlugin", "HikvisionPlugin",
+def set_connect_hook(hook) -> None:
+    """Connect-Hook (``hook(scheme, host, port, der)``) in allen HTTP-Clients setzen —
+    fuer die Zertifikatspruefung (``kkm.core.certpin.check_connection``); ``None``
+    schaltet ihn ab."""
+    for mod in (_vapix, _isapi, _httpapi, _sunapi, _soap):
+        mod.CONNECT_HOOK = hook
+
+
+__all__ = ["build_registry", "set_basic_over_http", "set_connect_hook", "AxisPlugin", "OnvifPlugin", "HikvisionPlugin",
            "DahuaPlugin", "HanwhaPlugin"]

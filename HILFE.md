@@ -122,6 +122,10 @@ Mehrere Kameras lassen sich mit **Strg**/**Umschalt** markieren.
   entfernen"**: löscht die Kamera aus der Geräteliste und allen Gruppen sowie ihr
   gespeichertes Passwort. Bei der nächsten Suche taucht eine erreichbare Kamera
   wieder auf.
+- **Zertifikat vergessen** — Rechtsklick → **„Zertifikat vergessen"**: verwirft das
+  gespeicherte HTTPS-Zertifikat der markierten Kameras (siehe *Einstellungen → Plugins*);
+  beim nächsten Kontakt wird es neu gespeichert. Sinnvoll, wenn das Zertifikat bewusst
+  außerhalb des Programms getauscht wurde.
 
 ---
 
@@ -382,6 +386,16 @@ Mehrere Bereiche:
   nur per **Digest** an und sendet nie ein Passwort im Klartext; verlangt eine Kamera über
   HTTP ausschließlich Basic, bricht die Aktion mit einem Hinweis ab. Über HTTPS bleibt
   Basic erlaubt. Nur für alte Geräte einschalten, die weder HTTPS noch Digest können.
+  Ebenfalls dort: **„Kamera-Zertifikate beim ersten Kontakt merken und bei Änderung
+  nachfragen (empfohlen)"** — ab Werk **an**. Beim ersten HTTPS-Kontakt merkt sich das
+  Programm den Fingerabdruck (SHA-256) des Kamera-Zertifikats. Ändert er sich später,
+  bricht die Verbindung ab, **bevor** Zugangsdaten gesendet werden, und der Aktionsdialog
+  fragt nach: **„Neuem Zertifikat vertrauen und wiederholen"** oder abbrechen. Das
+  schützt vor abgefangenen Verbindungen (Man-in-the-Middle). Ist ein Zertifikat bekannt,
+  fällt die Verbindungsart *auto* zudem nicht mehr auf unverschlüsseltes HTTP zurück,
+  wenn HTTPS plötzlich nicht erreichbar ist. Nach **Werksreset** und **Firmware-Update**
+  über das Programm wird das neue Zertifikat automatisch übernommen. **„Alle vergessen"**
+  löscht alle gespeicherten Zertifikate.
 - **Online-Prüfung** — pro Gruppe die automatische Online-Prüfung ein-/ausschalten
   und das Intervall festlegen.
 - **Spalten** — einzelne Spalten der Geräteliste ein-/ausblenden (die Spalte
@@ -432,7 +446,8 @@ Mehrere Bereiche:
 
 ## Speicherort der Daten
 Gespeichert werden Gruppen (`groups.json`), Einstellungen (`settings.json`) und der
-verschlüsselte Passwort-Tresor (`vault.enc`) im Unterordner
+verschlüsselte Passwort-Tresor (`vault.enc`) sowie die gemerkten Kamera-Zertifikate
+(`known_certs.json`) im Unterordner
 `kamera_konfigurationsmanager`:
 
 - **Windows (portable `.exe`):** **neben der ausführbaren Datei** — die Konfiguration

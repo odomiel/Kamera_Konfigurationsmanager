@@ -108,6 +108,9 @@ opens its web interface in the default browser (`http://<IP>`).
 - **Remove a camera completely** — right-click → **"Remove camera(s) completely"**:
   deletes the camera from the device list and all groups, as well as its stored password.
   On the next search a reachable camera reappears.
+- **Forget certificate** — right-click → **"Forget certificate"**: discards the stored
+  HTTPS certificate of the selected cameras (see *Settings → Plugins*); it is stored again
+  at next contact. Useful when the certificate was replaced on purpose outside the program.
 
 ---
 
@@ -351,6 +354,15 @@ Several areas:
   **Digest** only and never sends a password in plain text; if a camera demands Basic over
   HTTP, the action is aborted with a notice. Basic over HTTPS remains allowed. Enable only
   for old devices that support neither HTTPS nor Digest.
+  Also there: **"Remember camera certificates at first contact and ask when they change
+  (recommended)"** — **on** by default. At the first HTTPS contact the program stores the
+  fingerprint (SHA-256) of the camera certificate. If it changes later, the connection is
+  aborted **before** any credentials are sent and the action dialog asks: **"Trust new
+  certificate and retry"** or cancel. This protects against intercepted connections
+  (man-in-the-middle). Once a certificate is known, connection mode *auto* no longer falls
+  back to unencrypted HTTP when HTTPS suddenly becomes unreachable. After a **factory
+  reset** or **firmware update** performed by the program, the new certificate is adopted
+  automatically. **"Forget all"** deletes all stored certificates.
 - **Online check** — enable/disable the automatic online check per group and set the
   interval.
 - **Columns** — show/hide individual columns of the device list (the "Name" column always
@@ -397,7 +409,8 @@ Several areas:
 
 ## Where the data is stored
 Groups (`groups.json`), settings (`settings.json`) and the encrypted password vault
-(`vault.enc`) are stored in the subfolder `kamera_konfigurationsmanager`:
+(`vault.enc`) as well as the remembered camera certificates (`known_certs.json`) are
+stored in the subfolder `kamera_konfigurationsmanager`:
 
 - **Windows (portable `.exe`):** **next to the executable** — the configuration is thus
   portable (e.g. on a USB stick) and stays with the program.

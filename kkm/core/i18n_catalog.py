@@ -599,6 +599,22 @@ EN: dict[str, str] = {
     'Verbindungssicherheit:': 'Connection security:',
     'Basic-Anmeldung über unverschlüsseltes HTTP erlauben (unsicher)': 'Allow Basic authentication over unencrypted HTTP (insecure)',
     'Bei Basic-Anmeldung über HTTP geht das Kamera-Passwort im Klartext über das Netz. Ohne Haken wird über HTTP nur Digest verwendet; nur für alte Geräte aktivieren, die weder HTTPS noch Digest können.': 'With Basic authentication over HTTP the camera password travels over the network in plain text. When unchecked, only Digest is used over HTTP; enable only for old devices that support neither HTTPS nor Digest.',
+    'Zertifikat der Kamera hat sich geändert (bekannt {old}, jetzt {new}) — Verbindung abgebrochen, keine Zugangsdaten gesendet. Ist die Änderung erwartet: Rechtsklick → „Zertifikat vergessen“.': 'The camera\'s certificate has changed (known {old}, now {new}) — connection aborted, no credentials sent. If the change is expected: right-click → "Forget certificate".',
+    'HTTPS nicht erreichbar, für diese Kamera ist aber ein Zertifikat bekannt — kein Rückfall auf unverschlüsseltes HTTP. Verbindung „http“ wählen oder das Zertifikat vergessen, falls HTTPS bewusst abgeschaltet wurde.': 'HTTPS not reachable, but a certificate is known for this camera — no fallback to unencrypted HTTP. Choose connection "http" or forget the certificate if HTTPS was switched off on purpose.',
+    'Zertifikat geändert': 'Certificate changed',
+    '⚠ Das HTTPS-Zertifikat hat sich geändert ({n} Kamera(s))': '⚠ The HTTPS certificate has changed ({n} camera(s))',
+    'Das Zertifikat unterscheidet sich von dem beim ersten Kontakt gespeicherten. Das ist harmlos, wenn die Kamera außerhalb des Programms zurückgesetzt, aktualisiert oder mit einem neuen Zertifikat versehen wurde — es kann aber auch auf einen Angriff (Man-in-the-Middle) hindeuten. Es wurden keine Zugangsdaten gesendet.': 'The certificate differs from the one stored at first contact. This is harmless if the camera was reset, updated or given a new certificate outside the program — but it may also indicate an attack (man-in-the-middle). No credentials were sent.',
+    'Kamera': 'Camera',
+    'Bisher (SHA-256)': 'Previous (SHA-256)',
+    'Jetzt (SHA-256)': 'Now (SHA-256)',
+    'Neuem Zertifikat vertrauen und wiederholen': 'Trust new certificate and retry',
+    'Zertifikat vergessen ({n})': 'Forget certificate ({n})',
+    'Zertifikat von {n} Kamera(s) vergessen — wird beim nächsten Kontakt neu gespeichert': 'Forgot the certificate of {n} camera(s) — it will be stored again at next contact',
+    'Kamera-Zertifikate beim ersten Kontakt merken und bei Änderung nachfragen (empfohlen)': 'Remember camera certificates at first contact and ask when they change (recommended)',
+    'Schützt vor dem Abfangen der Verbindung (Man-in-the-Middle): Ändert sich das HTTPS-Zertifikat einer bekannten Kamera, werden keine Zugangsdaten gesendet und das Programm fragt nach. Nach Werksreset und Firmware-Update über das Programm wird das neue Zertifikat automatisch übernommen.': 'Protects against interception of the connection (man-in-the-middle): if the HTTPS certificate of a known camera changes, no credentials are sent and the program asks. After a factory reset or firmware update performed by the program, the new certificate is adopted automatically.',
+    'Alle vergessen': 'Forget all',
+    'Gespeicherte Zertifikate: {n}': 'Stored certificates: {n}',
+    'Alle gespeicherten Kamera-Zertifikate vergessen? Sie werden beim nächsten Kontakt neu gespeichert (ohne Prüfung).': 'Forget all stored camera certificates? They will be stored again at next contact (without verification).',
 }
 
 CATALOG: dict[str, dict[str, str]] = {"en": EN}

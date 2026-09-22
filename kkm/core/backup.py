@@ -16,7 +16,8 @@
 
 """Verschluesseltes Sicherungs-Archiv fuer Daten + Passwort-Tresor.
 
-Buendelt die App-Dateien (``groups.json``, ``settings.json``, ``vault.enc``) in
+Buendelt die App-Dateien (``groups.json``, ``settings.json``, ``vault.enc``,
+``known_certs.json``) in
 **eine** portable Datei:
 
     Dateien --tar--> --zlib(deflate)--> --AES-256-GCM--> .kkmbackup
@@ -59,7 +60,7 @@ NONCE_LEN = 12
 HEADER_LEN = len(MAGIC) + SALT_LEN + NONCE_LEN + 4
 
 #: Nur diese Dateien werden gesichert/wiederhergestellt (Basisnamen, keine Pfade).
-BACKUP_FILES = ("groups.json", "settings.json", "vault.enc")
+BACKUP_FILES = ("groups.json", "settings.json", "vault.enc", "known_certs.json")
 
 
 class BackupError(Exception):

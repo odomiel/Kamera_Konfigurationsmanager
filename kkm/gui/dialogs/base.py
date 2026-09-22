@@ -39,9 +39,10 @@ from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox, simpledialog
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Credentials, camera_key, get_first_ip, looks_like_zip, t
+from kkm.core import Credentials, camera_key, certpin, get_first_ip, looks_like_zip, t
 from .vault_access import ensure_vault_unlocked
 from .reauth_prompt import ReauthPromptDialog
+from .cert_prompt import CertMismatchDialog
 
 
 class ActionDialog(tk.Toplevel):
@@ -293,6 +294,7 @@ class ActionDialog(tk.Toplevel):
         self._active_max_workers = self._max_workers
         self._run_cameras = list(cameras) if cameras is not None else self.cameras
         self._auth_failures = []
+        self._cert_failures = []
         # Tresor wird gebraucht (zum Lesen der Passwörter und/oder zum Speichern),
         # ist aber gesperrt/nicht angelegt -> auf dem Main-Thread anbieten, ihn
         # einzurichten. Eine Nachfrage deckt beide Fälle ab.
@@ -320,12 +322,20 @@ class ActionDialog(tk.Toplevel):
             self._q.put(("line", f"✗ {name} ({ip}): " + t("kein Plugin")))
             return
         try:
-            msg = op(plugin, cam, self.creds_for(cam))
+            creds = self.creds_for(cam)
+            # Alle Verbindungen dieses Threads der Kamera zuordnen -> Zertifikatspruefung
+            # (Trust-on-First-Use) greift, auch in Polls nach einem Neustart.
+            with certpin.bound(camera_key(cam), creds.scheme):
+                msg = op(plugin, cam, creds)
             self._q.put(("line", f"✓ {name} ({ip}): {msg or 'OK'}"))
         except Exception as exc:  # noqa: BLE001 - per-camera failure is logged
+            # Zertifikat geaendert: vormerken, nach dem Durchlauf nachfragen.
+            if getattr(exc, "cert_mismatch", False):
+                self._q.put(("certfail", (cam, exc)))
+                self._q.put(("line", f"✗ {name} ({ip}): {exc}"))
             # Auth-Fehler (401): Kamera vormerken, damit der Dialog nach dem Durchlauf das
             # Passwort erneut abfragen und die Aktion wiederholen kann.
-            if plugin.is_auth_error(exc):
+            elif plugin.is_auth_error(exc):
                 self._q.put(("authfail", cam))
                 self._q.put(("line", f"✗ {name} ({ip}): {exc} — "
                              + t("Passwort ggf. veraltet.")))
@@ -360,6 +370,8 @@ class ActionDialog(tk.Toplevel):
                     self._log_line(payload)
                 elif kind == "authfail":
                     self._auth_failures.append(payload)
+                elif kind == "certfail":
+                    self._cert_failures.append(payload)
                 elif kind == "done":
                     self.progress.stop()
                     self._busy = False
@@ -371,13 +383,16 @@ class ActionDialog(tk.Toplevel):
         # Erst nach dem Leeren der Queue behandeln — kann modal nachfragen und einen
         # erneuten Durchlauf starten (setzt dann wieder ``_busy``).
         if done_seen:
-            self._handle_auth_failures()
+            self._finish_reauth_round()
+            # Geaendertes Zertifikat zuerst klaeren (startet ggf. selbst einen erneuten
+            # Durchlauf); sonst wie gehabt nach dem Passwort fragen.
+            if not self._handle_cert_mismatches():
+                self._retry_auth_failures()
         self.after(120, self._poll)
 
     # ------------------------------------------------------- erneute Passwortabfrage
-    def _handle_auth_failures(self):
-        """Nach einem Durchlauf: erfolgreiche Retries im Tresor nachziehen und, wenn noch
-        Kameras die Zugangsdaten ablehnen, das Passwort erneut abfragen und wiederholen."""
+    def _finish_reauth_round(self):
+        """Nach einem Durchlauf: erfolgreiche Passwort-Retries im Tresor nachziehen."""
         # War das gerade ein Wiederholungs-Durchlauf? Was diesmal *nicht* wieder scheiterte,
         # gilt als erfolgreich — dessen neues Passwort ggf. in den Tresor übernehmen.
         if self._reauth_in_progress:
@@ -387,8 +402,30 @@ class ActionDialog(tk.Toplevel):
                 for cam in self._reauth_cams:
                     if camera_key(cam) not in failed_now:
                         self._persist_override(cam)
+
+    def _retry_auth_failures(self):
+        """Lehnen noch Kameras die Zugangsdaten ab: Passwort erneut abfragen und wiederholen."""
         if self._auth_failures and self._active_op is not None:
             self._prompt_and_retry(list(self._auth_failures))
+
+    def _handle_cert_mismatches(self) -> bool:
+        """Hat sich bei Kameras das HTTPS-Zertifikat geändert, einmal nachfragen; bei
+        Zustimmung die neuen Zertifikate speichern und die Aktion für diese Kameras
+        wiederholen. Gibt True zurück, wenn ein erneuter Durchlauf gestartet wurde."""
+        failures = list(getattr(self, "_cert_failures", []))
+        if not failures or self._active_op is None:
+            return False
+        dlg = CertMismatchDialog(self, failures)
+        self.wait_window(dlg)
+        if not dlg.result:
+            return False
+        for _cam, exc in failures:
+            certpin.STORE.remember(exc.camera_key, exc.actual)
+        self.run_per_camera(self._active_op, done_msg=t("Erneuter Versuch abgeschlossen."),
+                            parallel=getattr(self, "_active_parallel", False),
+                            max_workers=getattr(self, "_active_max_workers", 4),
+                            cameras=[cam for cam, _exc in failures])
+        return True
 
     def _prompt_and_retry(self, cams):
         default_user = self.creds_for(cams[0]).username

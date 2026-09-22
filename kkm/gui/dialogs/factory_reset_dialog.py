@@ -37,7 +37,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-from kkm.core import Capability, camera_key, get_first_ip, t
+from kkm.core import Capability, camera_key, certpin, get_first_ip, t
 from .base import ActionDialog
 
 
@@ -78,6 +78,8 @@ class FactoryResetDialog(ActionDialog):
         def op(plugin, camera, creds):
             key = camera_key(camera)
             plugin.factory_reset(camera, creds, keep_ip=keep_ip)   # löst Reset aus
+            # Nach dem Reset erzeugt die Kamera ein neues selbstsigniertes Zertifikat.
+            certpin.expect_new_certificate()
             self._reset_all_keys.append(key)   # Zugangsdaten sind jetzt ungültig
             if not keep_ip:
                 # IP ändert sich -> nicht am alten Ziel pollbar. Nur Hinweis.

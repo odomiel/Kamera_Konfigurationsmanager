@@ -47,7 +47,7 @@ from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
-from kkm.core import Capability, camera_key, get_first_ip, version_tuple, t
+from kkm.core import Capability, camera_key, certpin, get_first_ip, version_tuple, t
 from kkm.gui.widgets import add_scrollbars
 from .base import ActionDialog
 
@@ -483,6 +483,8 @@ class FirmwareDialog(ActionDialog):
 
             creds.timeout = max(creds.timeout, FIRMWARE_TIMEOUT)
             plugin.upgrade_firmware(camera, creds, path, factory_default=factory)
+            # Neue Firmware (erst recht mit Werksreset) bringt oft ein neues Zertifikat.
+            certpin.expect_new_certificate()
 
             if factory:
                 # factory-default beim Update -> Kamera kommt werksneu zurück.
