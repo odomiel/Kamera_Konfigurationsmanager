@@ -428,16 +428,19 @@ unverändert. Zusätzlich: *Beim Start maximiert öffnen*.
 **Plugins** — Hersteller-Plugins ein- und ausschalten (Axis, ONVIF). Die Auswahl wird
 gespeichert.
 
-**Verbindungssicherheit** — **„Kamera-Zertifikate beim ersten Kontakt merken und bei
-Änderung nachfragen"** (ab Werk an): Das Programm merkt sich beim ersten HTTPS-Kontakt den Fingerabdruck des
-Kamera-Zertifikats. Ändert er sich, werden **keine Zugangsdaten gesendet**; der
-Aktionsdialog zeigt alten und neuen Fingerabdruck und bietet *„Neuem Zertifikat vertrauen
-und wiederholen"* an. Nach Werksreset und Firmware-Update über das Programm wird das neue
-Zertifikat automatisch übernommen. *„Alle vergessen"* löscht alle gemerkten Zertifikate.
-Darunter **„Basic-Anmeldung über unverschlüsseltes HTTP erlauben (unsicher)"** (ab Werk
-aus): Ohne Haken meldet sich das Programm über HTTP nur per Digest an, ein Passwort geht nie
-im Klartext über das Netz. Nur für alte Geräte einschalten, die weder HTTPS noch Digest
-beherrschen.
+**Verbindungssicherheit** — zwei Bereiche:
+
+- *Zertifikatsprüfung:* **„Kamera-Zertifikate beim ersten Kontakt merken und bei Änderung
+  nachfragen"** (ab Werk an). Das Programm merkt sich beim ersten HTTPS-Kontakt den
+  Fingerabdruck des Kamera-Zertifikats. Ändert er sich, werden **keine Zugangsdaten
+  gesendet**; der Aktionsdialog zeigt alten und neuen Fingerabdruck und bietet *„Neuem
+  Zertifikat vertrauen und wiederholen"* an. Nach Werksreset und Firmware-Update über das
+  Programm wird das neue Zertifikat automatisch übernommen. **Alle vergessen** löscht alle
+  gemerkten Zertifikate.
+- *Anmeldung über HTTP:* **„Basic-Anmeldung über unverschlüsseltes HTTP erlauben
+  (unsicher)"** (ab Werk aus). Ohne Haken meldet sich das Programm über HTTP nur per Digest
+  an, ein Passwort geht nie im Klartext über das Netz. Nur für alte Geräte einschalten, die
+  weder HTTPS noch Digest beherrschen.
 
 **Online-Prüfung** — pro Gruppe die automatische Prüfung ein-/ausschalten und das Intervall
 festlegen.

@@ -237,6 +237,26 @@ class Manual:
         self.story.append(para)
 
     def parse(self, text: str):
+        start = len(self.story)
+        self._parse(text)
+        # Einleitungssatz einer Liste ("— zwei Bereiche:") nicht allein am Seitenende
+        # stehen lassen: mit der folgenden Liste zu einem Block buendeln. (keepWithNext
+        # greift hier nicht — reportlab laesst ListFlowable nicht in KeepTogether-Ketten.)
+        out = self.story[:start]
+        rest = self.story[start:]
+        k = 0
+        while k < len(rest):
+            f = rest[k]
+            if (getattr(f, "_intro", False) and k + 1 < len(rest)
+                    and isinstance(rest[k + 1], ListFlowable)):
+                out.append(KeepTogether([f, rest[k + 1]]))
+                k += 2
+                continue
+            out.append(f)
+            k += 1
+        self.story[:] = out
+
+    def _parse(self, text: str):
         lines = text.split("\n")
         i = 0
         para: list[str] = []
@@ -244,7 +264,10 @@ class Manual:
         def flush():
             nonlocal para
             if para:
-                self.story.append(Paragraph(inline(" ".join(para)), self.s["body"]))
+                text = " ".join(para)
+                p = Paragraph(inline(text), self.s["body"])
+                p._intro = text.rstrip().endswith(":")   # leitet eine Liste ein?
+                self.story.append(p)
                 para = []
 
         while i < len(lines):
