@@ -146,12 +146,11 @@ class AxisPlugin(VendorPlugin):
         return vapix.set_user_password(ip, creds.username, creds.password,
                                        target_user, new_password, **self._conn(creds))
 
-    def parse_user_list(self, path, onvif=False):
-        """Parse a CSV/text user list (Name,Password[,Role]) -> list of dicts.
-
-        Raises on format errors (with line numbers) so nothing partial is applied.
-        """
-        return vapix.parse_user_list(path, onvif=onvif)
+    # parse_user_list wird NICHT ueberschrieben: die neutrale Basis
+    # (VendorPlugin.parse_user_list -> core.camera.parse_user_list) validiert gegen
+    # USER_ROLES/ONVIF_LEVELS dieses Plugins und unterstuetzt verschluesselte
+    # ZIP-Benutzerlisten (zip_password). Die aeltere vapix.parse_user_list-Kopie
+    # kannte den zip_password-Parameter nicht -> "unexpected keyword argument".
 
     def add_onvif_user(self, camera, creds: Credentials, new_user, new_password,
                        level="Administrator"):

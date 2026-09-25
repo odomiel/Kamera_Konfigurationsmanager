@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.09.25 — 2026-09-25
+
+- **Fix: verschlüsselte ZIP-Benutzerlisten schlugen bei Axis-Kameras fehl.** Nach der
+  Passworteingabe brach der Import mit „unexpected keyword argument 'zip_password'" ab.
+  Ursache: `AxisPlugin` überschrieb `parse_user_list` und leitete auf die ältere
+  `vapix`-Kopie ohne den `zip_password`-Parameter um. Der Sonderweg entfällt jetzt — Axis
+  nutzt (wie alle anderen Plugins) die neutrale Basis in `core/camera.py`, die AES-256-ZIP
+  (WinZip/7-Zip) und ZipCrypto unterstützt. Klartext-Listen bleiben unverändert.
+
 ## 26.09.22b3 — 2026-09-22
 
 - **Eigener Einstellungs-Reiter „Verbindungssicherheit".** Zertifikatsprüfung
