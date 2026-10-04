@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.04 — 2026-10-04
+
+- **Abhängigkeiten aktualisiert: Python 3.14.7 → 3.14.8, OpenSSL 3.5.8 → 3.5.9**
+  (jeweils neuester Patch der unterstützten Zweige; OpenSSL bleibt auf dem **LTS**-Zweig
+  3.5.x). Tcl/Tk bleibt bewusst auf 9.0.4 (9.1.0 ist zwar erschienen, aber als frisches
+  Minor-Release für eine GUI noch nicht übernommen); libffi 3.8.0 unverändert. Die
+  ungepinnten Wheels ziehen beim Build automatisch ihre neueste Fassung (u. a. zeroconf
+  0.151.5, cryptography 50.0.2, pycryptodomex 3.24.0). Wird mit diesem AppImage-Build wirksam.
+
 ## 26.09.25 — 2026-09-25
 
 - **Fix: verschlüsselte ZIP-Benutzerlisten schlugen bei Axis-Kameras fehl.** Nach der
