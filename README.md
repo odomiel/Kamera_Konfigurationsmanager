@@ -6,7 +6,7 @@ Windows portabel (`.exe`) und Linux (AppImage), gleicher Stack wie das
 Axis_Kamera_Discovery-Tool (Python 3.14 + Tkinter; Tk 9 im Linux-AppImage
 selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
 
-## Funktionen (Zielbild)
+## Funktionen
 
 - **Gerätesuche** im LAN (mDNS); Kameras per **Rechtsklick** einer oder mehreren
   Gruppen zuweisen (additiv), aus der aktuellen Gruppe entfernen oder **vollständig
