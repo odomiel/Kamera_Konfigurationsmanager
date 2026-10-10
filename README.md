@@ -1,10 +1,10 @@
 # Kamera_Konfigurationsmanager
 
 Plattformübergreifendes Desktop-Tool zum Verwalten und Konfigurieren von
-Netzwerkkameras — Aufbau grob wie der AXIS Device Manager, **ohne Live-Überwachung**.
+Netzwerkkameras — Aufbau Inspiriert vom AXIS Device Manager.
 Windows portabel (`.exe`) und Linux (AppImage), gleicher Stack wie das
 Axis_Kamera_Discovery-Tool (Python 3.14 + Tkinter; Tk 9 im Linux-AppImage
-selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers).
+selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
 
 ## Funktionen (Zielbild)
 
@@ -17,7 +17,7 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 8.6 des python.org-Installers
   darunter eigene Gruppen (anlegen/bearbeiten/löschen).
 - **Online-Status** als eigene Spalte, manueller Prüf-Button + konfigurierbare
   Online-Prüfung je Gruppe.
-- **Kamera-Aktionen** als eigene Buttons in der Vorderansicht (wie ADM):
+- **Kamera-Aktionen** als eigene Buttons in der Vorderansicht:
   IP-Adresse, Benutzer, ONVIF-Benutzer, Firmware (mehrere Typen gleichzeitig,
   mit Online-Update-Suche), Konfiguration (Axis `.cfg` Im-/Export v1+v2),
   Konfig-Backup (Komplett-Sicherung: Axis via Device-Configuration-API `.json`,
@@ -82,44 +82,6 @@ Der gesamte herstellerspezifische Code liegt hinter `VendorPlugin`. Ein neuer
 Hersteller = ein neues Plugin-Paket unter `kkm/plugins/`; `core` und `gui` bleiben
 unverändert.
 
-## Stand
-
-Gerüst. Funktionsfähig: Paketstruktur, Plugin-Interface, Gruppen-Store,
-Passwort-Tresor, Axis-Plugin (Discovery + VAPIX gewrappt), GUI-Schale mit Suche,
-Gruppen, Tabelle und Online-Prüfung. **Erster Aktions-Dialog fertig:**
-*Konfiguration* (Axis `.cfg` Im-/Export auf alle ausgewählten Kameras — inkl.
-Bewegungserkennung/VMD4 — Export der ersten Kamera mit durchsuchbarer
-Parameter-Auswahl, v1+v2) — auf gemeinsamer
-Dialog-Basis (`kkm/gui/dialogs/base.py`: Zugangsdaten, Hintergrund-Threads,
-Ergebnis-Log, Tresor-Vorbefüllung). **Firmware-Dialog fertig:** aktualisiert
-mehrere Kameras *verschiedener Modelle gleichzeitig* — pro Modell eine eigene
-`.bin` zuweisen, Update parallel mit Ergebnis-Log; nicht zugewiesene Modelle
-werden übersprungen; factory-default-Option; langer Upload-Timeout.
-**Update-Suche fertig:** sucht die Modelle im öffentlichen Firmware-Verzeichnis des
-Herstellers (Axis: `ftp.axis.com`), zeigt die verfügbare Version je Modell, lädt sie
-mit Fortschritt/Wiederaufnahme in einen Cache und weist sie dem Modell zu.
-**Benutzer-Dialog fertig:** anlegen (mit Rolle + factory) / Passwort ändern /
-Stapel-Import aus `Name,Passwort[,Rolle]`-Datei (einmal validiert, je Kamera ×
-Benutzer); optional Speichern ins Tresor. **ONVIF-Benutzer-Dialog fertig:**
-gleicher Aufbau mit ONVIF-Stufen (Administrator/Operator/User), ohne factory.
-**IP-Adresse-Dialog fertig:** DHCP / feste IP fortlaufend ab Start-IP / pro Kamera
-einzeln (Ziel-IPs werden vor dem Zugriff validiert). **Konfig-Backup-Dialog fertig:**
-sichert bzw. spielt die *vollständige* Gerätekonfiguration als Ganzes ein — Axis über
-die Device-Configuration-API als `.json` (Varianten Zusammenführen/Ersetzen),
-Hikvision/Dahua/Hanwha als verschlüsselter `.bin`-Blob; der Dialog liest Dateiendung,
-„Netz behalten" und Einspiel-Varianten je Plugin. **Alle Aktions-Dialoge stehen damit.**
-**Einstellungen-Dialog fertig:** Tresor-Verwaltung (Master-Passwort
-anlegen/entsperren/sperren/ändern), Plugin-Manager (Hersteller an/aus, persistent),
-Online-Prüfung je Gruppe (an/aus + Intervall, mit automatischer Prüfung der
-gewählten Gruppe im Hauptfenster) und Spalten-Sichtbarkeit; Tresor ist ins
-Hauptfenster eingebunden (Aktions-Dialoge füllen gespeicherte Passwörter vor).
-Ein Reiter **„Über"** zeigt Programm- und Komponentenversionen, Ersteller/Lizenz
-sowie den Hinweis auf die KI-gestützte Entwicklung; der Reiter **„Lizenzen"**
-listet die Drittanbieter-Lizenzen aller mitgelieferten Komponenten und den
-vollständigen GPL-3.0-Text.
-**Build-Skripte fertig:** Linux-AppImage und Windows-`.exe` (siehe unten). Die
-Programm-Features sind damit vollständig.
-
 ## Aus dem Quellcode starten
 
 ```bash
@@ -168,6 +130,8 @@ python3 bump_version.py            # nächste Version setzen
 ```
 
 ## Lizenz
+
+Dieses Projekt wurde zu großen teilen mit Hilfe von Ki (Claud Code) erstellt
 
 GPL-3.0-or-later. Siehe `LICENSE`. Dieses Projekt enthält den VAPIX-Client aus
 dem ebenfalls GPL-3.0 lizenzierten Axis_Kamera_Discovery-Tool; der gesamte
