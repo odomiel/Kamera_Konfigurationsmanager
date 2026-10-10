@@ -624,7 +624,7 @@ endobj
 endobj
 36 0 obj
 <<
-/Author (Mirik) /CreationDate (D:20260922233511+02'00') /Creator (\(unspecified\)) /Keywords () /ModDate (D:20260922233511+02'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+/Author (Mirik) /CreationDate (D:20261010131606+02'00') /Creator (\(unspecified\)) /Keywords () /ModDate (D:20261010131606+02'00') /Producer (ReportLab PDF Library - \(opensource\)) 
   /Subject (\(unspecified\)) /Title (Kamera_Konfigurationsmanager \204 User Manual) /Trapped /False
 >>
 endobj
@@ -636,10 +636,10 @@ endobj
 endobj
 38 0 obj
 <<
-/Filter [ /ASCII85Decode /FlateDecode ] /Length 579
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 574
 >>
 stream
-Gat=g>Aour&;B$;(%^(9f^-i=o9QD!<@)JpM,o&''Wj)lD?DCB:>;Du%<8VWMNn;IBZ6Cu4(ed$SkeY@AHVG)J<LiP&em3rA.jb-peYMe%(Aj(RFN3%BPX$CQ;V"3]dFreQqT.u3F[fW(T]EjR4uX[?8Yo^f-dm9S*se28mBm-/'Aa?EcXQ/8$,Ec4#B9*Foh&!qUkK@Ga,Lm4/i^8FonC(Yg*lMdF(8]+XJ-_,@+c<b:I4T6S'.5"qVLoc=L/qM\H`9jWO>H6pfc9o]g3n7JQ6(4+I,GMP!_XJUC^e17[9gcL,2!rd_oL+d[N9Z;s(sM1gSWh`9G$Sbo:AroQ>MokJagrFQeuY48W$<cQ&<1c^/%M&E/FA@tg`61@PiOu#U5a@RV_<P&7'Y&\<SK!sD2$1Sgr]uLV3E/no2GLcAtb:ha:bm'*drmMpB;9Y])*[.64+F(K<LD`_!L!XT$Z(E1eR%^PtQI.Y\]8BnJ-Qnu"Je?8HDQ?5iNqa/=a%T2ef9;G3*JF8'Lm-,pbDCC]qis\(nE"I%))pb+iBCRRjFZna`;J2)p1JbP\V5\&+.nE.(B~>endstream
+Gat=f>AqtU&;B$?/*;tP]UdaQp8nUP:^_+dK6TY]2NAd]C9Op<JY19>9q=8\;-RC=m@!Kgc40lPPPSqF!5'i?A4Ag(MAf#@$,m'q.'dtb>G]`kC/#>J[7jcI;dFR[-fEE-R2/%JcA8\@X>?cB0ZL(u2>Tke-aOARmpXL6>LqS2()OQ&F&$mR>*lC8A;%,P!oA_)Zg7Y]-tO8WW=F2s!mV%e3_O-U9*5KR/*VR%kn7c:Agmg#@aS"/5bo5ePj,e^Uk&5E"G-:Z$%3oBX05eDiNmIkr9\8JIR<Q/no7OLE.V:T]8n97!tO4D>j@Hp>4ICp&f-=QkA63%m[G^&S+G"XX6!XZRoO.6`j^D"`=_:[j9VXEbUDR"j-<dXJnOqAa;d\n-]Q>Nm/h[HbH7$:g1p4,`*Z@7*]s.J89"9Heb-Ms0Aet<#)hO@diO3?b`JD;+ed[6Ge1qN),dFma0E[6L?N'#Y$tL&hn\\1G%mS!CIZBAmP\h0iJ7m3Elc`5;,8s=FV*h:i5g%9R'%IbIcV/"H9%H@L5+J/grHIR>VOAhb]!GlJ&4^@><'_'!=D^A?N~>endstream
 endobj
 39 0 obj
 <<
@@ -773,23 +773,23 @@ xref
 0000213311 00000 n 
 0000213616 00000 n 
 0000213767 00000 n 
-0000214437 00000 n 
-0000215576 00000 n 
-0000217829 00000 n 
-0000220598 00000 n 
-0000223309 00000 n 
-0000225702 00000 n 
-0000228463 00000 n 
-0000231002 00000 n 
-0000233490 00000 n 
-0000235161 00000 n 
-0000237568 00000 n 
-0000240397 00000 n 
-0000243054 00000 n 
+0000214432 00000 n 
+0000215571 00000 n 
+0000217824 00000 n 
+0000220593 00000 n 
+0000223304 00000 n 
+0000225697 00000 n 
+0000228458 00000 n 
+0000230997 00000 n 
+0000233485 00000 n 
+0000235156 00000 n 
+0000237563 00000 n 
+0000240392 00000 n 
+0000243049 00000 n 
 trailer
 <<
 /ID 
-[<c3115da90f4d543cf8d9563483479e6c><c3115da90f4d543cf8d9563483479e6c>]
+[<76031d1049427a66faac50a3d0c41403><76031d1049427a66faac50a3d0c41403>]
 % ReportLab generated PDF document -- digest (opensource)
 
 /Info 36 0 R
@@ -797,5 +797,5 @@ trailer
 /Size 52
 >>
 startxref
-244591
+244586
 %%EOF
