@@ -1,7 +1,7 @@
 # Kamera_Konfigurationsmanager
 
 Plattformübergreifendes Desktop-Tool zum Verwalten und Konfigurieren von
-Netzwerkkameras — Aufbau Inspiriert vom AXIS Device Manager.
+Netzwerkkameras — Aufbau inspiriert vom AXIS Device Manager.
 Windows portabel (`.exe`) und Linux (AppImage), gleicher Stack wie das
 Axis_Kamera_Discovery-Tool (Python 3.14 + Tkinter; Tk 9 im Linux-AppImage
 selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
@@ -131,7 +131,7 @@ python3 bump_version.py            # nächste Version setzen
 
 ## Lizenz
 
-Dieses Projekt wurde zu großen teilen mit Hilfe von Ki (Claud Code) erstellt
+Dieses Projekt wurde zu großen Teilen mit Hilfe von KI (Claude Code) erstellt.
 
 GPL-3.0-or-later. Siehe `LICENSE`. Dieses Projekt enthält den VAPIX-Client aus
 dem ebenfalls GPL-3.0 lizenzierten Axis_Kamera_Discovery-Tool; der gesamte
