@@ -110,9 +110,9 @@ und AppImage als Asset) in einem Schritt:
 ```
 
 **Windows (portable .exe)** — muss auf Windows mit **Python 3.14** laufen
-(PyInstaller cross-kompiliert nicht). Anders als die AppImage nutzt die `.exe`
-das **Tcl/Tk 8.6** des python.org-Windows-Installers (dessen 3.14 bringt auf
-Windows weiterhin Tk 8.6, nicht Tk 9); Details in `BUILD_WINDOWS.md`. Die `.exe` legt ihre Konfiguration (Gruppen,
+(PyInstaller cross-kompiliert nicht). Die `.exe` nutzt das **Tcl/Tk 9** des
+python.org-Windows-Installers (die AppImage kompiliert Tk 9 dagegen selbst);
+Details in `BUILD_WINDOWS.md`. Die `.exe` legt ihre Konfiguration (Gruppen,
 Einstellungen, Passwort-Tresor) **neben sich selbst** im Ordner
 `kamera_konfigurationsmanager` ab (mitnehmbar); die Linux-AppImage nutzt weiterhin
 `~/.config`:

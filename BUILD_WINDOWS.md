@@ -17,12 +17,12 @@ py -3.14 -m pip install -r requirements.txt
 
 **Warum Python 3.14?** Es haelt die Python-Version zur Linux-AppImage konsistent
 und ist die aktuelle Reihe. **Hinweis zur Tk-Version:** Der python.org-**Windows**-
-Installer von 3.14 buendelt weiterhin **Tcl/Tk 8.6.15** — nur der *macOS*-Installer
-wurde ab 3.14.5 auf Tk 9.0 umgestellt (CPythons `PCbuild/get_externals.bat` pinnt
-fuer Windows `tk-8.6.15.0`). Da PyInstaller die Tk-Version des bauenden
-Interpreters uebernimmt, hat die `.exe` folglich **Tk 8.6, nicht Tk 9**. Tk 9 gibt
-es nur in der Linux-AppImage, weil diese Tcl/Tk 9 selbst aus dem Quelltext baut.
-Das ist unkritisch: der Dunkelmodus (`sv-ttk`) laeuft auf Tk 8.6 unveraendert.
+Installer von 3.14 buendelt inzwischen **Tcl/Tk 9.0**. Da PyInstaller die Tk-Version
+des bauenden Interpreters uebernimmt, hat die `.exe` damit ebenfalls **Tk 9** — wie
+die Linux-AppImage, die Tcl/Tk 9 selbst aus dem Quelltext baut. Die Tcl/Tk-9-
+Bibliotheken liegen dort als zipfs-ZIPs vor; die `.spec` entpackt sie fuer
+PyInstaller (siehe Kommentar in `build_windows.ps1`). Der Dunkelmodus (`sv-ttk`)
+laeuft auf Tk 9 unveraendert.
 `--upgrade pyinstaller` haelt PyInstaller aktuell.
 
 `tkinter` ist im offiziellen Windows-Python bereits enthalten. `cryptography`
