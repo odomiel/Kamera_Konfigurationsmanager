@@ -1,6 +1,7 @@
 # Recherche: Senstar-Plugin (Schwerpunkt Senstar AIM-A10D)
 
-*Stand: 2026-07-23. Machbarkeits- und Aufwandsanalyse, noch keine Umsetzung.*
+*Stand: 2026-07-23 (Theorie). **Aktualisiert 2026-10-14** mit Befunden an einem echten
+Gerät (siehe Abschnitt 0).*
 
 Ziel war zu prüfen, was nötig ist, um ein Hersteller-Plugin für Senstar zu schreiben,
 insbesondere für den **Senstar AIM-A10D**. Das zentrale Ergebnis vorab, weil es die
@@ -21,6 +22,48 @@ ganze Bewertung prägt:
 Trotzdem lohnt die Analyse: der AIM-A10D hat eine **sauber dokumentierte REST-API**, und
 technisch ließe sich ein Plugin dafür sogar leichter bauen als die CGI/Digest-Plugins.
 Die eigentlichen Haken liegen woanders (Discovery, Benutzermodell, „keine Kamera").
+
+---
+
+## 0. Aktualisierung 2026-10-14 — Befunde am echten Gerät
+
+Ein A10D lag auf **192.168.0.156** vor und wurde read-only sondiert (keine
+Login-Versuche → keine Kontosperre). Das bestätigt die Theorie in den Kernpunkten
+und korrigiert drei Details.
+
+**Gerät/Software:** Senstar Thin Client, **Software 3.10.0.2726**, nginx 1.18.0.
+HTTP (80) **leitet auf HTTPS (443) um**; die Weboberfläche ist eine SPA
+(Angular-artig) mit vollem Management-Umfang (Netzwerk, *RestoreFactorySettings*,
+*FindDevice*, Firmware, „Symphony user settings").
+
+**Offene Ports:** nur **80 + 443**. **Zu:** 554 (RTSP), 8000, 22 (SSH), 37777.
+→ Der Thin Client liefert selbst **keinen** Stream und keinen Geräte-/ONVIF-Port.
+
+**ONVIF empirisch ausgeschlossen** (die zentrale offene Frage der Recherche):
+- Das **generische ONVIF-Plugin** (`kkm/plugins/onvif/discovery.discover()`) fand im
+  selben Netz nur eine Axis P3245-V — den A10D **nicht**. Kein WS-Discovery-Advertisement.
+- `/onvif/device_service` liefert nur die HTML-UI (kein SOAP).
+→ **Der A10D wird vom ONVIF-Plugin nicht angezeigt und nicht konfiguriert.** Er ist
+  ONVIF-**Client** (empfängt Streams), kein ONVIF-Server. Für Anzeige/Konfiguration im
+  Programm ist also ein **eigenes Senstar-Plugin** nötig.
+
+**REST-API hat sich gegenüber v2.2.1 verschoben** (Abschnitt 2 ist insoweit veraltet):
+- Basis ist jetzt **`/Api`** (nicht mehr `/` an der Wurzel); Transport **HTTPS**, nicht HTTP.
+- Auth weiterhin **Session-Token**: `POST /Api/Session` antwortet ohne gültige
+  Zugangsdaten mit **403** (die Route existiert); die alten Wurzelpfade `/Settings`,
+  `/System/Update` liefern **404**.
+- Die genauen 3.10-Endpunkt-Schemata (Form von `/Api/Settings`, Firmware-Upload, Reset)
+  sind **nur mit Login** abzugreifen und noch offen.
+
+**Discovery ist kein Blocker mehr:** Die Recherche nannte „kein manuelles Hinzufügen
+per IP" als Hauptproblem (Abschnitt 1.1, 4.2). Seit **26.08.29** gibt es den
+`ManualAddDialog` (Suchen-Button ▸ Pfeil ▸ „Kamera manuell hinzufügen…", Gerät per
+IP + Hersteller). Ein Senstar-Plugin könnte so **ohne eigenes Discovery** auskommen;
+ein Subnetz-Scan in `discover()` bleibt optional.
+
+**Unverändert gültig:** „keine Kamera" (Scope-Frage), Token-Transport-Muster,
+Capability-Zuschnitt (SET_IP/FIRMWARE/FIRMWARE_CHECK/factory_reset/reboot/device_info;
+kein USERS/ONVIF_USERS; CONFIG nur als opakes Backup), `experimental = True`.
 
 ---
 
@@ -49,10 +92,11 @@ Optional, je gemeldeter `Capability.*` freigeschaltet (die GUI grayt den Rest au
 
 Zwei Rahmenbedingungen der App, die für Senstar besonders relevant sind:
 
-1. **Die App ist rein Discovery-getrieben.** Geräte gelangen ausschließlich über
-   `discover()` eines aktiven Plugins (oder den Axis-ADM-Import) in die Liste — es gibt
-   **kein „Gerät manuell per IP hinzufügen"** in der GUI. Ein Plugin, dessen Gerät kein
-   Discovery-Protokoll beherrscht, muss `discover()` selbst mit einem Subnetz-Scan füllen.
+1. **Die App ist rein Discovery-getrieben.** Geräte gelangen über `discover()` eines
+   aktiven Plugins (oder den Axis-ADM-Import) in die Liste. **Überholt seit 26.08.29
+   (siehe Abschnitt 0):** es gibt jetzt zusätzlich „Kamera manuell hinzufügen…" per
+   IP + Hersteller. Ein Plugin ohne eigenes Discovery-Protokoll kann darauf bauen; ein
+   Subnetz-Scan in `discover()` bleibt optional.
 2. **Transport-Regel** (aus `vapix.py`, in allen Plugins gespiegelt): der
    `scheme="auto"`-HTTPS→HTTP-Rückfall darf **nur** bei Verbindungsfehlern greifen, nie
    bei HTTP 401 (sonst Klartext-Wiederholung + verdoppelte Fehlversuche → Geräte-Sperre).
@@ -124,11 +168,11 @@ sauber; **USERS/ONVIF_USERS** passen nicht; **CONFIG** nur als opakes Backup.
    ist ein *Kamera*-Konfigurationsmanager; ein Decoder in der Geräteliste ist eine
    **Scope-Entscheidung**, keine rein technische. Alles Kamera-Spezifische (ONVIF-Nutzer,
    Bewegungserkennung, Stream-Profile) entfällt.
-2. **Discovery ist der eigentliche Aufwand.** Kein Kamera-Discovery-Protokoll; die App
-   kennt kein manuelles „per IP hinzufügen". Ein Plugin müsste in `discover()` selbst
-   einen **Subnetz-Scan** fahren (Probe auf `/Session` o. Ä.). Alternativ wäre in der GUI
-   ein generisches „Gerät per IP hinzufügen" nachzurüsten — das wäre aber eine
-   Kern-Änderung außerhalb des Plugin-Seams (aktuell bewusst nicht vorhanden).
+2. **Discovery** (entschärft seit 26.08.29, siehe Abschnitt 0). Kein
+   Kamera-Discovery-Protokoll — aber die GUI kann ein Gerät jetzt **manuell per IP +
+   Hersteller** aufnehmen (`ManualAddDialog`). Ein Plugin kann damit ohne eigenes
+   Discovery auskommen; ein **Subnetz-Scan** in `discover()` (Probe auf `/Api/Session`)
+   ist nur noch Komfort, kein Blocker mehr.
 3. **Token-Auth statt Digest.** Neues Transport-Muster: erst `POST /Session` →
    `authtoken`-Header, dann Token an jeden Request hängen, am Ende `DELETE /Session`.
    `urllib` kann das problemlos, aber es ist ein eigener kleiner Client (nicht der
@@ -197,3 +241,6 @@ Die REST-API ist angenehmer als die CGI-Vendoren; die eigentliche Arbeit steckt 
 - A10D Firmware-Upgrade (KB): <https://xnet.senstar.com/Support/kbarticle.aspx?ID=10347>
 - Produkt/Händler AIM-A10D: <https://www.anixter.com/en_us/products/AIM-A10D/SENSTAR-CORP/Video-Transmission/p/598655>
 - Senstar/ONVIF (Profil S/T, Symphony): <https://senstar.com/product-resources/symphony-supported-devices/>
+- Thin Client als ONVIF-/RTSP-**Client** mit Dritt-VMS (bestätigt 2026-10-14):
+  <https://senstar.com/security-digest/using-thin-client-with-third-party-vms/>,
+  <https://senstar.com/products/thin-client/>
