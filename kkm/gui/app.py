@@ -1245,6 +1245,19 @@ class MainWindow(tk.Tk):
             cam["_firmware"] = fw
         if model and model != "?":
             cam["_model"] = model
+        # MAC/Seriennummer nachtragen, wenn die Suche sie nicht liefern konnte
+        # (z. B. Senstar: der unauthentifizierte Fingerprint kennt keine MAC —
+        # sie kommt erst mit Zugangsdaten aus der Geräteinfo). Das Feld ist
+        # zugleich die Identität (camera_key); beim ersten Lernen daher
+        # umschlüsseln, damit Gruppen, Tresor und Zertifikat mitwandern.
+        mac = str(info.get("mac", "")).strip()
+        if mac and not str(cam.get("MAC-Adresse/Seriennummer", "")).strip():
+            cam["MAC-Adresse/Seriennummer"] = mac
+            new_key = camera_key(cam)
+            if new_key != key:
+                self.store.rekey_camera(key, new_key)
+                certpin.STORE.rekey(key, new_key)
+                self._move_key(key, new_key)
 
     def _worker_creds(self, targets, user, pw):
         creds = Credentials(username=user, password=pw)

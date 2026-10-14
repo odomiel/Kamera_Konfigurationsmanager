@@ -69,6 +69,17 @@ class SenstarPlugin(VendorPlugin):
 
     # --- helpers ------------------------------------------------------------
     @staticmethod
+    def _mac_aus_serial(serial: str) -> str:
+        """Die Geräte-Seriennummer des Thin Client IST seine MAC-Adresse (die
+        Hardware basiert auf Lanner, OUI 00:90:0B) — z. B. ``00900B587DA2`` ->
+        ``00:90:0B:58:7D:A2``. Als MAC formatieren, wenn es 12 Hex-Ziffern sind;
+        sonst unverändert als Seriennummer zurückgeben."""
+        s = (serial or "").strip().replace(":", "").replace("-", "")
+        if len(s) == 12 and all(c in "0123456789abcdefABCDEF" for c in s):
+            return ":".join(s[i:i + 2] for i in range(0, 12, 2)).upper()
+        return (serial or "").strip()
+
+    @staticmethod
     def _ip(camera: dict) -> str:
         ip = get_first_ip(camera)
         if not ip:
@@ -107,6 +118,7 @@ class SenstarPlugin(VendorPlugin):
         info = session.kennung(ip, timeout=6) or {}
         modell = info.get("modell", "")
         version = info.get("version", "")
+        mac = ""
         if creds and creds.password:
             try:
                 token = self._anmelden(ip, creds)
@@ -116,9 +128,15 @@ class SenstarPlugin(VendorPlugin):
                 finally:
                     session.abmelden(ip, token)
                 version = werte.get("FirmwareVersion", version)
+                # Die MAC/Seriennummer liefert der unauth. Fingerprint nicht —
+                # sie steht nur authentifiziert in /Settings (DeviceSerial).
+                mac = self._mac_aus_serial(werte.get("DeviceSerial", ""))
             except session.SenstarError:
                 pass   # Fingerprint-Werte bleiben
-        return {"model": modell, "firmware": version}
+        ergebnis = {"model": modell, "firmware": version}
+        if mac:
+            ergebnis["mac"] = mac
+        return ergebnis
 
     # --- actions ------------------------------------------------------------
     def set_static_ip(self, camera, creds: Credentials, new_ip, mask, gateway):

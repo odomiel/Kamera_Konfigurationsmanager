@@ -104,11 +104,10 @@ class HanwhaPlugin(VendorPlugin):
         ip = self.ip_of(camera)
         info = sunapi.get_device_info(ip, creds.username, creds.password,
                                       **self._conn(creds))
-        # WS-Discovery liefert keine MAC — die echte MAC nachtragen, damit das
-        # Hauptfenster die Kamera auf eine stabile Identitaet umschluesseln kann.
-        mac = info.get("mac")
-        if mac and not str(camera.get("MAC-Adresse/Seriennummer", "")).count(":") >= 5:
-            camera.setdefault("_mac", mac)
+        # WS-Discovery liefert keine MAC — sie steckt im ``mac``-Feld der
+        # Geraeteinfo (``ConnectedMACAddress``). Das Hauptfenster traegt sie aus
+        # diesem Rueckgabewert in die Uebersicht nach und schluesselt die Kamera
+        # dabei auf eine stabile Identitaet um (siehe ``_apply_device_info``).
         return info
 
     def is_unconfigured(self, camera: dict, creds: Credentials | None = None) -> bool:

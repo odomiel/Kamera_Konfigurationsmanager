@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.14b3 — 2026-10-14
+
+- **MAC-Adresse wird nachgetragen, wenn die Suche sie nicht liefert.** Der Senstar
+  Thin Client nennt in seiner unauthentifizierten Gerätekennung keine MAC — sie steht
+  nur authentifiziert in `/Settings` (`DeviceSerial`, zugleich die MAC; die Hardware
+  basiert auf Lanner, OUI `00:90:0B`). Die Geräteinfo liest sie jetzt mit und das
+  Hauptfenster trägt sie in die Übersicht nach, sobald Zugangsdaten vorliegen. Weil die
+  MAC zugleich die Identität der Kamera ist (`camera_key`), wird sie beim ersten Lernen
+  sauber umgeschlüsselt — Gruppen, Passwort-Tresor und gemerktes Zertifikat wandern mit.
+  Der Mechanismus ist generisch: Er greift auch bei Hanwha/ONVIF (deren WS-Discovery
+  ebenfalls keine MAC kennt) und ersetzt dort ein zuvor wirkungsloses `_mac`-Feld.
+  Am A10D verifiziert (`00:90:0B:58:7D:A2`).
+
 ## 26.10.14b2 — 2026-10-14
 
 - **Senstar Thin Client: Benutzer + Firmware (Stufe 3).** Das Plugin kann jetzt auch
