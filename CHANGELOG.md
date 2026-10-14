@@ -4,6 +4,20 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.14 — 2026-10-14
+
+- **Neues (experimentelles) Plugin: Senstar/Aimetis Thin Client** (z. B. A10D) — vorerst
+  **nur Anzeige** (Stufe 1). Der Thin Client ist ein Netzwerk-Video-*Decoder*, keine
+  Kamera, und meldet sich **nicht** als ONVIF-Gerät (am echten A10D verifiziert: keine
+  WS-Discovery, kein ONVIF-Device-Service) — das generische ONVIF-Plugin kann ihn daher
+  nicht erfassen. Das neue Paket `kkm/plugins/senstar/` findet ihn per **Subnetz-Scan**
+  (TCP-Vortest auf 443 + unauthentifizierte 404-Geräte­kennung, **keine Loginversuche**)
+  und zeigt **Modell und Softwarefassung** sowie den Online-Status an; alternativ per
+  „Kamera manuell hinzufügen…" + Hersteller *Senstar Thin Client*. Capabilities:
+  `DISCOVER`/`ONLINE_CHECK`/`DEVICE_INFO`. **Experimentell, ab Werk ausgeschaltet.**
+  Konfiguration (IP, Firmware, Reset über die 3.10-REST-API) folgt in einer späteren
+  Stufe. Siehe `SENSTAR_PLUGIN_RECHERCHE.md`.
+
 ## 26.10.04 — 2026-10-04
 
 - **Abhängigkeiten aktualisiert: Python 3.14.7 → 3.14.8, OpenSSL 3.5.8 → 3.5.9**

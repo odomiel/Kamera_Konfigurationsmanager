@@ -40,7 +40,11 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
   und Amcrest ab — ebenfalls **experimentell**, ab Werk ausgeschaltet) sowie
   **Hanwha/Wisenet** (SUNAPI; Suche über ONVIF, Geräteinfo, IP, Benutzer, ONVIF-Benutzer,
   Firmware, Werksreset — **experimentell**, an einer Wisenet-Kamera verifiziert, ab Werk
-  ausgeschaltet).
+  ausgeschaltet) sowie **Senstar/Aimetis Thin Client** (z. B. A10D; ein
+  Netzwerk-Video-*Decoder*, keine Kamera — darum vom ONVIF-Plugin nicht erfassbar):
+  derzeit **nur Anzeige** (Suche per Subnetz-Scan, Modell + Softwarefassung, Online) über
+  die unauthentifizierte Gerätekennung; Konfiguration (IP, Firmware, Reset über die
+  REST-API) folgt — **experimentell**, an einem A10D verifiziert, ab Werk ausgeschaltet.
 
 ## Architektur
 
@@ -73,6 +77,10 @@ kkm/
       httpapi.py        Dahua HTTP API (HTTP-Digest, KEY=VALUE, stdlib-only)
       discovery.py      DHIP-Discovery (UDP 37810)
       plugin.py         DahuaPlugin: experimentell, ONVIF-Benutzer via onvif/soap
+    senstar/
+      session.py        Thin-Client-Kennung (404-Fingerprint, stdlib-only, unauth)
+      discovery.py      Subnetz-Scan (TCP-Vortest 443 + Fingerprint)
+      plugin.py         SenstarPlugin: Decoder-Anzeige (Stufe 1), experimentell
   gui/
     app.py              Hauptfenster: Gruppen-Baum + Tabelle + Aktions-Toolbar
 main.py                 Startpunkt (GUI)

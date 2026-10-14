@@ -33,6 +33,7 @@ from .onvif import OnvifPlugin
 from .hikvision import HikvisionPlugin
 from .dahua import DahuaPlugin
 from .hanwha import HanwhaPlugin
+from .senstar import SenstarPlugin
 from .axis import vapix as _vapix
 from .hikvision import isapi as _isapi
 from .dahua import httpapi as _httpapi
@@ -41,13 +42,14 @@ from .onvif import soap as _soap
 
 #: Plugins, die ohne gespeicherte Auswahl ausgeschaltet bleiben (generisches ONVIF
 #: sowie noch nicht an Hardware verifizierte, experimentelle Hersteller-Plugins).
-DEFAULT_OFF = {OnvifPlugin.id, HikvisionPlugin.id, DahuaPlugin.id, HanwhaPlugin.id}
+DEFAULT_OFF = {OnvifPlugin.id, HikvisionPlugin.id, DahuaPlugin.id, HanwhaPlugin.id,
+               SenstarPlugin.id}
 
 
 def build_registry(enabled_ids: list[str] | None = None) -> PluginRegistry:
     registry = PluginRegistry()
     available = [AxisPlugin(), HikvisionPlugin(), DahuaPlugin(), HanwhaPlugin(),
-                 OnvifPlugin()]
+                 OnvifPlugin(), SenstarPlugin()]
     for plugin in available:
         if enabled_ids is None:
             default_on = plugin.id not in DEFAULT_OFF
