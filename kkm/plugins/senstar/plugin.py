@@ -14,22 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Senstar (Aimetis) Thin Client plugin — Stufe 1: discovery + display only.
+"""Senstar (Aimetis) Thin Client plugin.
 
 The Thin Client (e.g. A10D) is a network **video decoder**, not a camera: it receives
 ONVIF Profile S / RTSP streams and shows them on a monitor. It is therefore *not* an
-ONVIF **server** — the generic ONVIF plugin cannot see or manage it (verified on
+ONVIF **server** - the generic ONVIF plugin cannot see or manage it (verified on
 hardware: WS-Discovery does not find it, ``/onvif/device_service`` serves only the web
-UI). This dedicated plugin makes it appear in the device list with model and software
-version, discovered by a light subnet scan (see ``discovery``) or added by hand.
+UI). This dedicated plugin makes it appear in the device list and configures its
+network.
 
-**Stufe 1 is read-only (display).** It offers ``DISCOVER`` / ``ONLINE_CHECK`` /
-``DEVICE_INFO`` via the device's unauthenticated 404-page fingerprint — no login. The
-writing capabilities the 3.10 REST API would allow (``SET_IP`` via ``POST /Settings``,
-``USERS`` via ``/User``, ``FIRMWARE``/``FIRMWARE_CHECK`` via ``/System/Update``,
-``FACTORY_RESET`` via ``/System/Restore``, token login via ``POST /Session``) are
-mapped but deliberately left for Stufe 2, once verified against a device with
-credentials. The plugin is ``experimental`` and shipped off by default.
+``DISCOVER`` / ``ONLINE_CHECK`` work unauthenticated via the device's 404-page
+fingerprint (no login). ``DEVICE_INFO``, ``SET_IP`` (``POST /Settings``, read-modify-
+write) and ``FACTORY_RESET`` (``GET /System/Restore``) use the token login
+(``POST /Session`` ``{user,pwd}`` -> ``Data.Token`` -> cookie ``authtoken``), mapped
+from the device's ``server.js`` and verified against a 3.10 A10D. ``USERS`` (``/User``)
+and firmware (the device updates itself online via ``/System/Update`` and does not fit
+the per-model file flow of the firmware dialog) are intentionally left out for now. The
+plugin is ``experimental`` and shipped off by default.
 """
 
 from __future__ import annotations
@@ -43,14 +44,32 @@ from . import session
 class SenstarPlugin(VendorPlugin):
     id = "senstar"
     name = "Senstar Thin Client"
-    #: Decoder, keine Kamera; noch nicht schreibend an Hardware verifiziert -> ab Werk aus.
+    #: Decoder, keine Kamera; noch nicht in jedem Schreibpfad an Hardware verifiziert.
     experimental = True
     default_username = "admin"
     capabilities = {
         Capability.DISCOVER,
         Capability.ONLINE_CHECK,
         Capability.DEVICE_INFO,
+        Capability.SET_IP,
+        Capability.FACTORY_RESET,
     }
+
+    def is_auth_error(self, exc: Exception) -> bool:
+        return bool(getattr(exc, "auth_failed", False))
+
+    # --- helpers ------------------------------------------------------------
+    @staticmethod
+    def _ip(camera: dict) -> str:
+        ip = get_first_ip(camera)
+        if not ip:
+            raise session.SenstarError("Gerät hat keine IP-Adresse.")
+        return ip
+
+    def _anmelden(self, ip: str, creds: Credentials) -> str:
+        benutzer = creds.username or self.default_username
+        return session.anmelden(ip, benutzer, creds.password,
+                                timeout=min(creds.timeout, 10))
 
     # --- discovery & status -------------------------------------------------
     def discover(self, timeout: int = 10) -> list[dict]:
@@ -70,11 +89,56 @@ class SenstarPlugin(VendorPlugin):
             return False
 
     def device_info(self, camera: dict, creds: Credentials) -> dict:
-        """Modell + Softwarefassung — unauthentifiziert aus der 404-Kennung.
-
-        Braucht (in Stufe 1) keine Zugangsdaten; ``creds`` bleibt ungenutzt."""
+        """Modell + Softwarefassung. Mit Zugangsdaten exakt aus ``/Settings``
+        (FirmwareVersion); ohne — bzw. wenn der Login scheitert — aus der
+        unauthentifizierten 404-Kennung."""
         ip = get_first_ip(camera)
-        info = session.kennung(ip, timeout=6) if ip else None
-        if not info:
+        if not ip:
             return {}
-        return {"model": info.get("modell", ""), "firmware": info.get("version", "")}
+        info = session.kennung(ip, timeout=6) or {}
+        modell = info.get("modell", "")
+        version = info.get("version", "")
+        if creds and creds.password:
+            try:
+                token = self._anmelden(ip, creds)
+                try:
+                    werte = {e["Name"]: e["Value"]
+                             for e in session.einstellungen_lesen(ip, token, creds.timeout)}
+                finally:
+                    session.abmelden(ip, token)
+                version = werte.get("FirmwareVersion", version)
+            except session.SenstarError:
+                pass   # Fingerprint-Werte bleiben
+        return {"model": modell, "firmware": version}
+
+    # --- actions ------------------------------------------------------------
+    def set_static_ip(self, camera, creds: Credentials, new_ip, mask, gateway):
+        ip = self._ip(camera)
+        token = self._anmelden(ip, creds)
+        try:
+            session.einstellungen_schreiben(ip, token, {
+                "NetworkMode": "static",
+                "NetworkIP": new_ip,
+                "NetworkMask": mask,
+                "NetworkGW": gateway or "",
+            }, timeout=max(creds.timeout, 15))
+        finally:
+            session.abmelden(ip, token)
+
+    def set_dhcp(self, camera, creds: Credentials):
+        ip = self._ip(camera)
+        token = self._anmelden(ip, creds)
+        try:
+            session.einstellungen_schreiben(ip, token, {"NetworkMode": "dhcp"},
+                                            timeout=max(creds.timeout, 15))
+        finally:
+            session.abmelden(ip, token)
+
+    def factory_reset(self, camera, creds: Credentials, keep_ip: bool = True):
+        # Der Thin Client kennt nur einen vollen Restore (kein „IP behalten").
+        ip = self._ip(camera)
+        token = self._anmelden(ip, creds)
+        try:
+            session.werksreset(ip, token, timeout=max(creds.timeout, 15))
+        finally:
+            session.abmelden(ip, token)

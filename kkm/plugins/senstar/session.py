@@ -30,6 +30,7 @@ hier bewusst noch nicht umgesetzt.
 
 from __future__ import annotations
 
+import json
 import re
 import socket
 import ssl
@@ -92,3 +93,105 @@ def kennung(ip: str, timeout: float = 4.0) -> dict | None:
         "version": mf.group(1) if mf else "",
         "name": f"Senstar {modell} Thin Client",
     }
+
+
+# --------------------------------------------------------------------------- #
+# Authentifizierte REST-API (Stufe 2): Token-Login + Settings                 #
+# --------------------------------------------------------------------------- #
+
+class SenstarError(Exception):
+    """Fehler beim Ansprechen des Thin Clients. ``auth_failed`` markiert 401/403,
+    damit der Aktionsdialog eine erneute Passwortabfrage anbieten kann."""
+
+    def __init__(self, nachricht, auth_failed=False):
+        super().__init__(nachricht)
+        self.auth_failed = auth_failed
+
+
+def _anfrage(ip: str, methode: str, pfad: str, token: str | None = None,
+             daten: bytes | None = None, timeout: float = 10.0):
+    """Ein REST-Aufruf. Token (falls vorhanden) als Cookie ``authtoken`` — so macht
+    es auch die Web-Oberflaeche. Liefert (status, body_bytes)."""
+    kopf = {"Accept": "application/json"}
+    if daten is not None:
+        kopf["Content-Type"] = "application/json"
+    if token:
+        kopf["Cookie"] = f"authtoken={token}"
+    url = f"https://{ip}:{PORT}{pfad}"
+    req = urllib.request.Request(url, data=daten, method=methode, headers=kopf)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+            return resp.status, resp.read()
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read()
+    except Exception as exc:  # noqa: BLE001 - offline / TLS
+        raise SenstarError(f"Nicht erreichbar: {exc}")
+
+
+def anmelden(ip: str, benutzer: str, passwort: str, timeout: float = 10.0) -> str:
+    """Meldet sich an und liefert den Session-Token (``Data.Token``).
+    Wirft SenstarError (auth_failed) bei leerem Token / falschem Passwort."""
+    daten = json.dumps({"user": benutzer, "pwd": passwort}).encode("utf-8")
+    status, body = _anfrage(ip, "POST", "/Session", daten=daten, timeout=timeout)
+    try:
+        token = json.loads(body)["Data"]["Token"]
+    except Exception:  # noqa: BLE001
+        token = ""
+    if not token:
+        raise SenstarError("Anmeldung fehlgeschlagen (Benutzer/Passwort?).",
+                           auth_failed=True)
+    return token
+
+
+def abmelden(ip: str, token: str, timeout: float = 5.0) -> None:
+    """Session beenden (best-effort; Fehler werden geschluckt)."""
+    try:
+        _anfrage(ip, "DELETE", f"/Session/{token}", token=token, timeout=timeout)
+    except SenstarError:
+        pass
+
+
+def einstellungen_lesen(ip: str, token: str, timeout: float = 10.0) -> list[dict]:
+    """Die vollstaendige Settings-Liste (``[{"Name","Value"}, …]``)."""
+    status, body = _anfrage(ip, "GET", "/Settings", token=token, timeout=timeout)
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status != 200:
+        raise SenstarError(f"Einstellungen nicht lesbar (HTTP {status}).")
+    try:
+        return json.loads(body)["Data"]
+    except Exception:  # noqa: BLE001
+        raise SenstarError("Antwort auf /Settings nicht lesbar.")
+
+
+def einstellungen_schreiben(ip: str, token: str, aenderungen: dict,
+                            timeout: float = 15.0) -> None:
+    """Read-modify-write: liest alle Settings, ueberschreibt die genannten Namen und
+    schreibt die ganze Liste zurueck. Passwortfelder kommen vom Geraet maskiert als
+    ``"noop"`` und bleiben so unveraendert — darum ist das Zurueckschreiben sicher."""
+    liste = einstellungen_lesen(ip, token, timeout)
+    offen = dict(aenderungen)
+    for eintrag in liste:
+        if eintrag.get("Name") in offen:
+            eintrag["Value"] = offen.pop(eintrag["Name"])
+    # Unbekannte Namen als zusaetzliche Eintraege anhaengen (sollte nicht vorkommen).
+    for name, wert in offen.items():
+        liste.append({"Name": name, "Value": wert})
+    daten = json.dumps(liste).encode("utf-8")
+    status, body = _anfrage(ip, "POST", "/Settings", token=token, daten=daten,
+                            timeout=timeout)
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status not in (200, 201, 204):
+        raise SenstarError(f"Einstellungen nicht speicherbar (HTTP {status}): "
+                           f"{body[:200].decode(errors='replace')}")
+
+
+def werksreset(ip: str, token: str, timeout: float = 15.0) -> None:
+    """Setzt das Geraet auf Werkseinstellungen zurueck (``GET /System/Restore``);
+    es startet danach neu. Setzt ALLES zurueck (kein „IP behalten")."""
+    status, _ = _anfrage(ip, "GET", "/System/Restore", token=token, timeout=timeout)
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status not in (200, 201, 202, 204):
+        raise SenstarError(f"Werksreset fehlgeschlagen (HTTP {status}).")

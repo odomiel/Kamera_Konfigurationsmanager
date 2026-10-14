@@ -1,10 +1,12 @@
 # Recherche: Senstar-Plugin (Schwerpunkt Senstar AIM-A10D)
 
 *Stand: 2026-07-23 (Theorie). **Aktualisiert 2026-10-14** mit Befunden an einem echten
-Gerät (siehe Abschnitt 0). **Stufe 1 (Anzeige) umgesetzt 2026-10-14:** Paket
-`kkm/plugins/senstar/` (DISCOVER/ONLINE_CHECK/DEVICE_INFO über den unauthentifizierten
-404-Fingerprint; experimentell, ab Werk aus). Die schreibenden Capabilities (SET_IP,
-Benutzer, Firmware, Reset über die 3.10-REST-API) bleiben Stufe 2.*
+Gerät (siehe Abschnitt 0). **Umgesetzt 2026-10-14** im Paket `kkm/plugins/senstar/`
+(experimentell, ab Werk aus): Stufe 1 (DISCOVER/ONLINE_CHECK/DEVICE_INFO über den
+unauthentifizierten 404-Fingerprint) **und** Stufe 2 (SET_IP statisch/DHCP + FACTORY_RESET
++ authentifizierte DEVICE_INFO über den Token-Login `POST /Session`, am A10D 3.10.0.2726
+verifiziert). Noch offen: Benutzerverwaltung (`/User`) und Firmware (`/System/Update` ist
+ein Online-Selbstupdate, passt nicht zum Datei-je-Modell-Ablauf der Firmware-Maske).*
 
 Ziel war zu prüfen, was nötig ist, um ein Hersteller-Plugin für Senstar zu schreiben,
 insbesondere für den **Senstar AIM-A10D**. Das zentrale Ergebnis vorab, weil es die

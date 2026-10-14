@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.14b1 — 2026-10-14
+
+- **Senstar Thin Client: Konfiguration (Stufe 2).** Das Plugin kann den Thin Client jetzt
+  auch **einrichten**, nicht nur anzeigen: **IP-Adresse** (statisch/DHCP, über
+  `POST /Settings` als Read-Modify-Write) und **Werksreset** (`GET /System/Restore`), dazu
+  die **authentifizierte Geräteinfo** (exakte Firmware aus `/Settings`). Anmeldung per
+  Token (`POST /Session` `{user,pwd}` → Cookie `authtoken`), falsches Passwort löst die
+  erneute Abfrage aus. An einem A10D (3.10.0.2726) verifiziert (Login/Lesen live; die
+  schreibenden Pfade teilen dieselbe geprüfte Mechanik). Benutzerverwaltung und Firmware
+  bleiben vorerst außen vor. Weiterhin **experimentell, ab Werk aus**.
+
 ## 26.10.14 — 2026-10-14
 
 - **Neues (experimentelles) Plugin: Senstar/Aimetis Thin Client** (z. B. A10D) — vorerst
