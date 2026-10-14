@@ -52,8 +52,14 @@ class SenstarPlugin(VendorPlugin):
         Capability.ONLINE_CHECK,
         Capability.DEVICE_INFO,
         Capability.SET_IP,
+        Capability.USERS,
+        Capability.FIRMWARE,
         Capability.FACTORY_RESET,
     }
+    #: Benutzerrollen (hoechstes Recht zuerst) — der Benutzer-Dialog liest sie hier.
+    USER_ROLES = ("admin", "viewer")
+    #: Firmware-Datei des Thin Clients (z. B. A10D_<version>_Firmware.bin).
+    firmware_extensions = (".bin",)
 
     def is_auth_error(self, exc: Exception) -> bool:
         return bool(getattr(exc, "auth_failed", False))
@@ -140,5 +146,63 @@ class SenstarPlugin(VendorPlugin):
         token = self._anmelden(ip, creds)
         try:
             session.werksreset(ip, token, timeout=max(creds.timeout, 15))
+        finally:
+            session.abmelden(ip, token)
+
+    # --- Benutzer (Capability.USERS) ----------------------------------------
+    def add_user(self, camera, creds: Credentials, new_user, new_password,
+                 role="viewer", factory=False):
+        # Der Thin Client hat keinen Werks-/Erstbenutzer-Fluss ueber die API —
+        # 'factory' ist hier ohne Wirkung (ein Admin-Login ist immer noetig).
+        ip = self._ip(camera)
+        token = self._anmelden(ip, creds)
+        try:
+            session.benutzer_anlegen(ip, token, new_user, new_password,
+                                     admin=(role == "admin"),
+                                     timeout=max(creds.timeout, 10))
+        finally:
+            session.abmelden(ip, token)
+        return f"Benutzer '{new_user}' angelegt (Rolle {role})"
+
+    def set_user_password(self, camera, creds: Credentials, target_user, new_password):
+        ip = self._ip(camera)
+        token = self._anmelden(ip, creds)
+        try:
+            session.benutzer_passwort(ip, token, target_user, new_password,
+                                      timeout=max(creds.timeout, 10))
+        finally:
+            session.abmelden(ip, token)
+        return f"Passwort von '{target_user}' geändert"
+
+    # --- Firmware (Capability.FIRMWARE) -------------------------------------
+    def upgrade_firmware(self, camera, creds: Credentials, firmware_path,
+                         factory_default=False):
+        """Spielt eine Firmware-Datei ein (``PUT /System/Update`` +
+        ``POST /System/Update/FromFile``) und wartet auf den Abschluss. Das Geraet
+        startet danach neu. ``factory_default`` hat beim Thin Client keine Wirkung."""
+        import time
+        ip = self._ip(camera)
+        token = self._anmelden(ip, creds)
+        try:
+            session.firmware_einspielen(ip, token, firmware_path)
+            # Auf den Abschluss warten: ExitCode gesetzt = fertig; wird das Geraet
+            # durch den Neustart unerreichbar, gilt das Einspielen als angestossen.
+            frist = time.time() + 900          # bis 15 min (Installation + Neustart)
+            letzter = ""
+            while time.time() < frist:
+                time.sleep(5)
+                try:
+                    st = session.firmware_status(ip, token)
+                except session.SenstarError:
+                    break                      # Neustart -> Session/Netz weg
+                letzter = st.get("Progress") or letzter
+                code = st.get("ExitCode")
+                if code is not None:
+                    if code == 0:
+                        return "Firmware eingespielt, Gerät startet neu."
+                    raise session.SenstarError(
+                        f"Firmware-Update fehlgeschlagen (ExitCode {code}).")
+            return ("Firmware hochgeladen und angewandt; Gerät startet neu "
+                    f"(Status: {letzter or 'unbekannt'}).")
         finally:
             session.abmelden(ip, token)

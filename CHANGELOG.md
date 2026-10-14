@@ -4,6 +4,20 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.14b2 — 2026-10-14
+
+- **Senstar Thin Client: Benutzer + Firmware (Stufe 3).** Das Plugin kann jetzt auch
+  **Benutzer anlegen / Passwort ändern** (`POST`/`PUT /User`, Rollen *admin*/*viewer* →
+  Privilegien-Bit; Passwort-Import inkl. verschlüsselter ZIP-Listen nutzbar) und
+  **Firmware einspielen** (`.bin`): die Datei wird hochgeladen (`PUT /System/Update`,
+  Anzeige vorher gestoppt), angewandt (`POST /System/Update/FromFile`) und der Abschluss
+  über `GET /System/Update/State` (`ExitCode`) abgewartet; das Gerät startet neu. Du lädst
+  die Firmware herunter (sie liegt hinter dem Senstar-xnet-Login bzw. das Gerät kann sich
+  selbst online aktualisieren — eine öffentliche Download-URL für den programmseitigen
+  Auto-Download gibt es **nicht**, daher kein `FIRMWARE_CHECK`), das Programm spielt sie
+  ein. Benutzerverwaltung am A10D (3.10.0.2726) live verifiziert; Firmware-Format `.bin`
+  am echten Image (A10D 3.13.1.3293) bestätigt. Weiterhin **experimentell, ab Werk aus**.
+
 ## 26.10.14b1 — 2026-10-14
 
 - **Senstar Thin Client: Konfiguration (Stufe 2).** Das Plugin kann den Thin Client jetzt

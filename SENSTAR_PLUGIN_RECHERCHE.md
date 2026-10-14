@@ -5,8 +5,12 @@ Gerät (siehe Abschnitt 0). **Umgesetzt 2026-10-14** im Paket `kkm/plugins/senst
 (experimentell, ab Werk aus): Stufe 1 (DISCOVER/ONLINE_CHECK/DEVICE_INFO über den
 unauthentifizierten 404-Fingerprint) **und** Stufe 2 (SET_IP statisch/DHCP + FACTORY_RESET
 + authentifizierte DEVICE_INFO über den Token-Login `POST /Session`, am A10D 3.10.0.2726
-verifiziert). Noch offen: Benutzerverwaltung (`/User`) und Firmware (`/System/Update` ist
-ein Online-Selbstupdate, passt nicht zum Datei-je-Modell-Ablauf der Firmware-Maske).*
+verifiziert). **Stufe 3:** Benutzer (`POST`/`PUT`/`DELETE /User`, Rollen admin/viewer,
+am A10D live verifiziert) und Firmware-Einspielen (`.bin` über `PUT /System/Update` +
+`POST /System/Update/FromFile`, Abschluss via `/System/Update/State.ExitCode`). **Kein
+`FIRMWARE_CHECK`:** keine öffentliche Download-URL (Firmware hinter xnet-Login; das Gerät
+aktualisiert sich alternativ selbst über `POST /System/Update`) — der programmseitige
+Auto-Download wie bei Axis ginge nur über einen konfigurierten Spiegel (`firmware_repo_url`).*
 
 Ziel war zu prüfen, was nötig ist, um ein Hersteller-Plugin für Senstar zu schreiben,
 insbesondere für den **Senstar AIM-A10D**. Das zentrale Ergebnis vorab, weil es die

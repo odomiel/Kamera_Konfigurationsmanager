@@ -195,3 +195,146 @@ def werksreset(ip: str, token: str, timeout: float = 15.0) -> None:
         raise SenstarError("Nicht autorisiert.", auth_failed=True)
     if status not in (200, 201, 202, 204):
         raise SenstarError(f"Werksreset fehlgeschlagen (HTTP {status}).")
+
+
+# --------------------------------------------------------------------------- #
+# Benutzer (Capability.USERS)                                                 #
+# --------------------------------------------------------------------------- #
+
+# Privilegien-Bits (aus der Geraete-Oberflaeche): ADMIN=1, PTZ_CONTROL=2, keine=0.
+PRIV_ADMIN = 1
+PRIV_NONE = 0
+
+
+def benutzer_liste(ip: str, token: str, timeout: float = 10.0) -> list[dict]:
+    status, body = _anfrage(ip, "GET", "/User", token=token, timeout=timeout)
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status != 200:
+        raise SenstarError(f"Benutzerliste nicht lesbar (HTTP {status}).")
+    try:
+        return json.loads(body)["Data"]
+    except Exception:  # noqa: BLE001
+        raise SenstarError("Antwort auf /User nicht lesbar.")
+
+
+def _benutzer_schreiben(ip, token, methode, pfad, name, passwort, privilegien, timeout):
+    daten = json.dumps({"Username": name, "Password": passwort,
+                        "Privileges": privilegien}).encode("utf-8")
+    status, body = _anfrage(ip, methode, pfad, token=token, daten=daten, timeout=timeout)
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status not in (200, 201, 204):
+        raise SenstarError(f"Benutzeraktion fehlgeschlagen (HTTP {status}): "
+                           f"{body[:200].decode(errors='replace')}")
+
+
+def benutzer_anlegen(ip: str, token: str, name: str, passwort: str,
+                     admin: bool, timeout: float = 10.0) -> None:
+    """Legt einen Benutzer an (``POST /User``). ``admin`` -> Rolle Administrator."""
+    _benutzer_schreiben(ip, token, "POST", "/User", name, passwort,
+                        PRIV_ADMIN if admin else PRIV_NONE, timeout)
+
+
+def benutzer_loeschen(ip: str, token: str, name: str, timeout: float = 10.0) -> None:
+    """Loescht einen Benutzer (``DELETE /User/<name>``)."""
+    import urllib.parse
+    pfad = "/User/" + urllib.parse.quote(name, safe="")
+    status, body = _anfrage(ip, "DELETE", pfad, token=token, timeout=timeout)
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status not in (200, 204):
+        raise SenstarError(f"Benutzer löschen fehlgeschlagen (HTTP {status}).")
+
+
+def benutzer_passwort(ip: str, token: str, name: str, passwort: str,
+                      timeout: float = 10.0) -> None:
+    """Setzt das Passwort eines bestehenden Benutzers (``PUT /User/<name>``).
+    Die Privilegien bleiben erhalten (vorher gelesen -> kein Rollen-Downgrade)."""
+    import urllib.parse
+    priv = PRIV_NONE
+    for u in benutzer_liste(ip, token, timeout):
+        if u.get("Username") == name:
+            priv = u.get("Privileges", PRIV_NONE)
+            break
+    else:
+        raise SenstarError(f"Benutzer '{name}' nicht gefunden.")
+    pfad = "/User/" + urllib.parse.quote(name, safe="")
+    _benutzer_schreiben(ip, token, "PUT", pfad, name, passwort, priv, timeout)
+
+
+# --------------------------------------------------------------------------- #
+# Firmware (Capability.FIRMWARE): Datei hochladen + einspielen                #
+# --------------------------------------------------------------------------- #
+
+def _panel_stoppen(ip: str, token: str, groesse: int, timeout: float = 15.0) -> None:
+    """Vor dem Upload die Anzeige stoppen und Platz reservieren (wie die UI:
+    ``GET /Panel/Stop`` mit Kopf ``SizeOfFileUpload``). Fehler sind nicht fatal."""
+    kopf = {"Accept": "application/json", "Cookie": f"authtoken={token}",
+            "SizeOfFileUpload": str(groesse)}
+    req = urllib.request.Request(f"https://{ip}:{PORT}/Panel/Stop", headers=kopf)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=_SSL):
+            pass
+    except Exception:  # noqa: BLE001 - Anzeige-Stopp ist Komfort, kein Muss
+        pass
+
+
+def firmware_einspielen(ip: str, token: str, pfad: str, timeout: float = 600.0) -> None:
+    """Spielt eine Firmware-Datei ein: Panel stoppen -> ``PUT /System/Update``
+    (octet-stream, gestreamt) -> ``POST /System/Update/FromFile`` (anwenden). Das
+    Geraet installiert und startet danach neu; den Fortschritt/Erfolg liefert
+    anschliessend ``firmware_status`` (``ExitCode`` im Body)."""
+    import os
+    groesse = os.path.getsize(pfad)
+    _panel_stoppen(ip, token, groesse)
+    # PUT mit Datei-Handle + Content-Length (urllib streamt, chunkt nicht).
+    with open(pfad, "rb") as fh:
+        kopf = {"Accept": "application/json", "Cookie": f"authtoken={token}",
+                "Content-Type": "application/octet-stream", "Content-Length": str(groesse)}
+        req = urllib.request.Request(f"https://{ip}:{PORT}/System/Update", data=fh,
+                                     method="PUT", headers=kopf)
+        try:
+            with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+                status = resp.status
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+        except Exception as exc:  # noqa: BLE001
+            raise SenstarError(f"Firmware-Upload fehlgeschlagen: {exc}")
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status not in (200, 201, 204):
+        raise SenstarError(f"Firmware-Upload abgelehnt (HTTP {status}).")
+    # Anwenden anstossen (die UI ruft dies direkt nach dem Upload).
+    status, body = _anfrage(ip, "POST", "/System/Update/FromFile", token=token,
+                            timeout=60)
+    if status not in (200, 201, 202, 204):
+        raise SenstarError(f"Firmware-Anwendung abgelehnt (HTTP {status}): "
+                           f"{body[:200].decode(errors='replace')}")
+
+
+def firmware_status(ip: str, token: str, timeout: float = 15.0) -> dict:
+    """Fortschritt/Ergebnis des Updates (``GET /System/Update/State``):
+    ``{"ExitCode": <None|int>, "Progress": <str>}``. ExitCode None = laeuft noch,
+    0 = fertig/ok, sonst Fehlercode."""
+    status, body = _anfrage(ip, "GET", "/System/Update/State", token=token,
+                            timeout=timeout)
+    if status != 200:
+        return {"ExitCode": None, "Progress": ""}
+    try:
+        d = json.loads(body)["Data"]
+        return {"ExitCode": d.get("ExitCode"), "Progress": d.get("Progress", "")}
+    except Exception:  # noqa: BLE001
+        return {"ExitCode": None, "Progress": ""}
+
+
+def neueste_version(ip: str, token: str, timeout: float = 20.0) -> str:
+    """Fragt das Geraet nach der online verfuegbaren neuesten Fassung
+    (``GET /System/Update`` -> Versionsstring; leer, wenn keine/404)."""
+    status, body = _anfrage(ip, "GET", "/System/Update", token=token, timeout=timeout)
+    if status != 200:
+        return ""
+    try:
+        return str(json.loads(body).get("Data", "") or "")
+    except Exception:  # noqa: BLE001
+        return ""

@@ -43,9 +43,9 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
   ausgeschaltet) sowie **Senstar/Aimetis Thin Client** (z. B. A10D; ein
   Netzwerk-Video-*Decoder*, keine Kamera — darum vom ONVIF-Plugin nicht erfassbar):
   Suche per Subnetz-Scan (Modell + Softwarefassung, Online) über die unauthentifizierte
-  Gerätekennung, dazu **IP-Adresse (statisch/DHCP) und Werksreset** über die Token-REST-API
-  (`POST /Session`); Benutzer/Firmware folgen — **experimentell**, an einem A10D
-  verifiziert, ab Werk ausgeschaltet.
+  Gerätekennung, dazu **IP-Adresse (statisch/DHCP), Benutzer, Firmware-Einspielen (`.bin`)
+  und Werksreset** über die Token-REST-API (`POST /Session`) — **experimentell**, an einem
+  A10D verifiziert, ab Werk ausgeschaltet.
 
 ## Architektur
 
@@ -81,7 +81,7 @@ kkm/
     senstar/
       session.py        Thin-Client-Kennung (404-Fingerprint, stdlib-only, unauth)
       discovery.py      Subnetz-Scan (TCP-Vortest 443 + Fingerprint)
-      plugin.py         SenstarPlugin: Anzeige + IP/Werksreset (Token-REST), experimentell
+      plugin.py         SenstarPlugin: Anzeige + IP/Benutzer/Firmware/Werksreset (Token-REST)
   gui/
     app.py              Hauptfenster: Gruppen-Baum + Tabelle + Aktions-Toolbar
 main.py                 Startpunkt (GUI)
