@@ -1073,12 +1073,6 @@ class MainWindow(tk.Tk):
         MAC-Identität zusammengeführt; deren Gruppen/Zugangsdaten bleiben erhalten, der
         Online-Status des Treffers wandert mit. Kein Save — der Aufrufer speichert
         gebündelt. Liefert (Anzahl Zusammenführungen, Ziel-Kameras)."""
-        # IP -> vorhandener Roster-Schlüssel MIT MAC/Seriennummer.
-        mac_by_ip: dict[str, str] = {}
-        for key, cam in self.store.roster.items():
-            if str(cam.get("MAC-Adresse/Seriennummer", "")).strip():
-                for ip in _cam_ips(cam):
-                    mac_by_ip.setdefault(ip, key)
         merged = 0
         targets: list[dict] = []
         for cam in discovered:
@@ -1087,9 +1081,25 @@ class MainWindow(tk.Tk):
             key = camera_key(cam)
             if key not in self.store.roster:
                 continue
-            target_key = next((mac_by_ip[ip] for ip in _cam_ips(cam)
-                               if ip in mac_by_ip), None)
-            if not target_key or target_key == key:
+            vendor = cam.get("_vendor")
+            ips = _cam_ips(cam)
+            # Bestehenden Eintrag MIT MAC, GLEICHEM Hersteller und ueberlappender IP
+            # suchen. Der Herstellerabgleich ist entscheidend: IPs werden neu vergeben,
+            # hat also ein anderes Geraet dieselbe (womoeglich veraltete) Adresse im
+            # Bestand, darf der Treffer NICHT in dessen Identitaet wandern (sonst
+            # verschwindet die wiedergefundene Kamera in einer fremden).
+            target_key = None
+            for rkey, rcam in self.store.roster.items():
+                if rkey == key:
+                    continue
+                if not str(rcam.get("MAC-Adresse/Seriennummer", "")).strip():
+                    continue
+                if rcam.get("_vendor") != vendor:
+                    continue
+                if ips & _cam_ips(rcam):
+                    target_key = rkey
+                    break
+            if not target_key:
                 continue
             target = self.store.roster.get(target_key)
             if target is None:

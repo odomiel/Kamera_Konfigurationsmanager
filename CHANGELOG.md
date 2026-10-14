@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.14b7 — 2026-10-14
+
+- **Fix: Wiederfund-Zusammenführung prüft jetzt den Hersteller.** Der in b6 eingeführte
+  Abgleich MAC-loser Suchtreffer (Senstar/ONVIF) mit bestehenden Einträgen erfolgte nur
+  über die IP. Hatte ein **anderes** Gerät dieselbe (womöglich veraltete, per DHCP neu
+  vergebene) Adresse im Bestand, wanderte der Treffer fälschlich in dessen Identität —
+  die wiedergefundene Kamera „verschwand" (z. B. ein Senstar Thin Client, der mit einer
+  früher auf derselben IP gesehenen Hikvision-Kamera verschmolz). Die Zusammenführung
+  verlangt jetzt zusätzlich **denselben Hersteller**; fremde Geräte auf derselben IP
+  bleiben getrennt.
+
 ## 26.10.14b6 — 2026-10-14
 
 - **Fix: Wiederfund ohne MAC legt kein Duplikat mehr an.** Kameras, deren Suche keine
