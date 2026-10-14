@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.14b5 — 2026-10-14
+
+- **Senstar Thin Client: Ersteinrichtungszustand erkannt.** Ein werksneuer Thin Client
+  wird jetzt — wie die anderen Kameras — mit **„Ersteinrichtung erforderlich"** angezeigt,
+  statt nach einem (noch nicht gesetzten) Passwort zu fragen. Erkennung unauthentifiziert
+  und ohne Nebenwirkung: Im Werks-/Einrichtungszustand gibt `GET /` dem nicht angemeldeten
+  Besucher einen Setup-Token per `Set-Cookie: authtoken=…` (den der Einrichtungsassistent
+  braucht); ein eingerichtetes Gerät vergibt keinen solchen Cookie mehr. Dieser Unterschied
+  ist der zuverlässige Marker — die HTML-Oberfläche selbst ist in beiden Zuständen gleich
+  und Zustandsfelder werden einem Gast maskiert. Die Ersteinrichtung selbst bleibt der
+  Geräte-Weboberfläche überlassen. Weiterhin **experimentell, ab Werk aus**.
+
 ## 26.10.14b4 — 2026-10-14
 
 - **Neue Aktion „Videoquellen": Kamera-/Quellenliste im- und exportieren.** Der Senstar

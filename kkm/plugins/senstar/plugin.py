@@ -35,8 +35,17 @@ exports the device's list of video sources (``GET /Camera/Export`` ->
 ``POST /import.html`` with the multipart field ``camerasFile``; the hidden
 ``returnCode`` 0 means success) — the same ``cameras-<ts>.json`` the web UI offers.
 There is no ``FIRMWARE_CHECK``: Senstar firmware lives behind the xnet login (no public
-download URL for an in-app auto-download); the device updates itself online instead. The
-plugin is ``experimental`` and shipped off by default.
+download URL for an in-app auto-download); the device updates itself online instead.
+
+Factory state is detected unauthenticated (``is_unconfigured``) so the UI shows
+"Ersteinrichtung erforderlich" instead of prompting for a not-yet-set password: in the
+setup state ``GET /`` hands the (not logged-in) visitor a setup token via
+``Set-Cookie: authtoken=…`` that the wizard needs; once configured no such cookie is
+issued. The HTML shell (incl. ``wizard.js``) is identical in both states and state
+fields like ``SetupWizardRun`` are masked for a guest, so the cookie is the reliable
+marker. The setup itself is intentionally left to the device web UI.
+
+The plugin is ``experimental`` and shipped off by default.
 """
 
 from __future__ import annotations
@@ -113,6 +122,20 @@ class SenstarPlugin(VendorPlugin):
         try:
             return session.kennung(ip, timeout=5) is not None
         except Exception:  # noqa: BLE001 - offline ist kein Fehlerfall
+            return False
+
+    def is_unconfigured(self, camera: dict, creds: Credentials | None = None) -> bool:
+        """Werksneu lädt ``GET /`` den Einrichtungsassistenten — daran erkennbar
+        (``wizard.js``), ohne Login. So zeigt die Oberfläche „Ersteinrichtung
+        erforderlich" statt nach einem (noch nicht gesetzten) Passwort zu fragen.
+        Die Ersteinrichtung selbst bleibt bewusst der Geräte-Weboberfläche
+        überlassen."""
+        ip = get_first_ip(camera)
+        if not ip:
+            return False
+        try:
+            return session.ist_werksneu(ip, timeout=5)
+        except Exception:  # noqa: BLE001 - im Zweifel nicht werksneu
             return False
 
     def device_info(self, camera: dict, creds: Credentials) -> dict:

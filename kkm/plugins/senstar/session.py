@@ -341,6 +341,32 @@ def neueste_version(ip: str, token: str, timeout: float = 20.0) -> str:
         return ""
 
 
+def ist_werksneu(ip: str, timeout: float = 5.0) -> bool:
+    """True, wenn der Thin Client im Ersteinrichtungs-/Werkszustand ist.
+
+    Im Werkszustand braucht der Einrichtungsassistent einen Token, obwohl noch kein
+    Login existiert — daher gibt das Geraet dem **nicht angemeldeten** Besucher von
+    ``GET /`` einen Setup-Token per ``Set-Cookie: authtoken=…`` mit. Ist das Geraet
+    eingerichtet, vergibt ``GET /`` keinen solchen Cookie mehr (man muss sich
+    anmelden). Dieser Unterschied ist der zuverlaessige Marker — die HTML-Shell
+    selbst (inkl. ``wizard.js``) ist in beiden Zustaenden identisch, und Zustands-
+    felder wie ``SetupWizardRun`` werden einem Gast maskiert.
+
+    Rein lesend, unauthentifiziert, ohne Nebenwirkung. ``Accept: text/html`` ist
+    noetig: bei ``application/json`` liefert das Geraet per Content-Negotiation die
+    REST-Antwort — ohne den Setup-Cookie."""
+    try:
+        req = urllib.request.Request(f"https://{ip}:{PORT}/",
+                                     headers={"Accept": "text/html"})
+        with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+            if resp.status != 200:
+                return False
+            setze = resp.headers.get("Set-Cookie", "")
+    except Exception:  # noqa: BLE001 - offline / kein Thin Client -> nicht werksneu
+        return False
+    return "authtoken=" in setze
+
+
 def videoquellen_export(ip: str, token: str, timeout: float = 20.0) -> bytes:
     """Exportiert die Videoquellen-Liste des Geraets (``GET /Camera/Export``) als
     JSON-Bytes — die Datei, die die Web-Oberflaeche als ``cameras-<ts>.json``
