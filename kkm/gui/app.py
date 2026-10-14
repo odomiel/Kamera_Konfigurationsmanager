@@ -1060,6 +1060,48 @@ class MainWindow(tk.Tk):
             merged += 1
         return merged
 
+    def _merge_rediscovered_duplicates(self, discovered) -> tuple[int, list[dict]]:
+        """Einen Suchtreffer OHNE MAC/Seriennummer (Schlüssel = Name+IP) in einen bereits
+        gespeicherten Eintrag MIT MAC derselben IP überführen.
+
+        Manche Plugins liefern bei der Suche keine MAC (Senstar: unauthentifizierter
+        Fingerprint; ONVIF-basierte Discovery). Deren Identität wird erst mit
+        Zugangsdaten nachgetragen und der Roster-Eintrag auf die MAC umgeschlüsselt
+        (:meth:`_apply_device_info`). Eine erneute Suche findet dieselbe Kamera dann
+        wieder nur als Name+IP — ohne diesen Schritt entstünde ein Duplikat, das erneut
+        nach dem Passwort fragte. Hier wird der MAC-lose Treffer in die bestehende
+        MAC-Identität zusammengeführt; deren Gruppen/Zugangsdaten bleiben erhalten, der
+        Online-Status des Treffers wandert mit. Kein Save — der Aufrufer speichert
+        gebündelt. Liefert (Anzahl Zusammenführungen, Ziel-Kameras)."""
+        # IP -> vorhandener Roster-Schlüssel MIT MAC/Seriennummer.
+        mac_by_ip: dict[str, str] = {}
+        for key, cam in self.store.roster.items():
+            if str(cam.get("MAC-Adresse/Seriennummer", "")).strip():
+                for ip in _cam_ips(cam):
+                    mac_by_ip.setdefault(ip, key)
+        merged = 0
+        targets: list[dict] = []
+        for cam in discovered:
+            if str(cam.get("MAC-Adresse/Seriennummer", "")).strip():
+                continue   # Treffer bringt selbst eine MAC -> stabile Identität
+            key = camera_key(cam)
+            if key not in self.store.roster:
+                continue
+            target_key = next((mac_by_ip[ip] for ip in _cam_ips(cam)
+                               if ip in mac_by_ip), None)
+            if not target_key or target_key == key:
+                continue
+            target = self.store.roster.get(target_key)
+            if target is None:
+                continue
+            if cam.get("_online"):
+                target["_online"] = True
+            self.store.merge_camera(key, target_key)
+            self._transfer_creds(key, target_key)
+            targets.append(target)
+            merged += 1
+        return merged, targets
+
     # -------------------------------------------------------------- search
     def start_search(self):
         self.progress.start(12)
@@ -1291,7 +1333,12 @@ class MainWindow(tk.Tk):
                     merged, merge_targets = self._merge_generic_duplicates()
                     # Manuell angelegte Platzhalter durch echte Treffer derselben IP ersetzen.
                     manual_merged = self._merge_manual_duplicates(payload)
-                    if merged or manual_merged:
+                    # MAC-lose Wiederfunde (Senstar/ONVIF) in die bereits auf die MAC
+                    # umgeschlüsselte Identität überführen — sonst Duplikat + erneute
+                    # Passwortabfrage.
+                    rediscovered, rediscovered_targets = \
+                        self._merge_rediscovered_duplicates(payload)
+                    if merged or manual_merged or rediscovered:
                         self.store.save()
                     self.progress.stop()
                     self._refresh_table()
@@ -1300,7 +1347,7 @@ class MainWindow(tk.Tk):
                     # weiterbehandeln (anreichern bzw. nach Zugangsdaten fragen).
                     alive = {camera_key(c): c for c in payload
                              if camera_key(c) in self.store.roster}
-                    for cam in merge_targets:
+                    for cam in merge_targets + rediscovered_targets:
                         if cam.get("_online"):
                             alive.setdefault(camera_key(cam), cam)
                     text = t("Suche fertig: {n} Gerät(e)", n=len(alive))

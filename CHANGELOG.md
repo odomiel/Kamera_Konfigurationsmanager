@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.14b6 — 2026-10-14
+
+- **Fix: Wiederfund ohne MAC legt kein Duplikat mehr an.** Kameras, deren Suche keine
+  MAC liefert (Senstar Thin Client über den unauthentifizierten Fingerprint, ebenso
+  ONVIF-basierte Discovery), bekamen ihre MAC erst mit Zugangsdaten nachgetragen und
+  wurden intern auf diese Identität umgeschlüsselt. Eine erneute Suche fand dieselbe
+  Kamera dann wieder nur über Name+IP und legte sie als **zweiten** Eintrag an, der
+  erneut nach dem Passwort fragte (und erst nach korrektem Passwort mit dem alten
+  verschmolz). Solche MAC-losen Wiederfunde werden jetzt direkt nach der Suche über die
+  IP in die bestehende (MAC-)Identität zusammengeführt — Gruppen, Zugangsdaten und
+  Online-Status bleiben erhalten, keine erneute Passwortabfrage.
+
 ## 26.10.14b5 — 2026-10-14
 
 - **Senstar Thin Client: Ersteinrichtungszustand erkannt.** Ein werksneuer Thin Client
