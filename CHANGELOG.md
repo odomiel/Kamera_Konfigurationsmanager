@@ -11,9 +11,10 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   `POST /Settings` als Read-Modify-Write) und **Werksreset** (`GET /System/Restore`), dazu
   die **authentifizierte Geräteinfo** (exakte Firmware aus `/Settings`). Anmeldung per
   Token (`POST /Session` `{user,pwd}` → Cookie `authtoken`), falsches Passwort löst die
-  erneute Abfrage aus. An einem A10D (3.10.0.2726) verifiziert (Login/Lesen live; die
-  schreibenden Pfade teilen dieselbe geprüfte Mechanik). Benutzerverwaltung und Firmware
-  bleiben vorerst außen vor. Weiterhin **experimentell, ab Werk aus**.
+  erneute Abfrage aus. An einem A10D (3.10.0.2726) verifiziert: Login/Lesen sowie der
+  `POST /Settings`-Schreibpfad **live und reversibel** (Werksreset als destruktiv nicht
+  ausgelöst). Benutzerverwaltung und Firmware bleiben vorerst außen vor. Weiterhin
+  **experimentell, ab Werk aus**.
 
 ## 26.10.14 — 2026-10-14
 
