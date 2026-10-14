@@ -30,10 +30,13 @@ write), ``FACTORY_RESET`` (``GET /System/Restore``), ``USERS`` (``/User``) and
 polling ``GET /System/Update/State`` for the ``ExitCode``) all use the token login
 (``POST /Session`` ``{user,pwd}`` -> ``Data.Token`` -> cookie ``authtoken``), mapped
 from the device's ``server.js`` and verified against an A10D (every write path live,
-including a real firmware flash 3.10.0.2726 -> 3.13.1.3293). There is no
-``FIRMWARE_CHECK``: Senstar firmware lives behind the xnet login (no public download
-URL for an in-app auto-download); the device updates itself online instead. The plugin
-is ``experimental`` and shipped off by default.
+including a real firmware flash 3.10.0.2726 -> 3.13.1.3293). ``VIDEO_SOURCES`` im-/
+exports the device's list of video sources (``GET /Camera/Export`` ->
+``POST /import.html`` with the multipart field ``camerasFile``; the hidden
+``returnCode`` 0 means success) — the same ``cameras-<ts>.json`` the web UI offers.
+There is no ``FIRMWARE_CHECK``: Senstar firmware lives behind the xnet login (no public
+download URL for an in-app auto-download); the device updates itself online instead. The
+plugin is ``experimental`` and shipped off by default.
 """
 
 from __future__ import annotations
@@ -58,11 +61,15 @@ class SenstarPlugin(VendorPlugin):
         Capability.USERS,
         Capability.FIRMWARE,
         Capability.FACTORY_RESET,
+        Capability.VIDEO_SOURCES,
     }
     #: Benutzerrollen (hoechstes Recht zuerst) — der Benutzer-Dialog liest sie hier.
     USER_ROLES = ("admin", "viewer")
     #: Firmware-Datei des Thin Clients (z. B. A10D_<version>_Firmware.bin).
     firmware_extensions = (".bin",)
+    #: Dateityp der Videoquellen-Liste (Camera-Export) — vom Videoquellen-Dialog gelesen.
+    video_sources_extension = ".json"
+    video_sources_filetype_label = "Videoquellen"
 
     def is_auth_error(self, exc: Exception) -> bool:
         return bool(getattr(exc, "auth_failed", False))
@@ -227,3 +234,33 @@ class SenstarPlugin(VendorPlugin):
                     f"(Status: {letzter or 'unbekannt'}).")
         finally:
             session.abmelden(ip, token)
+
+    # --- Videoquellen (Capability.VIDEO_SOURCES) ----------------------------
+    def export_video_sources(self, camera, creds: Credentials, path):
+        """Lädt die Videoquellen-Liste des Geräts herunter und speichert sie als
+        Datei (``GET /Camera/Export``). Die Datei enthält die Zugangsdaten der
+        Quellen im Klartext — darauf weist der Dialog hin."""
+        ip = self._ip(camera)
+        token = self._anmelden(ip, creds)
+        try:
+            daten = session.videoquellen_export(ip, token,
+                                                timeout=max(creds.timeout, 20))
+        finally:
+            session.abmelden(ip, token)
+        with open(path, "wb") as datei:
+            datei.write(daten)
+        return f"Videoquellen exportiert ({len(daten)} Byte)"
+
+    def import_video_sources(self, camera, creds: Credentials, path):
+        """Spielt eine Videoquellen-Datei ein (``POST /import.html``). Der Import ist
+        additiv/mergend (Abgleich über die Quellen-Id), kein Ersetzen."""
+        with open(path, "rb") as datei:
+            daten = datei.read()
+        ip = self._ip(camera)
+        token = self._anmelden(ip, creds)
+        try:
+            session.videoquellen_import(ip, token, daten,
+                                        timeout=max(creds.timeout, 60))
+        finally:
+            session.abmelden(ip, token)
+        return "Videoquellen eingespielt"

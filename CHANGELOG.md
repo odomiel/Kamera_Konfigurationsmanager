@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.14b4 — 2026-10-14
+
+- **Neue Aktion „Videoquellen": Kamera-/Quellenliste im- und exportieren.** Der Senstar
+  Thin Client verwaltet eine Liste der Videoquellen, die er anzeigt; diese lässt sich
+  jetzt wie in der Geräte-Weboberfläche als `.json`-Datei **exportieren** (von der ersten
+  ausgewählten Kamera, `GET /Camera/Export`) und **importieren** (`POST /import.html`,
+  additiv/mergend über die Quellen-Kennung, kein Neustart). Die Export-Datei enthält die
+  Zugangsdaten der Quellen im Klartext — der Dialog weist darauf hin. Umgesetzt als
+  eigene, generische Capability `VIDEO_SOURCES` mit eigenem Aktionsdialog (Toolbar-Button
+  „Videoquellen"); andere Plugins bleiben davon unberührt. Am A10D live verifiziert
+  (Export + Reimport). Weiterhin **experimentell, ab Werk aus**.
+
 ## 26.10.14b3 — 2026-10-14
 
 - **MAC-Adresse wird nachgetragen, wenn die Suche sie nicht liefert.** Der Senstar

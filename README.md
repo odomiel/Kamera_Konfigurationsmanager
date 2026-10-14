@@ -43,9 +43,9 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
   ausgeschaltet) sowie **Senstar/Aimetis Thin Client** (z. B. A10D; ein
   Netzwerk-Video-*Decoder*, keine Kamera — darum vom ONVIF-Plugin nicht erfassbar):
   Suche per Subnetz-Scan (Modell + Softwarefassung, Online) über die unauthentifizierte
-  Gerätekennung, dazu **IP-Adresse (statisch/DHCP), Benutzer, Firmware-Einspielen (`.bin`)
-  und Werksreset** über die Token-REST-API (`POST /Session`) — **experimentell**, an einem
-  A10D verifiziert, ab Werk ausgeschaltet.
+  Gerätekennung, dazu **IP-Adresse (statisch/DHCP), Benutzer, Firmware-Einspielen (`.bin`),
+  Werksreset und Im-/Export der Videoquellen (`.json`)** über die Token-REST-API
+  (`POST /Session`) — **experimentell**, an einem A10D verifiziert, ab Werk ausgeschaltet.
 
 ## Architektur
 

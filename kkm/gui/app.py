@@ -76,6 +76,7 @@ ACTION_ITEMS = [
     ("Konfiguration", Capability.CONFIG),
     ("Konfig-Backup", Capability.CONFIG_BACKUP),
     ("Zeitzone", Capability.TIMEZONE),
+    ("Videoquellen", Capability.VIDEO_SOURCES),
 ]
 
 _NUM_CHUNK = re.compile(r"(\d+)")

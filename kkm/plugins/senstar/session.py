@@ -36,6 +36,7 @@ import socket
 import ssl
 import urllib.error
 import urllib.request
+import uuid
 
 # Das Geraet spricht nur HTTPS (HTTP leitet dorthin um) mit selbstsigniertem
 # Zertifikat -> Pruefung aus (wie die anderen Plugins fuer LAN-HTTPS).
@@ -338,3 +339,52 @@ def neueste_version(ip: str, token: str, timeout: float = 20.0) -> str:
         return str(json.loads(body).get("Data", "") or "")
     except Exception:  # noqa: BLE001
         return ""
+
+
+def videoquellen_export(ip: str, token: str, timeout: float = 20.0) -> bytes:
+    """Exportiert die Videoquellen-Liste des Geraets (``GET /Camera/Export``) als
+    JSON-Bytes — die Datei, die die Web-Oberflaeche als ``cameras-<ts>.json``
+    anbietet. Achtung: enthaelt die Zugangsdaten der Quellen im Klartext."""
+    status, body = _anfrage(ip, "GET", "/Camera/Export", token=token, timeout=timeout)
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status != 200:
+        raise SenstarError(f"Videoquellen-Export fehlgeschlagen (HTTP {status}).")
+    return body
+
+
+def videoquellen_import(ip: str, token: str, daten: bytes, timeout: float = 60.0) -> None:
+    """Spielt eine Videoquellen-Liste ein. Die Web-Oberflaeche postet die Datei als
+    Formular (``POST /import.html``, multipart-Feld ``camerasFile``) und liest den
+    Ausgang aus dem zurueckgegebenen Formular (verstecktes ``returnCode``, 0 = OK) —
+    genau so hier. Ein Import ist additiv/mergend (Abgleich ueber die Quellen-``Id``)."""
+    grenze = "----kkm" + uuid.uuid4().hex
+    rumpf = b"".join([
+        (f"--{grenze}\r\n"
+         f'Content-Disposition: form-data; name="camerasFile"; '
+         f'filename="cameras.json"\r\n'
+         f"Content-Type: application/json\r\n\r\n").encode("utf-8"),
+        daten,
+        f"\r\n--{grenze}--\r\n".encode("utf-8"),
+    ])
+    kopf = {"Accept": "text/html", "Cookie": f"authtoken={token}",
+            "Content-Type": f"multipart/form-data; boundary={grenze}"}
+    url = f"https://{ip}:{PORT}/import.html"
+    req = urllib.request.Request(url, data=rumpf, method="POST", headers=kopf)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+            status, body = resp.status, resp.read()
+    except urllib.error.HTTPError as exc:
+        status, body = exc.code, exc.read()
+    except Exception as exc:  # noqa: BLE001 - offline / TLS
+        raise SenstarError(f"Nicht erreichbar: {exc}")
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status != 200:
+        raise SenstarError(f"Videoquellen-Import fehlgeschlagen (HTTP {status}).")
+    treffer = re.search(r'name="returnCode"\s+value="(-?\d+)"',
+                        body.decode("utf-8", "replace"))
+    code = treffer.group(1) if treffer else None
+    if code != "0":
+        raise SenstarError("Videoquellen-Import fehlgeschlagen "
+                           f"(returnCode {code if code is not None else '?'}).")

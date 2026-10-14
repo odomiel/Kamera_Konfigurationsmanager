@@ -62,6 +62,10 @@ class Capability:
     CONFIG_BACKUP = "config_backup"
     FACTORY_RESET = "factory_reset"
     TIMEZONE = "timezone"               # Zeitzone setzen (Axis: Time API, IANA)
+    # Liste der Videoquellen eines Geraets als Datei im-/exportieren — anders als
+    # CONFIG_BACKUP keine Komplett-Sicherung des Geraets, sondern nur dessen
+    # Kamera-/Quellenliste (z. B. Senstar Thin Client: Camera-Export/-Import).
+    VIDEO_SOURCES = "video_sources"
 
 
 @dataclass
