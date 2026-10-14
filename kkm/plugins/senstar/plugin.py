@@ -25,12 +25,15 @@ network.
 
 ``DISCOVER`` / ``ONLINE_CHECK`` work unauthenticated via the device's 404-page
 fingerprint (no login). ``DEVICE_INFO``, ``SET_IP`` (``POST /Settings``, read-modify-
-write) and ``FACTORY_RESET`` (``GET /System/Restore``) use the token login
+write), ``FACTORY_RESET`` (``GET /System/Restore``), ``USERS`` (``/User``) and
+``FIRMWARE`` (``.bin`` via ``PUT /System/Update`` + ``POST /System/Update/FromFile``,
+polling ``GET /System/Update/State`` for the ``ExitCode``) all use the token login
 (``POST /Session`` ``{user,pwd}`` -> ``Data.Token`` -> cookie ``authtoken``), mapped
-from the device's ``server.js`` and verified against a 3.10 A10D. ``USERS`` (``/User``)
-and firmware (the device updates itself online via ``/System/Update`` and does not fit
-the per-model file flow of the firmware dialog) are intentionally left out for now. The
-plugin is ``experimental`` and shipped off by default.
+from the device's ``server.js`` and verified against an A10D (every write path live,
+including a real firmware flash 3.10.0.2726 -> 3.13.1.3293). There is no
+``FIRMWARE_CHECK``: Senstar firmware lives behind the xnet login (no public download
+URL for an in-app auto-download); the device updates itself online instead. The plugin
+is ``experimental`` and shipped off by default.
 """
 
 from __future__ import annotations

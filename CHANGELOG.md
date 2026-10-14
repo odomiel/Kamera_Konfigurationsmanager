@@ -15,8 +15,9 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   die Firmware herunter (sie liegt hinter dem Senstar-xnet-Login bzw. das Gerät kann sich
   selbst online aktualisieren — eine öffentliche Download-URL für den programmseitigen
   Auto-Download gibt es **nicht**, daher kein `FIRMWARE_CHECK`), das Programm spielt sie
-  ein. Benutzerverwaltung am A10D (3.10.0.2726) live verifiziert; Firmware-Format `.bin`
-  am echten Image (A10D 3.13.1.3293) bestätigt. Weiterhin **experimentell, ab Werk aus**.
+  ein. Benutzerverwaltung am A10D (3.10.0.2726) live verifiziert; **Firmware-Einspielen am
+  echten A10D durchgelaufen** (`3.10.0.2726` → `3.13.1.3293`, `ExitCode 0`, sauberer
+  Neustart). Weiterhin **experimentell, ab Werk aus**.
 
 ## 26.10.14b1 — 2026-10-14
 
