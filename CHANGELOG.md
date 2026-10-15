@@ -4,6 +4,23 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.15 — 2026-10-15
+
+- **Neues (experimentelles) Plugin: Scutum/Inform Netcon** (z. B. Netcon 3) — vorerst
+  **nur Anzeige**. Die Netcon ist ein *Alarmübertragungsgerät* (Übertragungseinrichtung
+  nach EN 50136 / VdS 2465 / VdS SecurIP), keine Kamera, und besitzt **keine
+  Weboberfläche**. Am echten Gerät verifiziert: im Netz ist einzig **SSH (Port 22)**
+  erreichbar — kein HTTP/SNMP/mDNS/ONVIF. Der einzige herstellerspezifische Marker ohne
+  Login ist der **DHCP-/Reverse-DNS-Hostname** `netcon…`. Das neue Paket
+  `kkm/plugins/scutum/` findet das Gerät daher per **Subnetz-Scan** (TCP-Vortest auf 22 +
+  Reverse-DNS-Marker, **keine Loginversuche**) und zeigt Online-Status sowie
+  Modell/Seriennummer (aus dem Hostnamen, zugleich stabile Identität). **Keine
+  Konfiguration** — die bräuchte den SSH-Zugang des Errichters und ist bewusst nicht
+  umgesetzt (ein scharfes Alarmübertragungsgerät wird nicht provoziert). Die
+  Subnetz-Suche greift nur, wo das Netz den DHCP-Namen im DNS registriert; sonst lässt
+  sich das Gerät **manuell** (IP + Hersteller) hinzufügen. **Ab Werk ausgeschaltet.**
+  Recherche in `SCUTUM_NETCON_PLUGIN_RECHERCHE.md`.
+
 ## 26.10.14b7 — 2026-10-14
 
 - **Fix: Wiederfund-Zusammenführung prüft jetzt den Hersteller.** Der in b6 eingeführte
