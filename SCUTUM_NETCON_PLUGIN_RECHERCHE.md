@@ -4,7 +4,8 @@
 **8 seriellen Schnittstellen** — **keine Kamera, keine Weboberfläche**. Umgesetzt als
 eigenes, experimentelles Plugin `kkm/plugins/scutum/` — vorerst **nur Anzeige** (Stufe 1):
 das Gerät taucht in der Liste auf, eine Konfiguration ist über die öffentlich
-zugänglichen Schnittstellen nicht möglich.
+zugänglichen Schnittstellen nicht möglich. Der **Nachfolger Netcon 4** (Raspberry-Pi-Basis)
+wird vom selben Plugin **ohne Änderung** abgedeckt (siehe Abschnitt 0).
 
 ---
 
@@ -34,6 +35,20 @@ Reverse-DNS (PTR) lesbar. `<id>` (hier `1436520562`) ist geräteindividuell und 
 Eine Konfiguration würde die **SSH-Zugangsdaten des Errichters** und
 **Hersteller-Dokumentation** erfordern — beides ist nicht öffentlich verfügbar. Daher:
 **nur Anzeige**.
+
+### Netcon 4 (Nachfolger, 2026-10-15 am echten Gerät verifiziert)
+
+Ein **Netcon 4** lag auf **192.168.0.164** vor und wird vom bestehenden Plugin **ohne
+Änderung** erkannt und angezeigt (`discover`/`check_online`/`device_info` → „Netcon 4").
+Gleiches Bild wie die Netcon 3: im Netz **nur SSH (Port 22)**, kein Web/SNMP/mDNS. Zwei
+Unterschiede:
+- Software-Basis ist **Raspberry Pi OS** (`SSH-2.0-OpenSSH_7.9p1 Raspbian-10+deb10u2+rpt1`,
+  Debian Buster) statt der Netcon-3-Basis (OpenSSH 6.7, Debian 8) — die Netcon 4 läuft
+  auf einem Raspberry Pi.
+- Der Reverse-DNS-Hostname ist **`netcon4` ohne ID-Suffix** (die Netcon 3 hatte
+  `netcon3-<id>`). Dadurch keine Seriennummer → Identität = Name+IP. Das
+  Hostname-Muster (`netcon` + optionale Nummer + optionale ID) erkennt beide Modelle
+  generisch; ein eigenes Modell-/Plugin-Handling ist nicht nötig.
 
 ---
 

@@ -6,10 +6,11 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 
 ## 26.10.15 — 2026-10-15
 
-- **Neues (experimentelles) Plugin: Scutum/Inform Netcon** (z. B. Netcon 3) — vorerst
-  **nur Anzeige**. Die Netcon 3 ist ein *I/O-Modul* mit zusätzlich **8 seriellen
-  Schnittstellen**, keine Kamera, und besitzt **keine Weboberfläche**. Am echten Gerät
-  verifiziert: im Netz ist einzig **SSH (Port 22)** erreichbar — kein HTTP/SNMP/mDNS/ONVIF.
+- **Neues (experimentelles) Plugin: Scutum/Inform Netcon** (z. B. Netcon 3 und der
+  Raspberry-Pi-basierte Nachfolger Netcon 4) — vorerst **nur Anzeige**. Die Netcon ist ein
+  *I/O-Modul* mit zusätzlich **8 seriellen Schnittstellen**, keine Kamera, und besitzt
+  **keine Weboberfläche**. An beiden Geräten verifiziert: im Netz ist einzig **SSH
+  (Port 22)** erreichbar — kein HTTP/SNMP/mDNS/ONVIF.
   Der einzige herstellerspezifische Marker ohne Login ist der **DHCP-/Reverse-DNS-Hostname**
   `netcon…`. Das neue Paket `kkm/plugins/scutum/` findet das Gerät daher per **Subnetz-Scan**
   (TCP-Vortest auf 22 + Reverse-DNS-Marker, **keine Loginversuche**) und zeigt Online-Status
