@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.15b1 — 2026-10-15
+
+- **Scutum/Netcon: keine Passwortabfrage mehr bei der Suche.** Ein Netcon (I/O-Modul) kennt
+  keine vom Programm nutzbaren Zugangsdaten. Bislang behandelte die Suche es wie eine
+  Kamera mit unbekanntem Passwort und fragte nach Benutzer/Passwort (die es nicht gibt).
+  Reine Anzeige-Plugins ohne Login tragen jetzt das Basis-Flag `uses_credentials = False`;
+  die Nach-Such-Pipeline überspringt für solche Geräte sowohl die Zugangsdaten-Abfrage als
+  auch die Auslieferungszustand-Prüfung — Modell/MAC/Online stehen ohnehin bereits aus der
+  Suche. Andere Plugins bleiben unverändert.
+
 ## 26.10.15 — 2026-10-15
 
 - **Neues (experimentelles) Plugin: Scutum/Inform Netcon** (z. B. Netcon 3 und der

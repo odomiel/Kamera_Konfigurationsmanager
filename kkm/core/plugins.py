@@ -112,6 +112,12 @@ class VendorPlugin(abc.ABC):
     #: Plugin-Manager kennzeichnet sie als „experimentell"; sie sind ab Werk aus.
     experimental: bool = False
 
+    #: True, wenn das Geraet ueberhaupt Zugangsdaten kennt. Reine Anzeige-Plugins
+    #: ohne Login/Konfiguration (z. B. Scutum/Netcon: nur Discovery/Online/Info ueber
+    #: SSH-Port + Reverse-DNS) setzen False — die Suche fragt dann nicht nach Benutzer/
+    #: Passwort und prueft auch keinen Auslieferungszustand.
+    uses_credentials: bool = True
+
     #: True, wenn ``import_config_backup`` das Erhalten der Netzwerk-/IP-Einstellungen
     #: unterstuetzt (Hanwha ``ExcludeSettings=Network``). Der Backup-Dialog blendet die
     #: Checkbox „Netz behalten" nur dann ein. Standard: nicht unterstuetzt.

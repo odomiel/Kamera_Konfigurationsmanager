@@ -41,6 +41,9 @@ class ScutumPlugin(VendorPlugin):
     name = "Scutum/Inform Netcon"
     #: I/O-Modul (8 serielle Schnittstellen), nur Anzeige; keine Konfig-Schnittstelle.
     experimental = True
+    #: Das Netcon kennt keine (vom Programm nutzbaren) Zugangsdaten — die Suche soll
+    #: daher nicht nach Benutzer/Passwort fragen.
+    uses_credentials = False
     capabilities = {
         Capability.DISCOVER,
         Capability.ONLINE_CHECK,

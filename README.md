@@ -51,7 +51,8 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
   lässt sich daher nur **anzeigen** — Suche per Subnetz-Scan über den Reverse-DNS-Namen
   (`netcon…`), Online-Status, Modell und MAC-Adresse (per ARP; ersatzweise die
   Hostnamen-ID als Seriennummer); **keine** Konfiguration (die bräuchte den
-  Errichter-SSH-Zugang). **Experimentell**, an Netcon 3 und 4 verifiziert, ab Werk aus.
+  Errichter-SSH-Zugang) und **keine Passwortabfrage** bei der Suche (das Gerät kennt keine
+  nutzbaren Zugangsdaten). **Experimentell**, an Netcon 3 und 4 verifiziert, ab Werk aus.
 
 ## Architektur
 

@@ -1184,6 +1184,12 @@ class MainWindow(tk.Tk):
         self._q.put(("online_done", None))
 
     # -------------------------------------------- Geräteinfo (Firmware/Modell)
+    def _uses_credentials(self, cam) -> bool:
+        """False fuer reine Anzeige-Plugins ohne Login (Scutum/Netcon) — fuer die
+        wird nach der Suche weder angereichert noch nach Zugangsdaten gefragt."""
+        plugin = self.registry.get(cam.get("_vendor", "axis"))
+        return getattr(plugin, "uses_credentials", True) if plugin else True
+
     def _creds_known(self, cam) -> bool:
         key = camera_key(cam)
         if key in self._cam_creds:
@@ -1209,6 +1215,9 @@ class MainWindow(tk.Tk):
         Auslieferungszustand prüfen (werksneue nicht nach Passwort fragen, sondern
         in der Firmware-Spalte „Ersteinrichtung erforderlich" anzeigen), erst dann
         für die restlichen nach Zugangsdaten fragen."""
+        # Reine Anzeige-Geraete ohne Zugangsdaten (z. B. Scutum/Netcon) weder anreichern
+        # noch nach Passwort fragen — discover() hat bereits alles (Modell/MAC/online).
+        found = [c for c in found if self._uses_credentials(c)]
         known = [c for c in found if self._creds_known(c)]
         if known:
             threading.Thread(target=self._worker_enrich, args=(known,),
