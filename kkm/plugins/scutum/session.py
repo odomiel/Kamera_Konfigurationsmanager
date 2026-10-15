@@ -14,21 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Minimal stdlib-only probe for the Scutum/Inform Netcon 3 alarm transmitter.
+"""Minimal stdlib-only probe for the Scutum/Inform Netcon 3 I/O module.
 
-The Netcon 3 is an **alarm transmission unit** (Alarmuebertragungseinrichtung, EN 50136 /
-VdS 2465 / VdS SecurIP): it forwards alarms from an intrusion/fire panel to a receiving
-centre and is deliberately minimal on the network. Verified on a real unit (192.168.0.236):
-**no web UI, no SNMP, no mDNS/WS-Discovery** — the only open TCP port is **22 (SSH,
-OpenSSH 6.7)**, and the SSH banner is generic (any Debian-8 host looks the same).
+The Netcon 3 is an **I/O module** with 8 additional serial interfaces (Scutum/Inform) —
+not a camera and with no web UI. Verified on a real unit (192.168.0.236): **no web UI,
+no SNMP, no mDNS/WS-Discovery** — the only open TCP port is **22 (SSH, OpenSSH 6.7)**,
+and the SSH banner is generic (any Debian-8 host looks the same).
 
 The single manufacturer-specific marker reachable **without a login** is the device's
 DHCP hostname ``netcon3-<id>`` (e.g. ``netcon3-1436520562``), visible via reverse DNS
 where the network registers DHCP client names. That is what identifies the unit here;
 ``<id>`` doubles as a stable per-device identity. There is intentionally **no login**
-attempt (an alarm transmitter must not be provoked into lockouts), so the plugin only
-*shows* the device — configuration needs the installer's SSH credentials and vendor
-documentation, which are not publicly available.
+attempt (never guess passwords — lockout risk), so the plugin only *shows* the device —
+configuration needs the installer's SSH credentials and vendor documentation, which are
+not publicly available.
 """
 
 from __future__ import annotations

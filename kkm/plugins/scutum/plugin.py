@@ -14,18 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Scutum/Inform Netcon alarm-transmitter plugin (display only).
+"""Scutum/Inform Netcon I/O-module plugin (display only).
 
-The Netcon 3 is an alarm transmission unit (EN 50136 / VdS 2465 / VdS SecurIP), not a
+The Netcon 3 is an I/O module with 8 additional serial interfaces (Scutum/Inform), not a
 camera. Verified on a real unit: it exposes only SSH (port 22, OpenSSH 6.7) — no web UI,
 no SNMP, no mDNS/WS-Discovery — so there is no unauthenticated vendor fingerprint beyond
 its DHCP hostname ``netcon…`` (seen via reverse DNS). This plugin therefore only makes
 the device *appear* in the list: ``DISCOVER`` (subnet scan + reverse-DNS marker),
 ``ONLINE_CHECK`` (TCP 22) and ``DEVICE_INFO`` (model/serial from the hostname). There is
 **no** configuration path — that needs the installer's SSH credentials and vendor
-documentation, which are not publicly available; the plugin never attempts a login (an
-alarm transmitter must not be provoked into lockouts). ``experimental``, shipped off by
-default. A unit can also be added by hand (IP + manufacturer) via the search split menu.
+documentation, which are not publicly available; the plugin never attempts a login
+(never guess passwords — lockout risk). ``experimental``, shipped off by default. A unit
+can also be added by hand (IP + manufacturer) via the search split menu.
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ from . import session
 class ScutumPlugin(VendorPlugin):
     id = "scutum"
     name = "Scutum/Inform Netcon"
-    #: Alarmuebertragungsgeraet, nur Anzeige; nicht an jedem Pfad verifiziert.
+    #: I/O-Modul (8 serielle Schnittstellen), nur Anzeige; keine Konfig-Schnittstelle.
     experimental = True
     capabilities = {
         Capability.DISCOVER,

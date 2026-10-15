@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Discovery for Scutum/Inform Netcon alarm transmitters — a light unicast subnet scan.
+"""Discovery for Scutum/Inform Netcon I/O modules — a light unicast subnet scan.
 
 The Netcon advertises **no** discovery protocol (no mDNS/WS-Discovery — verified on
 hardware), so discovery scans the local ``/24``(s): a fast TCP pre-filter on the SSH

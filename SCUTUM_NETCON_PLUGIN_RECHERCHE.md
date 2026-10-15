@@ -1,19 +1,17 @@
 # Recherche: Scutum/Inform Netcon-Plugin (Schwerpunkt Netcon 3)
 
-**Kurzfassung.** Die **Netcon 3** (Scutum/Inform) ist ein **Alarmübertragungsgerät**
-(Übertragungseinrichtung, ÜE) nach DIN EN 50136 / VdS 2465 / VdS SecurIP — sie meldet
-Alarme einer Einbruch-/Brandmelderzentrale an eine Notruf- und Serviceleitstelle (NSL).
-**Keine Kamera, keine Weboberfläche.** Umgesetzt als eigenes, experimentelles Plugin
-`kkm/plugins/scutum/` — vorerst **nur Anzeige** (Stufe 1): das Gerät taucht in der Liste
-auf, eine Konfiguration ist über die öffentlich zugänglichen Schnittstellen nicht möglich.
+**Kurzfassung.** Die **Netcon 3** (Scutum/Inform) ist ein **I/O-Modul** mit zusätzlich
+**8 seriellen Schnittstellen** — **keine Kamera, keine Weboberfläche**. Umgesetzt als
+eigenes, experimentelles Plugin `kkm/plugins/scutum/` — vorerst **nur Anzeige** (Stufe 1):
+das Gerät taucht in der Liste auf, eine Konfiguration ist über die öffentlich
+zugänglichen Schnittstellen nicht möglich.
 
 ---
 
 ## 0. Befunde am echten Gerät (2026-10-15)
 
 Ein Netcon 3 lag auf **192.168.0.236** vor und wurde **read-only** sondiert (keine
-Login-Versuche — ein Alarmübertragungsgerät darf nicht in eine Kontosperre provoziert
-werden).
+Login-Versuche — keine Passwörter raten, Sperrgefahr).
 
 **Offene Ports (TCP, 1–1024 + Industrie-/Hersteller-Ports):** **nur 22 (SSH)**.
 - SSH-Kennung: `SSH-2.0-OpenSSH_6.7` (Debian-8-Ära), Hostkey nur `ssh-rsa`,
@@ -21,7 +19,9 @@ werden).
 - **Kein** HTTP/HTTPS (80/443 zu) → **keine Weboberfläche** (vom Nutzer bestätigt).
 - **Kein** SNMP (161/UDP, Community `public` ohne Antwort).
 - **Kein** mDNS/Zeroconf, **kein** WS-Discovery → das ONVIF-Plugin sieht es nicht.
-- **Keine** Industrie-/Gebäudeprotokolle (Modbus/BACnet/IEC-104/… alle zu).
+- **Keine** Industrie-/Gebäudeprotokolle auf den geprüften Ports (Modbus/BACnet/…).
+  Die 8 seriellen Schnittstellen des Geräts werden über das Netz nicht als offener
+  TCP-Dienst (Terminal-/Seriell-über-IP) sichtbar — zumindest nicht auf Standardports.
 
 **Einziger herstellerspezifischer Marker ohne Login:** der **DHCP-/Reverse-DNS-Hostname**
 `netcon3-<id>` — hier `netcon3-1436520562`. Das Gerät sendet diesen Default-Hostnamen im
@@ -32,8 +32,8 @@ Reverse-DNS (PTR) lesbar. `<id>` (hier `1436520562`) ist geräteindividuell und 
 **Konsequenz:** Aus reiner Netzsicht ist das Gerät sonst „nur ein Linux mit SSH". Es gibt
 **keinen** weiteren unauthentifizierten Fingerprint (keine Seite, kein SNMP-sysDescr).
 Eine Konfiguration würde die **SSH-Zugangsdaten des Errichters** und
-**Hersteller-Dokumentation** (VdS-/SecurIP-Konfiguration) erfordern — beides ist nicht
-öffentlich verfügbar. Daher: **nur Anzeige**.
+**Hersteller-Dokumentation** erfordern — beides ist nicht öffentlich verfügbar. Daher:
+**nur Anzeige**.
 
 ---
 
@@ -76,7 +76,8 @@ Das Plugin ist `experimental = True` und **ab Werk ausgeschaltet** (`DEFAULT_OFF
 
 - **Konfiguration/Status** nur mit SSH-Login des Errichters denkbar; Befehls-/Dateipfade
   des Netcon sind undokumentiert (Hersteller-/Errichterwissen). Nicht ohne Freigabe und
-  reale Zugangsdaten angehen (Sperr-/Betriebsrisiko bei einem scharfen ÜE).
-- Ein **herstellereigenes Konfig-Tool** (falls existent) könnte ein UDP-Discovery nutzen;
-  am Testgerät war auf den geprüften Ports nichts zu sehen. Bei Verfügbarkeit des Tools
-  ließe sich ein Protokoll-Mitschnitt nachziehen.
+  reale Zugangsdaten angehen (keine Passwörter raten).
+- Die **8 seriellen Schnittstellen**: ob/wie sie über das Netz adressierbar sind
+  (Seriell-über-IP/Terminalserver), war auf den geprüften Standardports nicht sichtbar.
+  Falls ein herstellereigenes Tool oder eine Portliste bekannt wird, ließe sich das
+  nachziehen (z. B. Status/Belegung anzeigen).

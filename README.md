@@ -46,8 +46,8 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
   Gerätekennung, dazu **IP-Adresse (statisch/DHCP), Benutzer, Firmware-Einspielen (`.bin`),
   Werksreset und Im-/Export der Videoquellen (`.json`)** über die Token-REST-API
   (`POST /Session`) — **experimentell**, an einem A10D verifiziert, ab Werk ausgeschaltet.
-  Schließlich **Scutum/Inform Netcon** (z. B. Netcon 3; ein *Alarmübertragungsgerät* nach
-  EN 50136 / VdS, keine Kamera, ohne Weboberfläche): es stellt im Netz nur SSH bereit und
+  Schließlich **Scutum/Inform Netcon** (z. B. Netcon 3; ein *I/O-Modul* mit 8 seriellen
+  Schnittstellen, keine Kamera, ohne Weboberfläche): es stellt im Netz nur SSH bereit und
   lässt sich daher nur **anzeigen** — Suche per Subnetz-Scan über den Reverse-DNS-Namen
   (`netcon…`), Online-Status und Modell/Seriennummer; **keine** Konfiguration (die bräuchte
   den Errichter-SSH-Zugang). **Experimentell**, an einem Netcon 3 verifiziert, ab Werk aus.
@@ -90,7 +90,7 @@ kkm/
     scutum/
       session.py        Netcon-Kennung (Reverse-DNS-Name netcon…, stdlib-only, unauth)
       discovery.py      Subnetz-Scan (TCP-Vortest 22 + Reverse-DNS-Marker)
-      plugin.py         ScutumPlugin: nur Anzeige (Alarmübertragungsgerät, kein Web/Config)
+      plugin.py         ScutumPlugin: nur Anzeige (I/O-Modul, kein Web/Config)
   gui/
     app.py              Hauptfenster: Gruppen-Baum + Tabelle + Aktions-Toolbar
 main.py                 Startpunkt (GUI)

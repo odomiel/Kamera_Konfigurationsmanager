@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Scutum/Inform Netcon alarm-transmitter plugin package."""
+"""Scutum/Inform Netcon I/O-module plugin package."""
 
 from .plugin import ScutumPlugin
 
