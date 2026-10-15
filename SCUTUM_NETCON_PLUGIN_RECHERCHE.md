@@ -72,7 +72,7 @@ Der einzige unauth-Marker ist der Hostname, also:
 |-----------------|---------------------------------------------------------------------|
 | `DISCOVER`      | Subnetz-Scan Port 22 + Reverse-DNS-Marker `netcon…`                  |
 | `ONLINE_CHECK`  | TCP-Connect auf Port 22 (Lebenszeichen, kein Login)                 |
-| `DEVICE_INFO`   | Modell (`Netcon 3`) + Seriennummer (`<id>`) aus dem Hostnamen        |
+| `DEVICE_INFO`   | Modell + MAC (per ARP) bzw. Seriennummer (Hostnamen-ID)             |
 
 **Nicht möglich** (ohne Errichter-SSH-Zugang + Hersteller-Doku): `SET_IP`, `USERS`,
 `FIRMWARE`, `FACTORY_RESET`, `CONFIG` — es gibt keine offene Konfigurationsschnittstelle.
@@ -83,9 +83,19 @@ Das Plugin ist `experimental = True` und **ab Werk ausgeschaltet** (`DEFAULT_OFF
 
 ## 3. Identität
 
-`discover()` setzt die Geräte-ID aus dem Hostnamen als **Seriennummer**
-(`MAC-Adresse/Seriennummer`), damit `camera_key` stabil ist und einen IP-Wechsel übersteht
-(sonst Name+IP). Ohne Reverse-DNS (manuell, kein DNS) bleibt es bei Name+IP.
+`discover()` füllt das Feld `MAC-Adresse/Seriennummer`, damit `camera_key` stabil ist und
+einen IP-Wechsel übersteht. Priorität:
+1. **MAC-Adresse** per **ARP** (`/proc/net/arp` unter Linux, sonst `ip neigh`/`arp`) — im
+   selben Subnetz ohne Login verfügbar, das Gerät muss dafür keinen Dienst anbieten. Ein
+   vorheriger TCP-Connect (der `erreichbar`-Vortest) füllt den ARP-Cache. Beim Netcon 4
+   z. B. `B8:27:EB:B4:7F:78` (OUI `B8:27:EB` = Raspberry Pi Foundation → bestätigt die
+   Pi-Basis).
+2. **Geräte-ID aus dem Hostnamen** (`netcon3-<id>`), falls keine MAC ermittelbar ist
+   (anderes Subnetz, kein ARP).
+3. Sonst **Name+IP**.
+
+So bekommen Netcon 3 (Hostname-ID *oder* MAC) und Netcon 4 (keine Hostname-ID, aber MAC)
+eine stabile Identität.
 
 ## 4. Offene Punkte / mögliche spätere Stufen
 

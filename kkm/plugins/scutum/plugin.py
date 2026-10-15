@@ -65,14 +65,16 @@ class ScutumPlugin(VendorPlugin):
             return False
 
     def device_info(self, camera: dict, creds: Credentials | None = None) -> dict:
-        """Modell + Seriennummer aus der (unauthentifizierten) Reverse-DNS-Kennung.
+        """Modell + MAC/Seriennummer aus der (unauthentifizierten) Kennung: die MAC
+        kommt per ARP (im selben Subnetz), ersatzweise die Geräte-ID aus dem Hostnamen.
         Eine Firmware-/Softwarefassung ist ohne Login nicht ermittelbar (SSH-Version
-        ist nicht die Geraetefirmware) und bleibt daher leer."""
+        ist nicht die Gerätefirmware) und bleibt daher leer."""
         ip = get_first_ip(camera)
         if not ip:
             return {}
         info = session.kennung(ip, timeout=6) or {}
         ergebnis = {"model": info.get("modell", "") or "Netcon"}
-        if info.get("serial"):
-            ergebnis["mac"] = info["serial"]
+        kennzeichen = info.get("mac") or info.get("serial")
+        if kennzeichen:
+            ergebnis["mac"] = kennzeichen
         return ergebnis

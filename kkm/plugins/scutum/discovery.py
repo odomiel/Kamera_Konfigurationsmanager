@@ -80,10 +80,11 @@ def _cam(ip: str, info: dict) -> dict:
     cam["Port"] = str(session.PORT)
     cam["_vendor"] = "scutum"
     cam["_model"] = info.get("modell") or "Netcon"
-    # Die Geraete-ID aus dem Default-Hostnamen ist eine stabile Identitaet
-    # (ueberlebt einen IP-Wechsel), daher als Seriennummer fuehren.
-    if info.get("serial"):
-        cam["MAC-Adresse/Seriennummer"] = info["serial"]
+    # Stabile Identitaet (ueberlebt IP-Wechsel): bevorzugt die MAC (per ARP, im selben
+    # Subnetz immer verfuegbar), sonst die Geraete-ID aus dem Default-Hostnamen.
+    kennzeichen = info.get("mac") or info.get("serial")
+    if kennzeichen:
+        cam["MAC-Adresse/Seriennummer"] = kennzeichen
     cam["_online"] = True
     return cam
 

@@ -49,8 +49,9 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
   Schließlich **Scutum/Inform Netcon** (z. B. Netcon 3 und Netcon 4; ein *I/O-Modul* mit
   8 seriellen Schnittstellen, keine Kamera, ohne Weboberfläche): es stellt im Netz nur SSH bereit und
   lässt sich daher nur **anzeigen** — Suche per Subnetz-Scan über den Reverse-DNS-Namen
-  (`netcon…`), Online-Status und Modell/Seriennummer; **keine** Konfiguration (die bräuchte
-  den Errichter-SSH-Zugang). **Experimentell**, an einem Netcon 3 verifiziert, ab Werk aus.
+  (`netcon…`), Online-Status, Modell und MAC-Adresse (per ARP; ersatzweise die
+  Hostnamen-ID als Seriennummer); **keine** Konfiguration (die bräuchte den
+  Errichter-SSH-Zugang). **Experimentell**, an Netcon 3 und 4 verifiziert, ab Werk aus.
 
 ## Architektur
 

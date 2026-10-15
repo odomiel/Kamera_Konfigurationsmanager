@@ -34,9 +34,12 @@ from __future__ import annotations
 
 import re
 import socket
+import subprocess
 
 #: Der einzige offene Dienst des Geraets (SSH). Zugleich der Online-Pruefpunkt.
 PORT = 22
+
+_MAC_RE = re.compile(r"([0-9a-fA-F]{2}(?:[:-][0-9a-fA-F]{2}){5})")
 
 #: Marker im (DHCP-/Reverse-DNS-)Hostnamen, z. B. ``netcon3-1436520562``.
 _NETCON = re.compile(r"netcon\s*([0-9]+)?[-_]?([0-9a-f]+)?", re.I)
@@ -67,6 +70,42 @@ def ssh_banner(ip: str, timeout: float = 3.0) -> str:
         return ""
     finally:
         s.close()
+
+
+def mac_adresse(ip: str) -> str:
+    """MAC-Adresse der IP aus dem ARP-Cache (nur im selben Subnetz ermittelbar).
+
+    Das Netcon (I/O-Modul auf Linux/Raspberry Pi) bietet keinen Dienst, der eine MAC
+    nennt — aber im selben LAN-Segment liefert ARP sie ohne Login. Voraussetzung ist
+    ein gefuellter ARP-Cache; ein vorheriger TCP-Connect (``erreichbar``) sorgt dafuer.
+    Plattformuebergreifend: erst Linux-``/proc/net/arp``, dann ``ip neigh`` / ``arp``.
+    Liefert die MAC gross mit Doppelpunkten (``B8:27:EB:…``) oder ``""``."""
+    def norm(mac: str) -> str:
+        return mac.upper().replace("-", ":")
+
+    # 1) Linux: /proc/net/arp (stdlib, kein Subprozess)
+    try:
+        with open("/proc/net/arp", encoding="ascii", errors="replace") as fh:
+            next(fh, "")  # Kopfzeile
+            for zeile in fh:
+                felder = zeile.split()
+                if len(felder) >= 4 and felder[0] == ip:
+                    mac = felder[3]
+                    if _MAC_RE.fullmatch(mac) and mac != "00:00:00:00:00:00":
+                        return norm(mac)
+    except OSError:
+        pass
+    # 2) Fallback (Windows/macOS/Linux): ip neigh / arp
+    for cmd in (["ip", "neigh", "show", ip], ["arp", "-a", ip], ["arp", "-n", ip]):
+        try:
+            out = subprocess.run(cmd, capture_output=True, text=True,
+                                 timeout=4).stdout
+        except (OSError, subprocess.SubprocessError):
+            continue
+        for treffer in _MAC_RE.findall(out):
+            if treffer.replace("-", ":") != "00:00:00:00:00:00":
+                return norm(treffer)
+    return ""
 
 
 def _reverse_dns(ip: str, timeout: float = 2.0) -> str:
@@ -100,9 +139,13 @@ def kennung(ip: str, timeout: float = 4.0) -> dict | None:
     nummer = treffer.group(1) or ""          # Modellnummer, z. B. "3"
     serial = treffer.group(2) or ""          # Geraete-ID aus dem Default-Hostnamen
     banner = ssh_banner(ip, min(timeout, 3.0))
+    # MAC aus dem ARP-Cache (gefuellt durch das obige erreichbar()); universelle,
+    # stabile Identitaet, falls der Hostname keine ID traegt (z. B. Netcon 4).
+    mac = mac_adresse(ip)
     return {
         "name": host,
         "modell": f"Netcon {nummer}".strip() if nummer else "Netcon",
         "serial": serial,
+        "mac": mac,
         "ssh": banner,
     }
