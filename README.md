@@ -149,6 +149,23 @@ python3 bump_version.py --print    # aktuelle Version
 python3 bump_version.py            # nächste Version setzen
 ```
 
+## Tests
+
+Schlanke Testsuite auf Basis der Standardbibliothek (`unittest`, keine zusätzliche
+Abhängigkeit). Aus dem Projektverzeichnis:
+
+```bash
+python3 -m unittest discover -s tests        # alle Tests
+python3 -m unittest tests.test_dedup         # einzelne Datei
+```
+
+Abgedeckt sind bisher das **Versionsschema** (`test_version`), die Vollständigkeit des
+**Übersetzungskatalogs** (`test_i18n` — liest per AST jeden `t("…")`-Aufruf und prüft,
+dass er im englischen Katalog steht) und die **Entdopplung** wiedergefundener Geräte
+(`test_dedup` — `camera_key`, `GroupStore`-Rekey/Merge sowie der IP-/Hersteller-Abgleich
+MAC-loser Treffer). Fehlt die Tkinter-Anbindung im System-Python, lassen sich die Tests
+mit dem im AppImage gebündelten Interpreter ausführen (siehe `CLAUDE.md`).
+
 ## Lizenz
 
 Dieses Projekt wurde zu großen Teilen mit Hilfe von KI (Claude Code) erstellt.
