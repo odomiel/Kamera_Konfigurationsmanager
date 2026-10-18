@@ -22,7 +22,7 @@
 #   ./release.sh                 # bauen (falls noetig) + testen + Forgejo + GitHub
 #   ./release.sh --no-build      # vorhandenes AppImage der Version verwenden
 #   ./release.sh --build         # Neubau erzwingen
-#   ./release.sh --no-test       # Smoke-Test ueberspringen
+#   ./release.sh --no-test       # Selbsttest (unittest) + Smoke-Test ueberspringen
 #   ./release.sh --no-github     # nur Forgejo, GitHub-Schritt auslassen
 #   ./release.sh --draft         # Release(s) als Entwurf anlegen
 #   ./release.sh --dry-run       # nichts hochladen, nur anzeigen
@@ -65,6 +65,14 @@ VERSION="$(python3 bump_version.py --print)"
 APPIMAGE="Kamerakonfigurationsmanager-${VERSION}-x86_64.AppImage"
 
 echo "== Release ${VERSION} =="
+
+# 0) Selbsttest (stdlib-unittest) — vor dem Bauen, damit ein Fehler die
+#    Veroeffentlichung sofort stoppt. `set -e` bricht bei rc!=0 ab.
+if [ "$DO_TEST" = 1 ]; then
+  echo "-> Selbsttest (python3 -m unittest discover -s tests) ..."
+  python3 -m unittest discover -s tests
+  echo "   Selbsttest bestanden."
+fi
 
 # 1) Bauen (falls noetig) -----------------------------------------------------
 if [ "$FORCE_BUILD" = 1 ] || { [ ! -f "$APPIMAGE" ] && [ "$NO_BUILD" = 0 ]; }; then
