@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.21b2 — 2026-10-21
+
+- **Senstar Thin Client: Aktionen (u. a. Firmware-Einspielen) funktionieren auch mit
+  älterer Firmware.** Deren HTTPS spricht nur **veraltetes TLS** (TLS 1.0 mit Legacy-
+  Renegotiation), das der moderne Unterbau abwies — alle *authentifizierten* Operationen
+  (Login, Einstellungen, Benutzer, **Firmware-Update**, Werksreset, Videoquellen) brachen
+  mit einem SSL-Fehler ab. Sie laufen jetzt über einen Rückfall: zuerst strenges TLS,
+  bei einem SSL-Handshake-Fehler ein nachgiebiger Legacy-Context (erlaubt das alte
+  Protokoll) — die Verbindung bleibt dabei **verschlüsselt** (kein Klartext-HTTP). Neuere
+  Firmware bleibt unverändert auf starkem TLS. Am Gerät verifiziert (TLS-Handshake zur
+  authentifizierten API gelingt wieder).
+
 ## 26.10.21b1 — 2026-10-21
 
 - **Senstar Thin Client: ältere Firmware wird jetzt gefunden.** Ein A10D mit alter

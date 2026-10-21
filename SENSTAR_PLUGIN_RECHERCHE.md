@@ -59,6 +59,18 @@ darum von HTTPS auf HTTP zurück — unbedenklich, da der Fingerprint keine Zuga
 sendet. Der TCP-Vortest bleibt auf 443 (auch die alte FW hält 443 offen), damit der
 Subnetz-Scan schnell bleibt.
 
+Für die **authentifizierte** REST-API (Login, Einstellungen, Firmware-Update, …) darf
+der HTTP-Rückfall *nicht* genutzt werden (das Login sendet das Passwort — kein Klartext).
+Stattdessen schafft der moderne OpenSSL den TLS-Handshake der alten FW zunächst gar nicht
+(`UNSUPPORTED_PROTOCOL`, dann `UNSAFE_LEGACY_RENEGOTIATION_DISABLED`). Lösung in
+`session.py`: `_oeffnen()` versucht jeden Aufruf erst mit dem strikten Context und bei
+einem SSL-Fehler erneut mit einem **nachgiebigen Legacy-Context** (`_SSL_LEGACY`:
+`minimum_version=TLSv1`, `set_ciphers("DEFAULT@SECLEVEL=0")`,
+`OP_LEGACY_SERVER_CONNECT`). Damit handelt die alte FW `TLSv1 / AES256-SHA` aus — die
+Verbindung bleibt verschlüsselt, neuere FW bleibt auf starkem TLS. Hinweis: die
+Fassung-1.2.x-API ordnet einige Pfade anders an (`GET /Settings` → 404), der
+SSL-Rückfall ist aber die Voraussetzung, dass überhaupt etwas durchkommt.
+
 **ONVIF empirisch ausgeschlossen** (die zentrale offene Frage der Recherche):
 - Das **generische ONVIF-Plugin** (`kkm/plugins/onvif/discovery.discover()`) fand im
   selben Netz nur eine Axis P3245-V — den A10D **nicht**. Kein WS-Discovery-Advertisement.

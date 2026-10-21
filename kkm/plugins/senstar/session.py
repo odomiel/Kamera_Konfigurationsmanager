@@ -37,6 +37,7 @@ import ssl
 import urllib.error
 import urllib.request
 import uuid
+import warnings
 
 # Das Geraet spricht nur HTTPS (HTTP leitet dorthin um) mit selbstsigniertem
 # Zertifikat -> Pruefung aus (wie die anderen Plugins fuer LAN-HTTPS).
@@ -44,7 +45,47 @@ _SSL = ssl.create_default_context()
 _SSL.check_hostname = False
 _SSL.verify_mode = ssl.CERT_NONE
 
+# Aeltere Firmware spricht nur **veraltetes TLS** (TLS 1.0) mit „unsicherer" Legacy-
+# Renegotiation; der moderne OpenSSL lehnt das sonst mit UNSUPPORTED_PROTOCOL bzw.
+# UNSAFE_LEGACY_RENEGOTIATION_DISABLED ab. Dieser nachgiebige Context erlaubt es, damit
+# auch solche Geraete (nur im LAN, Zertifikat ohnehin ungeprueft) erreichbar bleiben —
+# **weiter verschluesselt** (kein Klartext-HTTP). Genutzt nur als Rueckfall, wenn der
+# strikte Context an einem SSL-Fehler scheitert (:func:`_oeffnen`), damit neuere
+# Firmware auf starkem TLS bleibt.
+_SSL_LEGACY = ssl.create_default_context()
+_SSL_LEGACY.check_hostname = False
+_SSL_LEGACY.verify_mode = ssl.CERT_NONE
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)  # TLSv1 ist deprecated
+    try:
+        _SSL_LEGACY.minimum_version = ssl.TLSVersion.TLSv1
+    except (ValueError, AttributeError):  # pragma: no cover
+        pass
+try:
+    _SSL_LEGACY.set_ciphers("DEFAULT@SECLEVEL=0")
+except ssl.SSLError:  # pragma: no cover
+    pass
+if hasattr(ssl, "OP_LEGACY_SERVER_CONNECT"):
+    _SSL_LEGACY.options |= ssl.OP_LEGACY_SERVER_CONNECT
+
 PORT = 443
+
+
+def _oeffnen(req: urllib.request.Request, timeout: float):
+    """``urlopen`` mit TLS-Rueckfall: erst der strikte Context, bei einem SSL-Fehler
+    (veraltetes TLS aelterer Firmware) noch einmal mit dem nachgiebigen Legacy-Context.
+    Eine echte HTTP-Antwort (``HTTPError``, z. B. 401/404) reicht der Aufrufer wie bisher
+    durch; nur SSL-Handshake-Fehler loesen den Rueckfall aus."""
+    for ctx in (_SSL, _SSL_LEGACY):
+        try:
+            return urllib.request.urlopen(req, context=ctx, timeout=timeout)
+        except urllib.error.HTTPError:
+            raise
+        except urllib.error.URLError as exc:
+            letzter = not isinstance(getattr(exc, "reason", None), ssl.SSLError) \
+                or ctx is _SSL_LEGACY
+            if letzter:
+                raise
 
 # „Senstar A10D Thin Client" (Marke, dann Modell). Aeltere Firmware traegt noch den
 # alten Markennamen „Aimetis" (vor der Senstar-Uebernahme) — beide zaehlen. Die
@@ -85,7 +126,7 @@ def kennung(ip: str, timeout: float = 4.0) -> dict | None:
         url = f"{schema}://{ip}:{port}/kkm-sondierung"
         req = urllib.request.Request(url, headers={"Accept": "text/html"})
         try:
-            with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+            with _oeffnen(req, timeout) as resp:
                 roh = resp.read(8192)
         except urllib.error.HTTPError as exc:      # 404 ist der Normalfall -> Body lesen
             try:
@@ -133,7 +174,7 @@ def _anfrage(ip: str, methode: str, pfad: str, token: str | None = None,
     url = f"https://{ip}:{PORT}{pfad}"
     req = urllib.request.Request(url, data=daten, method=methode, headers=kopf)
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+        with _oeffnen(req, timeout) as resp:
             return resp.status, resp.read()
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read()
@@ -287,7 +328,7 @@ def _panel_stoppen(ip: str, token: str, groesse: int, timeout: float = 15.0) -> 
             "SizeOfFileUpload": str(groesse)}
     req = urllib.request.Request(f"https://{ip}:{PORT}/Panel/Stop", headers=kopf)
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_SSL):
+        with _oeffnen(req, timeout):
             pass
     except Exception:  # noqa: BLE001 - Anzeige-Stopp ist Komfort, kein Muss
         pass
@@ -308,7 +349,7 @@ def firmware_einspielen(ip: str, token: str, pfad: str, timeout: float = 600.0) 
         req = urllib.request.Request(f"https://{ip}:{PORT}/System/Update", data=fh,
                                      method="PUT", headers=kopf)
         try:
-            with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+            with _oeffnen(req, timeout) as resp:
                 status = resp.status
         except urllib.error.HTTPError as exc:
             status = exc.code
@@ -370,7 +411,7 @@ def ist_werksneu(ip: str, timeout: float = 5.0) -> bool:
     try:
         req = urllib.request.Request(f"https://{ip}:{PORT}/",
                                      headers={"Accept": "text/html"})
-        with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+        with _oeffnen(req, timeout) as resp:
             if resp.status != 200:
                 return False
             setze = resp.headers.get("Set-Cookie", "")
@@ -410,7 +451,7 @@ def videoquellen_import(ip: str, token: str, daten: bytes, timeout: float = 60.0
     url = f"https://{ip}:{PORT}/import.html"
     req = urllib.request.Request(url, data=rumpf, method="POST", headers=kopf)
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+        with _oeffnen(req, timeout) as resp:
             status, body = resp.status, resp.read()
     except urllib.error.HTTPError as exc:
         status, body = exc.code, exc.read()

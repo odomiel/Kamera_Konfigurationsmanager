@@ -121,6 +121,25 @@ class TestSenstarFingerprint(unittest.TestCase):
         self.assertEqual(mf.group(1), "1.2.1.515")
 
 
+class TestSenstarLegacyTLS(unittest.TestCase):
+    """Der nachgiebige TLS-Context macht ältere Firmware (nur veraltetes TLS)
+    erreichbar — ohne auf Klartext-HTTP auszuweichen."""
+
+    def test_legacy_context_erlaubt_altes_tls(self):
+        import ssl
+        c = senstar._SSL_LEGACY
+        self.assertEqual(c.verify_mode, ssl.CERT_NONE)
+        self.assertLessEqual(c.minimum_version, ssl.TLSVersion.TLSv1)
+        if hasattr(ssl, "OP_LEGACY_SERVER_CONNECT"):
+            self.assertTrue(c.options & ssl.OP_LEGACY_SERVER_CONNECT)
+
+    def test_strikter_context_bleibt_streng(self):
+        import ssl
+        # Der normale Context wird NICHT auf Alt-TLS herabgesetzt (nur der Legacy-
+        # Context tut das); er behält das strenge Minimum des create_default_context.
+        self.assertNotEqual(senstar._SSL.minimum_version, ssl.TLSVersion.TLSv1)
+
+
 class TestSenstarSerialZuMac(unittest.TestCase):
     """``DeviceSerial`` des Thin Client IST die MAC (Lanner-OUI)."""
 
