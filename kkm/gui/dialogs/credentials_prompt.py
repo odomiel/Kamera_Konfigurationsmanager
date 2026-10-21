@@ -32,8 +32,9 @@ from kkm.core import t
 
 
 class CredentialPromptDialog(tk.Toplevel):
-    def __init__(self, parent, camera, remaining):
+    def __init__(self, parent, camera, remaining, default_user="root"):
         super().__init__(parent)
+        self._default_user = (default_user or "root").strip() or "root"
         self.title(t("Zugangsdaten benötigt"))
         self.transient(parent)
         self.grab_set()
@@ -52,7 +53,7 @@ class CredentialPromptDialog(tk.Toplevel):
         ttk.Label(frame, text=t("Noch {n} Kamera(s) ohne gespeicherte Zugangsdaten.", n=remaining)).grid(
             row=1, column=0, columnspan=2, sticky=tk.W, pady=(0, 8))
 
-        self.user = tk.StringVar(value="root")
+        self.user = tk.StringVar(value=self._default_user)
         self.pw = tk.StringVar()
         self.try_all = tk.BooleanVar(value=True)
 
@@ -79,7 +80,7 @@ class CredentialPromptDialog(tk.Toplevel):
         self.bind("<Escape>", lambda _e: self._cancel())
 
     def _apply(self):
-        self.result = ("apply", self.user.get().strip() or "root",
+        self.result = ("apply", self.user.get().strip() or self._default_user,
                        self.pw.get(), self.try_all.get())
         self.destroy()
 

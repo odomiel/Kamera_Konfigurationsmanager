@@ -1279,7 +1279,11 @@ class MainWindow(tk.Tk):
             self._refresh_table()
             return
         cam = self._unknown_queue[0]
-        dlg = CredentialPromptDialog(self, cam, len(self._unknown_queue))
+        # Benutzer-Vorgabe vom Hersteller-Plugin (z. B. Senstar „admin", nicht „root") —
+        # sonst scheitert die Anmeldung mit dem Default-Benutzer, obwohl das Passwort stimmt.
+        plugin = self.registry.get(cam.get("_vendor", "axis"))
+        default_user = (getattr(plugin, "default_username", "root") or "root") if plugin else "root"
+        dlg = CredentialPromptDialog(self, cam, len(self._unknown_queue), default_user=default_user)
         self.wait_window(dlg)
         action, user, pw, try_all = dlg.result or ("cancel", None, None, False)
         if action == "cancel":

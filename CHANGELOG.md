@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.21b3 — 2026-10-21
+
+- **Fix: Passwortabfrage nach der Suche nutzt jetzt den Hersteller-Benutzernamen.** Die
+  Zugangsdaten-Abfrage (nach einem Suchlauf) hatte den Benutzer fest auf „root" gesetzt
+  und den vom Plugin vorgegebenen Standardbenutzer ignoriert. Bei Senstar (Benutzer
+  **admin**) schlug die Anmeldung dadurch fehl, obwohl das richtige Passwort eingegeben
+  wurde — der Dialog fragte immer wieder. Er übernimmt nun den `default_username` des
+  jeweiligen Plugins (Senstar → „admin"), füllbar bleibt das Feld weiterhin. (Der
+  Aktions­dialog, z. B. Firmware, war davon nicht betroffen — er nutzte den Default bereits.)
+
 ## 26.10.21b2 — 2026-10-21
 
 - **Senstar Thin Client: Aktionen (u. a. Firmware-Einspielen) funktionieren auch mit

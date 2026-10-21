@@ -74,6 +74,12 @@ class TestFaehigkeiten(unittest.TestCase):
             with self.subTest(plugin=pid):
                 self.assertTrue(self.reg.get(pid).uses_credentials)
 
+    def test_default_username_wird_gefuehrt(self):
+        """Senstar braucht „admin" als Vorgabe-Benutzer — mit dem generischen
+        „root" scheitert die Anmeldung trotz richtigem Passwort (die
+        Passwortabfrage muss diesen Default übernehmen)."""
+        self.assertEqual(self.reg.get("senstar").default_username, "admin")
+
     def test_experimentelle_und_generische_kennzeichnung(self):
         self.assertFalse(self.reg.get("axis").experimental)
         self.assertTrue(self.reg.get("scutum").experimental)
