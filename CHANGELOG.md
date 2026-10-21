@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.21b1 — 2026-10-21
+
+- **Senstar Thin Client: ältere Firmware wird jetzt gefunden.** Ein A10D mit alter
+  Firmware (Fassung 1.2.1.515) tauchte in der Suche nicht auf — aus zwei Gründen, beide
+  behoben: (1) Die Gerätekennung trägt dort noch den **alten Markennamen „Aimetis"** (vor
+  der Senstar-Übernahme); der Fingerprint akzeptiert jetzt „Senstar" **oder** „Aimetis"
+  und zeigt den tatsächlichen Namen (z. B. *Aimetis A10D Thin Client*). (2) Ihr HTTPS
+  spricht nur **veraltetes TLS**, das der moderne Unterbau ablehnt — die (login-freie)
+  Kennungs-Seite wird nun ersatzweise über **HTTP** gelesen. Am Gerät verifiziert. Neuere
+  Firmware ist unberührt; der Subnetz-Scan bleibt gleich schnell.
+
 ## 26.10.21 — 2026-10-21
 
 - **Scutum/Netcon: Erkennung jetzt auch über den MAC-Hersteller (OUI).** Bisher wurde ein

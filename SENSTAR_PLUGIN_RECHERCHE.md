@@ -48,6 +48,17 @@ HTTP (80) **leitet auf HTTPS (443) um**; die Weboberfläche ist eine SPA
 **Offene Ports:** nur **80 + 443**. **Zu:** 554 (RTSP), 8000, 22 (SSH), 37777.
 → Der Thin Client liefert selbst **keinen** Stream und keinen Geräte-/ONVIF-Port.
 
+**Ältere Firmware (2026-10-21 an einem A10D mit Fassung 1.2.1.515 verifiziert):** zwei
+Abweichungen, die die Erkennung zunächst scheitern ließen und jetzt abgedeckt sind —
+(1) die 404-Kennung trägt noch den **alten Markennamen „Aimetis"** (vor der
+Senstar-Übernahme), also `Aimetis A10D Thin Client`; der Fingerprint-Regex akzeptiert
+jetzt `Senstar` **oder** `Aimetis` (Marke als eigene Gruppe, damit der angezeigte Name
+stimmt). (2) Ihr **HTTPS spricht nur veraltetes TLS** (`SSL: UNSUPPORTED_PROTOCOL` beim
+modernen OpenSSL), die Kennungs-Seite kommt dann über **HTTP (80)**. `kennung()` fällt
+darum von HTTPS auf HTTP zurück — unbedenklich, da der Fingerprint keine Zugangsdaten
+sendet. Der TCP-Vortest bleibt auf 443 (auch die alte FW hält 443 offen), damit der
+Subnetz-Scan schnell bleibt.
+
 **ONVIF empirisch ausgeschlossen** (die zentrale offene Frage der Recherche):
 - Das **generische ONVIF-Plugin** (`kkm/plugins/onvif/discovery.discover()`) fand im
   selben Netz nur eine Axis P3245-V — den A10D **nicht**. Kein WS-Discovery-Advertisement.

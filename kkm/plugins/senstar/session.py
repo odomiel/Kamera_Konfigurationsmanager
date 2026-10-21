@@ -46,15 +46,24 @@ _SSL.verify_mode = ssl.CERT_NONE
 
 PORT = 443
 
-# „Senstar A10D Thin Client" (Modell = mittleres Wort). Die Softwarefassung steht
-# in der sysInfo-Kopfleiste *hinter* dieser Zeile — darum wird sie erst im Text
-# NACH dem Modell-Treffer gesucht (sonst faengt man die jquery-ui-1.12.1 der Seite).
-_MODELL = re.compile(r"Senstar\s+(\S+)\s+Thin\s+Client", re.I)
+# „Senstar A10D Thin Client" (Marke, dann Modell). Aeltere Firmware traegt noch den
+# alten Markennamen „Aimetis" (vor der Senstar-Uebernahme) — beide zaehlen. Die
+# Softwarefassung steht in der Kopfleiste *hinter* dieser Zeile und wird darum erst im
+# Text NACH dem Modell-Treffer gesucht (sonst faengt man die jquery-ui-1.12.1 der Seite).
+_MODELL = re.compile(r"(Senstar|Aimetis)\s+(\S+)\s+Thin\s+Client", re.I)
 _FASSUNG = re.compile(r"(\d+\.\d+\.\d+(?:\.\d+)?)")
+
+#: Ports, auf denen der Thin Client die Kennungs-Seite ausliefert. Neuere Firmware
+#: nur HTTPS (443); aeltere spricht nur veraltetes TLS (vom modernen OpenSSL
+#: abgelehnt) und liefert die Seite ueber HTTP (80). Fuer den *unauthentifizierten*
+#: Fingerprint (keine Zugangsdaten) ist der HTTP-Rueckfall unbedenklich.
+_KENNUNG_PORTS = (PORT, 80)
 
 
 def erreichbar(ip: str, timeout: float = 0.4) -> bool:
-    """Schneller TCP-Vortest auf den HTTPS-Port (vor dem teureren TLS-GET)."""
+    """Schneller TCP-Vortest auf den HTTPS-Port (vor dem teureren GET). Auch die
+    aeltere Firmware (nur veraltetes TLS) haelt 443 offen — den HTTP-Rueckfall macht
+    erst :func:`kennung`, damit der Subnetz-Scan nicht pro Fremdhost zweimal wartet."""
     s = socket.socket()
     s.settimeout(timeout)
     try:
@@ -71,29 +80,32 @@ def kennung(ip: str, timeout: float = 4.0) -> dict | None:
     Liefert ``{"modell", "version", "name"}`` oder ``None``, wenn es keiner ist /
     nicht antwortet. Rein lesend (ein GET), kein Loginversuch.
     """
-    url = f"https://{ip}:{PORT}/kkm-sondierung"
-    req = urllib.request.Request(url, headers={"Accept": "text/html"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
-            roh = resp.read(8192)
-    except urllib.error.HTTPError as exc:          # 404 ist der Normalfall -> Body lesen
+    for port in _KENNUNG_PORTS:
+        schema = "https" if port == PORT else "http"
+        url = f"{schema}://{ip}:{port}/kkm-sondierung"
+        req = urllib.request.Request(url, headers={"Accept": "text/html"})
         try:
-            roh = exc.read(8192)
-        except Exception:  # noqa: BLE001
-            return None
-    except Exception:  # noqa: BLE001 - offline / kein TLS / kein HTTP
-        return None
-    text = roh.decode("utf-8", errors="replace")
-    m = _MODELL.search(text)
-    if not m:
-        return None                                 # kein Senstar Thin Client
-    modell = m.group(1)
-    mf = _FASSUNG.search(text, m.end())             # Fassung erst NACH der Modellzeile
-    return {
-        "modell": modell,
-        "version": mf.group(1) if mf else "",
-        "name": f"Senstar {modell} Thin Client",
-    }
+            with urllib.request.urlopen(req, timeout=timeout, context=_SSL) as resp:
+                roh = resp.read(8192)
+        except urllib.error.HTTPError as exc:      # 404 ist der Normalfall -> Body lesen
+            try:
+                roh = exc.read(8192)
+            except Exception:  # noqa: BLE001
+                continue
+        except Exception:  # noqa: BLE001 - veraltetes TLS / offline -> naechster Port
+            continue
+        text = roh.decode("utf-8", errors="replace")
+        m = _MODELL.search(text)
+        if not m:
+            return None                             # antwortet, aber kein Thin Client
+        marke, modell = m.group(1), m.group(2)
+        mf = _FASSUNG.search(text, m.end())         # Fassung erst NACH der Modellzeile
+        return {
+            "modell": modell,
+            "version": mf.group(1) if mf else "",
+            "name": f"{marke} {modell} Thin Client",
+        }
+    return None
 
 
 # --------------------------------------------------------------------------- #

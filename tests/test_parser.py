@@ -96,16 +96,29 @@ class TestSenstarFingerprint(unittest.TestCase):
              "<title>Senstar A10D Thin Client</title></head>"
              "<body><div>Version 3.10.0.2726</div></body>")
 
-    def test_modell(self):
+    def test_marke_und_modell(self):
         m = senstar._MODELL.search(self.SEITE)
         self.assertIsNotNone(m)
-        self.assertEqual(m.group(1), "A10D")
+        self.assertEqual(m.group(1), "Senstar")   # Marke
+        self.assertEqual(m.group(2), "A10D")       # Modell
 
     def test_fassung_erst_nach_dem_modell(self):
         m = senstar._MODELL.search(self.SEITE)
         mf = senstar._FASSUNG.search(self.SEITE, m.end())
         self.assertIsNotNone(mf)
         self.assertEqual(mf.group(1), "3.10.0.2726")
+
+    def test_aeltere_firmware_heisst_noch_aimetis(self):
+        """Firmware vor der Senstar-Übernahme trägt den Markennamen Aimetis."""
+        seite = ("<head><script src='jquery-ui.min-1.12.1.js'></script>"
+                 "<title>Aimetis Thin Client</title></head>"
+                 "<body>Aimetis A10D Thin Client<br />Version 1.2.1.515</body>")
+        m = senstar._MODELL.search(seite)
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group(1), "Aimetis")
+        self.assertEqual(m.group(2), "A10D")
+        mf = senstar._FASSUNG.search(seite, m.end())
+        self.assertEqual(mf.group(1), "1.2.1.515")
 
 
 class TestSenstarSerialZuMac(unittest.TestCase):
