@@ -334,15 +334,25 @@ def _panel_stoppen(ip: str, token: str, groesse: int, timeout: float = 15.0) -> 
         pass
 
 
-def firmware_einspielen(ip: str, token: str, pfad: str, timeout: float = 600.0) -> None:
-    """Spielt eine Firmware-Datei ein: Panel stoppen -> ``PUT /System/Update``
-    (octet-stream, gestreamt) -> ``POST /System/Update/FromFile`` (anwenden). Das
-    Geraet installiert und startet danach neu; den Fortschritt/Erfolg liefert
-    anschliessend ``firmware_status`` (``ExitCode`` im Body)."""
-    import os
-    groesse = os.path.getsize(pfad)
-    _panel_stoppen(ip, token, groesse)
-    # PUT mit Datei-Handle + Content-Length (urllib streamt, chunkt nicht).
+def _server_kennung(ip: str, token: str, timeout: float = 8.0) -> str:
+    """Server-Kopf des Geraets (``Server:``). Unterscheidet die aeltere Firmware
+    (``Mono-HTTPAPI/…``) von der neueren (nginx) und damit den Upload-Weg."""
+    req = urllib.request.Request(f"https://{ip}:{PORT}/System/Update/State",
+                                 headers={"Accept": "application/json",
+                                          "Cookie": f"authtoken={token}"})
+    try:
+        with _oeffnen(req, timeout) as resp:
+            return resp.headers.get("Server", "")
+    except urllib.error.HTTPError as exc:
+        return exc.headers.get("Server", "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def _firmware_put_upload(ip: str, token: str, pfad: str, groesse: int,
+                         timeout: float) -> None:
+    """Neuere Firmware: ``PUT /System/Update`` (octet-stream, gestreamt) ->
+    ``POST /System/Update/FromFile`` (anwenden)."""
     with open(pfad, "rb") as fh:
         kopf = {"Accept": "application/json", "Cookie": f"authtoken={token}",
                 "Content-Type": "application/octet-stream", "Content-Length": str(groesse)}
@@ -365,6 +375,61 @@ def firmware_einspielen(ip: str, token: str, pfad: str, timeout: float = 600.0) 
     if status not in (200, 201, 202, 204):
         raise SenstarError(f"Firmware-Anwendung abgelehnt (HTTP {status}): "
                            f"{body[:200].decode(errors='replace')}")
+
+
+def _firmware_form_upload(ip: str, token: str, pfad: str, timeout: float) -> None:
+    """Aeltere Firmware (Mono): Multipart-Form-Upload an ``POST /upload.html`` (Feld
+    ``firmwareFile``) — so macht es die Geraete-Web-UI. Ergebnis im zurueckgegebenen
+    Formular als verstecktes ``returnCode`` (``0`` = OK; der Upload spielt direkt ein,
+    kein separater Anwenden-Schritt). Kennt die alte FW kein ``PUT /System/Update``."""
+    import os
+    grenze = "----kkm" + uuid.uuid4().hex
+    name = os.path.basename(pfad) or "firmware.bin"
+    kopf_teil = (f"--{grenze}\r\n"
+                 f'Content-Disposition: form-data; name="firmwareFile"; '
+                 f'filename="{name}"\r\n'
+                 f"Content-Type: application/octet-stream\r\n\r\n").encode("utf-8")
+    fuss_teil = f"\r\n--{grenze}--\r\n".encode("utf-8")
+    with open(pfad, "rb") as fh:
+        rumpf = kopf_teil + fh.read() + fuss_teil     # Firmware-Image komplett im RAM
+    kopf = {"Accept": "text/html", "Cookie": f"authtoken={token}",
+            "Content-Type": f"multipart/form-data; boundary={grenze}",
+            "Content-Length": str(len(rumpf))}
+    req = urllib.request.Request(f"https://{ip}:{PORT}/upload.html", data=rumpf,
+                                 method="POST", headers=kopf)
+    try:
+        with _oeffnen(req, timeout) as resp:
+            status, body = resp.status, resp.read()
+    except urllib.error.HTTPError as exc:
+        status, body = exc.code, exc.read()
+    except Exception as exc:  # noqa: BLE001
+        raise SenstarError(f"Firmware-Upload fehlgeschlagen: {exc}")
+    if status in (401, 403):
+        raise SenstarError("Nicht autorisiert.", auth_failed=True)
+    if status != 200:
+        raise SenstarError(f"Firmware-Upload abgelehnt (HTTP {status}).")
+    treffer = re.search(r'name="returnCode"\s+value="(-?\d+)"',
+                        body.decode("utf-8", "replace"))
+    code = treffer.group(1) if treffer else None
+    # 0 = Erfolg. -1/kein Code = angestossen (Geraet startet neu, Verbindung faellt
+    # weg) -> nicht als Fehler werten; andere negative Codes sind echte Fehler.
+    if code not in (None, "0", "-1"):
+        raise SenstarError(f"Firmware-Einspielung fehlgeschlagen (returnCode {code}).")
+
+
+def firmware_einspielen(ip: str, token: str, pfad: str, timeout: float = 600.0) -> None:
+    """Spielt eine Firmware-Datei ein. Vorgehen haengt von der Firmware ab: neuere
+    (nginx) ueber ``PUT /System/Update`` + ``POST /System/Update/FromFile``, aeltere
+    (Mono) ueber den Multipart-Form-Upload an ``/upload.html`` — die alte kennt das PUT
+    nicht (403). Beide stoppen vorher die Anzeige (``GET /Panel/Stop``). Das Geraet
+    installiert und startet danach neu."""
+    import os
+    groesse = os.path.getsize(pfad)
+    _panel_stoppen(ip, token, groesse)
+    if "Mono" in _server_kennung(ip, token):
+        _firmware_form_upload(ip, token, pfad, timeout)
+    else:
+        _firmware_put_upload(ip, token, pfad, groesse, timeout)
 
 
 def firmware_status(ip: str, token: str, timeout: float = 15.0) -> dict:

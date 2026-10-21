@@ -71,6 +71,19 @@ Verbindung bleibt verschlüsselt, neuere FW bleibt auf starkem TLS. Hinweis: die
 Fassung-1.2.x-API ordnet einige Pfade anders an (`GET /Settings` → 404), der
 SSL-Rückfall ist aber die Voraussetzung, dass überhaupt etwas durchkommt.
 
+**Firmware-Upload unterscheidet sich zwischen alt und neu** (2026-10-21 am A10D 1.2.1.515
+verifiziert). Login (`admin`/`admin`) und die Endpunkte `GET /Settings`,
+`/System/Update(/State)`, `/Panel/Stop` liefern mit gültigem Token 200. Aber
+**`PUT /System/Update` → 403**: die alte (Mono-)Firmware kennt den octet-stream-Upload
+nicht. Ihr `server.js` hat kein `putSystemUpdate`; stattdessen lädt ihre Web-UI
+(`main.js` `stopViewAndStartUpload`) über ein **Multipart-Formular** hoch: `GET
+/Panel/Stop` (Header `SizeOfFileUpload`) → `POST /upload.html` (iframe-Form
+`firmwareUploadForm`, Dateifeld **`firmwareFile`**, verstecktes `returnCode`, 0 = OK).
+Die neue (nginx-)Firmware nutzt dagegen `PUT /System/Update` + `POST
+/System/Update/FromFile`. `session.firmware_einspielen` wählt den Weg am **Server-Kopf**
+(`Mono…` → Form-Upload, sonst PUT). `/User` fehlt der alten FW (404) — keine
+Benutzerverwaltung. Ein echtes Flash der alten FW wurde nicht ausgelöst (Risiko).
+
 **ONVIF empirisch ausgeschlossen** (die zentrale offene Frage der Recherche):
 - Das **generische ONVIF-Plugin** (`kkm/plugins/onvif/discovery.discover()`) fand im
   selben Netz nur eine Axis P3245-V — den A10D **nicht**. Kein WS-Discovery-Advertisement.

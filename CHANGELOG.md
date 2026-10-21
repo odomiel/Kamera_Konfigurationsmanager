@@ -4,6 +4,19 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.21b4 — 2026-10-21
+
+- **Senstar Firmware-Update: Upload-Weg der älteren Firmware ergänzt.** Die ältere
+  Firmware (Mono-basiert) kennt den Datei-Upload per `PUT /System/Update` **nicht** und
+  wies ihn mit „403" ab — nach dem (langsamen) Hochladen erschien dadurch fälschlich eine
+  Passwortabfrage. Sie spielt Firmware stattdessen über einen **Multipart-Form-Upload**
+  (`POST /upload.html`, Feld `firmwareFile`) ein, genau wie ihre Web-Oberfläche. Das
+  Plugin wählt den Weg jetzt anhand des Server-Typs: neuere Firmware (nginx) → `PUT`
+  wie bisher, ältere (Mono) → Form-Upload. Der Login und die TLS-Verbindung (siehe b2/b3)
+  waren nicht die Ursache. **Hinweis:** Die Wegwahl und alle Vorbedingungen sind am Gerät
+  verifiziert; ein vollständiges echtes Flash der alten Firmware wurde aus Vorsicht nicht
+  ausgelöst.
+
 ## 26.10.21b3 — 2026-10-21
 
 - **Fix: Passwortabfrage nach der Suche nutzt jetzt den Hersteller-Benutzernamen.** Die
