@@ -62,7 +62,7 @@ github_configured() {
 }
 
 VERSION="$(python3 bump_version.py --print)"
-APPIMAGE="Kamerakonfigurationsmanager-${VERSION}-x86_64.AppImage"
+APPIMAGE="dist/Kamerakonfigurationsmanager-${VERSION}-x86_64.AppImage"
 
 echo "== Release ${VERSION} =="
 

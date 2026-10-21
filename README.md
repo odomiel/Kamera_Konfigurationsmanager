@@ -116,7 +116,7 @@ python3 main.py
 und vendort `zeroconf` + `cryptography` als Wheels (kein pip im Ergebnis nötig):
 
 ```bash
-./build_appimage.sh            # -> Kamerakonfigurationsmanager-<version>-x86_64.AppImage
+./build_appimage.sh            # -> dist/Kamerakonfigurationsmanager-<version>-x86_64.AppImage
 ./build_appimage.sh --bump     # Version vorher hochzählen, dann bauen
 ```
 

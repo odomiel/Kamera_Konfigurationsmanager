@@ -274,7 +274,10 @@ chmod +x "$AIT"
 
 [ "${1:-}" = "--bump" ] && python3 "$ROOT/bump_version.py" >/dev/null
 VERSION="$(python3 "$ROOT/bump_version.py" --print)"
-OUT="$ROOT/$APP-${VERSION}-x86_64.AppImage"
+# Das fertige AppImage landet im dist/-Ordner (wie der Windows-Build); release.sh
+# veroeffentlicht beide Assets von dort. dist/ ist in .gitignore.
+mkdir -p "$ROOT/dist"
+OUT="$ROOT/dist/$APP-${VERSION}-x86_64.AppImage"
 # zstd auf hoher Stufe: nahe an xz, aber schnelleres Entpacken beim Start.
 ARCH=x86_64 "$AIT" --appimage-extract-and-run \
     --comp zstd --mksquashfs-opt -Xcompression-level --mksquashfs-opt 19 \
@@ -292,6 +295,10 @@ NS="$(date +%s%N)"
 printf '\n# KKM %s build %s\n' "$VERSION" "$NS" >> "$OUT"
 head -c "$(( NS % 65536 + 4096 ))" /dev/zero >> "$OUT"
 
-ln -sfn "$(basename "$OUT")" "$ROOT/$APP-x86_64.AppImage"
+# Komfort-Symlinks auf die jeweils letzte Fassung: in dist/ (neben dem Artefakt) und
+# im Repo-Wurzelverzeichnis (zeigt nach dist/, damit bestehende Aufrufe wie
+# ./Kamerakonfigurationsmanager-x86_64.AppImage weiter funktionieren).
+ln -sfn "$(basename "$OUT")" "$ROOT/dist/$APP-x86_64.AppImage"
+ln -sfn "dist/$(basename "$OUT")" "$ROOT/$APP-x86_64.AppImage"
 
 echo ">> Fertig: $OUT"
