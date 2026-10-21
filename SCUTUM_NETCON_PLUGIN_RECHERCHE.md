@@ -57,11 +57,17 @@ Unterschiede:
 Der einzige unauth-Marker ist der Hostname, also:
 
 - **`discover()`** (`scutum/discovery.py`): Subnetz-Scan der lokalen `/24`(s) — schneller
-  **TCP-Vortest auf Port 22**, dann **Reverse-DNS** (`session.kennung`) nur auf offenen
-  Hosts. Gelistet wird nur, wessen PTR-Name den **`netcon`-Marker** trägt (konservativ,
-  keine Fehltreffer auf beliebige SSH-Hosts). **Keine Loginversuche.**
-- **Grenze:** Das greift nur in Netzen, die den DHCP-Client-Namen im DNS registrieren
-  (beim Testaufbau der Fall). Anderswo findet der Scan das Gerät **nicht**.
+  **TCP-Vortest auf Port 22**, dann `session.kennung` nur auf offenen Hosts. Erkannt wird
+  über **zwei Wege** (`_erkennen`, netzfrei): der **Reverse-DNS-Name `netcon…`** *oder*
+  der **MAC-OUI** der Netzkarte (bekannte Netcon-Hardware). **Keine Loginversuche.**
+- **MAC-OUI als zuverlässiger Marker:** Der Hostname ist frei konfigurierbar und oft gar
+  nicht im DNS registriert — am realen Netz hießen zwei Netcon 3 `enet` bzw. hatten gar
+  keinen PTR, der reine Hostname-Marker verfehlte sie. Der OUI der Netzkarte liegt dagegen
+  fest: **`74:6A:8F` = VS Vision Systems GmbH (Norderstedt) = Netcon-3-Hardware**
+  (`_NETCON_OUIS`). Ein Raspberry-Pi-OUI (`B8:27:EB`, Netcon 4) steht bewusst **nicht** in
+  der Liste — er wäre nicht eindeutig; die Netcon 4 wird über ihren Hostnamen erkannt.
+- **Grenze:** Der MAC-Weg greift nur im selben Subnetz (ARP); in einem fremden Subnetz
+  ohne `netcon`-Hostnamen bleibt nur das **manuelle Hinzufügen**.
 - **Fallback (immer):** **manuelles Hinzufügen** über den Pfeil am *Suchen*-Button
   (IP + Hersteller „Scutum/Inform Netcon"); `check_online` prüft dann Port 22, der
   Reverse-DNS-Name liefert ggf. Modell/Seriennummer nach.

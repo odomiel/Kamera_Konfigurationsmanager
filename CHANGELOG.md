@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.21 — 2026-10-21
+
+- **Scutum/Netcon: Erkennung jetzt auch über den MAC-Hersteller (OUI).** Bisher wurde ein
+  Netcon nur erkannt, wenn sein Reverse-DNS-Name `netcon…` lautete. Der Hostname ist aber
+  frei konfigurierbar und oft gar nicht im DNS registriert — zwei Netcon 3 im Netz (z. B.
+  `enet` bzw. ganz ohne Namen) wurden dadurch **nicht gefunden**. Die Suche erkennt eine
+  Netcon jetzt zusätzlich am **MAC-OUI der Netzkarte** (`74:6A:8F` = VS Vision Systems
+  GmbH = Netcon-3-Hardware) — der liegt fest und ist im selben Subnetz ohne Login per ARP
+  lesbar. Der Hostname-Weg bleibt für Geräte in fremden Subnetzen bestehen; ein generischer
+  Raspberry-Pi-OUI wird bewusst **nicht** als Marker genutzt (keine Fehltreffer). Am realen
+  Netz verifiziert (zwei Netcon 3 auf .22/.23 werden jetzt gefunden).
+
 ## 26.10.15b1 — 2026-10-15
 
 - **Scutum/Netcon: keine Passwortabfrage mehr bei der Suche.** Ein Netcon (I/O-Modul) kennt

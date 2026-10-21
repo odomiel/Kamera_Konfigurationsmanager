@@ -44,6 +44,32 @@ _MAC_RE = re.compile(r"([0-9a-fA-F]{2}(?:[:-][0-9a-fA-F]{2}){5})")
 #: Marker im (DHCP-/Reverse-DNS-)Hostnamen, z. B. ``netcon3-1436520562``.
 _NETCON = re.compile(r"netcon\s*([0-9]+)?[-_]?([0-9a-f]+)?", re.I)
 
+#: MAC-OUIs bekannter Netcon-Hardware -> Modell. Der Hostname ist frei konfigurierbar
+#: und oft gar nicht im DNS registriert (dann kein Reverse-DNS-Marker); der OUI der
+#: Netzkarte dagegen liegt fest und identifiziert die Geraeteserie zuverlaessig.
+#: 74:6A:8F = VS Vision Systems GmbH (Norderstedt) = Netcon-3-Hardware.
+_NETCON_OUIS = {
+    "74:6A:8F": "Netcon 3",
+}
+
+
+def _erkennen(host: str, mac: str) -> dict | None:
+    """Entscheidet **ohne Netzwerk**, ob Hostname/MAC eine Netcon kennzeichnen.
+
+    Zwei Wege: der Reverse-DNS-Name ``netcon…`` (trägt ggf. Modellnummer + Geräte-ID)
+    oder ein bekannter Hersteller-OUI der Netzkarte. Liefert ``{modell, serial}`` oder
+    ``None``. Rein zeichenkettenbasiert, damit ohne echtes Gerät testbar."""
+    treffer = _NETCON.match(host) if host else None
+    if treffer:
+        nummer = treffer.group(1) or ""
+        return {"modell": f"Netcon {nummer}".strip() if nummer else "Netcon",
+                "serial": treffer.group(2) or ""}
+    if mac:
+        modell = _NETCON_OUIS.get(mac[:8].upper())
+        if modell:
+            return {"modell": modell, "serial": ""}
+    return None
+
 
 def erreichbar(ip: str, timeout: float = 0.4) -> bool:
     """Lebenszeichen: laesst sich der SSH-Port (22) oeffnen?"""
@@ -122,30 +148,26 @@ def _reverse_dns(ip: str, timeout: float = 2.0) -> str:
 
 
 def kennung(ip: str, timeout: float = 4.0) -> dict | None:
-    """Erkennt eine Netcon ohne Login. Grundlage ist der **Hostname** (``netcon…``)
-    aus Reverse-DNS; der offene SSH-Port dient als Lebenszeichen/Plausibilitaet.
+    """Erkennt eine Netcon ohne Login über zwei Wege: den **Hostnamen** (``netcon…``)
+    aus Reverse-DNS **oder** den **MAC-OUI** der Netzkarte (bekannte Netcon-Hardware).
+    Der offene SSH-Port dient als Lebenszeichen und wird zuerst geprüft.
 
-    Liefert ``{name, modell, serial, ssh}`` bei einem Treffer, sonst ``None`` — nur
-    Geraete, deren Reverse-DNS-Name den ``netcon``-Marker traegt, werden gelistet
-    (konservativ, keine Fehltreffer auf beliebige SSH-Hosts)."""
+    Liefert ``{name, modell, serial, mac, ssh}`` bei einem Treffer, sonst ``None`` —
+    nur Geräte mit Hostnamen-Marker oder bekanntem Hersteller-OUI werden gelistet
+    (keine Fehltreffer auf beliebige SSH-Hosts)."""
     if not erreichbar(ip, min(timeout, 1.5)):
         return None
     host = _reverse_dns(ip, min(timeout, 2.0))
-    if not host:
-        return None
-    treffer = _NETCON.match(host)
+    # MAC aus dem ARP-Cache (gefuellt durch das obige erreichbar()); zugleich der
+    # zweite Erkennungsweg (Hersteller-OUI) und die stabile Identitaet.
+    mac = mac_adresse(ip)
+    treffer = _erkennen(host, mac)
     if not treffer:
         return None
-    nummer = treffer.group(1) or ""          # Modellnummer, z. B. "3"
-    serial = treffer.group(2) or ""          # Geraete-ID aus dem Default-Hostnamen
-    banner = ssh_banner(ip, min(timeout, 3.0))
-    # MAC aus dem ARP-Cache (gefuellt durch das obige erreichbar()); universelle,
-    # stabile Identitaet, falls der Hostname keine ID traegt (z. B. Netcon 4).
-    mac = mac_adresse(ip)
     return {
         "name": host,
-        "modell": f"Netcon {nummer}".strip() if nummer else "Netcon",
-        "serial": serial,
+        "modell": treffer["modell"],
+        "serial": treffer["serial"],
         "mac": mac,
-        "ssh": banner,
+        "ssh": ssh_banner(ip, min(timeout, 3.0)),
     }

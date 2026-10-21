@@ -52,6 +52,28 @@ class TestScutumHostname(unittest.TestCase):
         self.assertIsNone(scutum._NETCON.match("axis-b8a44f"))
 
 
+class TestScutumErkennung(unittest.TestCase):
+    """``_erkennen`` — Netcon über Hostname-Marker ODER Hersteller-OUI (netzfrei)."""
+
+    def test_hostname_marker_gewinnt(self):
+        self.assertEqual(scutum._erkennen("netcon3-1436520562", ""),
+                         {"modell": "Netcon 3", "serial": "1436520562"})
+        self.assertEqual(scutum._erkennen("netcon4", "")["modell"], "Netcon 4")
+
+    def test_oui_erkennt_auch_ohne_passenden_hostnamen(self):
+        """.22/.23 heißen 'enet' bzw. haben keinen PTR — der VS-Vision-OUI greift."""
+        self.assertEqual(scutum._erkennen("enet", "74:6A:8F:00:05:78"),
+                         {"modell": "Netcon 3", "serial": ""})
+        self.assertEqual(scutum._erkennen("", "74:6A:8F:00:05:F4"),
+                         {"modell": "Netcon 3", "serial": ""})
+
+    def test_fremder_ssh_host_ist_keine_netcon(self):
+        # Ein Raspberry-Pi-OUI ohne netcon-Hostname darf NICHT als Netcon gelten.
+        self.assertIsNone(scutum._erkennen("raspberrypi", "B8:27:EB:B4:7F:78"))
+        self.assertIsNone(scutum._erkennen("fileserver", "00:11:22:33:44:55"))
+        self.assertIsNone(scutum._erkennen("", ""))
+
+
 class TestScutumMac(unittest.TestCase):
     """``_MAC_RE`` erkennt MAC-Adressen in ARP-Ausgaben (Doppelpunkt oder Strich)."""
 
