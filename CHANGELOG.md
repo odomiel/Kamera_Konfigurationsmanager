@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.26 — 2026-10-26
+
+- **Python auf 3.14.10 aktualisiert** (im Linux-AppImage mitkompiliert; vorher 3.14.8).
+  3.14.9/3.14.10 sind Wartungs-Releases der 3.14-Reihe (u. a. Sicherheitskorrekturen).
+  Die übrigen aus dem Quelltext gebauten Abhängigkeiten sind bereits aktuell: OpenSSL
+  3.5.9 (LTS), Tcl/Tk 9.0.4, libffi 3.8.0.
+
 ## 26.10.21b4 — 2026-10-21
 
 - **Senstar Firmware-Update: Upload-Weg der älteren Firmware ergänzt.** Die ältere
