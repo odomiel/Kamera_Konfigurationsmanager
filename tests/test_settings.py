@@ -52,6 +52,13 @@ class TestEinstellungen(unittest.TestCase):
         s = AppSettings(self.pfad)   # load() im Init darf nicht werfen
         self.assertEqual(s.get("language"), DEFAULTS["language"])
 
+    def test_backup_erinnerung_defaults(self):
+        """Die Sicherungs-Erinnerung ist ab Werk an, noch nie gesichert, 30-Tage-Grenze."""
+        from kkm.core.settings import BACKUP_WARN_DAYS
+        self.assertTrue(DEFAULTS["warn_backup_age"])
+        self.assertEqual(DEFAULTS["last_backup_ts"], 0.0)
+        self.assertEqual(BACKUP_WARN_DAYS, 30)
+
     def test_unbekannte_felder_bleiben_erhalten(self):
         """Vorwärtskompatibel: ein Feld einer neueren Fassung geht nicht verloren."""
         s = AppSettings(self.pfad)

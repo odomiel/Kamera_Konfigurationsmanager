@@ -32,6 +32,7 @@ stubbed with TODO markers — they will reuse the plugin methods in
 from __future__ import annotations
 
 import queue
+import time
 import re
 import threading
 import webbrowser
@@ -50,6 +51,7 @@ from kkm.core import (Credentials, Capability, GroupStore, ALL_CAMERAS_ID,
                       export_results, t, set_language, get_language, certpin)
 from kkm.plugins import build_registry, set_basic_over_http, set_connect_hook
 from kkm.core import updates
+from kkm.core.settings import BACKUP_WARN_DAYS
 from kkm.gui import theme
 from kkm.gui.widgets import add_scrollbars
 from kkm.gui.dialogs import ACTION_DIALOGS
@@ -249,10 +251,38 @@ class MainWindow(tk.Tk):
         # Verzögert, damit er den Start nicht ausbremst; Ergebnis nur bei neuerer Version.
         if self.settings.get("check_updates", True):
             self.after(1500, self._start_update_check)
+        # Erinnerung an eine fällige Konfigurationssicherung (abschaltbar).
+        self.after(1700, self._check_backup_age)
 
     def _show_disclaimer(self):
         from kkm.gui.dialogs.disclaimer import show_if_needed
         show_if_needed(self, self.settings)
+
+    def _check_backup_age(self):
+        """Hinweis, wenn länger als ``BACKUP_WARN_DAYS`` Tage (oder noch nie) keine
+        Konfigurationssicherung (.kkmbackup) erstellt wurde. Nur wenn es überhaupt
+        etwas zu sichern gibt (Geräte im Bestand) — eine frische Installation wird
+        nicht behelligt. Abschaltbar in Einstellungen → Import und Sicherung."""
+        if not self.settings.get("warn_backup_age", True):
+            return
+        if not self.store.roster:            # nichts zu sichern -> kein Hinweis
+            return
+        last = float(self.settings.get("last_backup_ts", 0) or 0)
+        tage = (time.time() - last) / 86400 if last else None
+        if tage is not None and tage < BACKUP_WARN_DAYS:
+            return
+        if last:
+            kern = t("Die letzte Konfigurationssicherung ist {n} Tage her.", n=int(tage))
+        else:
+            kern = t("Es wurde noch keine Konfigurationssicherung erstellt.")
+        self.status.config(text=t("Konfigurationssicherung empfohlen "
+                                  "(Einstellungen → Import und Sicherung)"))
+        messagebox.showinfo(
+            APP_NAME,
+            kern + "\n\n" + t("Eine Sicherung (Gruppen, Geräte, Passwort-Tresor) erstellst "
+                              "du über Einstellungen → Import und Sicherung → „Sicherung "
+                              "exportieren“.\n\nDieser Hinweis lässt sich dort abschalten."),
+            parent=self)
 
     def _maximize_window(self):
         """Fenster maximieren — plattformübergreifend (Windows/macOS vs. Linux/X11)."""

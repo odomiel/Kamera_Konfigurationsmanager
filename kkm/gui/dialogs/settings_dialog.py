@@ -35,6 +35,7 @@ from __future__ import annotations
 import os
 import platform
 import threading
+import time
 import webbrowser
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
@@ -699,6 +700,13 @@ class SettingsDialog(tk.Toplevel):
         ttk.Button(brow, text=t("Sicherung wiederherstellen…"),
                    command=self._run_backup_restore).pack(side=tk.LEFT, padx=6)
 
+        self._warn_backup_var = tk.BooleanVar(
+            value=bool(self.settings.get("warn_backup_age", True)))
+        ttk.Checkbutton(
+            tab, variable=self._warn_backup_var, command=self._save_warn_backup_age,
+            text=t("Beim Start erinnern, wenn länger als 30 Tage keine Sicherung "
+                   "erstellt wurde")).pack(anchor=tk.W, pady=(2, 6))
+
         logframe = ttk.Frame(tab)
         logframe.pack(fill=tk.BOTH, expand=True)
         self._import_log = tk.Text(logframe, height=10, width=60, wrap=tk.WORD,
@@ -825,6 +833,9 @@ class SettingsDialog(tk.Toplevel):
             return None
         return pw
 
+    def _save_warn_backup_age(self):
+        self.settings.set("warn_backup_age", bool(self._warn_backup_var.get()))
+
     def _run_backup_export(self):
         path = filedialog.asksaveasfilename(
             parent=self, title=t("Sicherung speichern"),
@@ -840,6 +851,9 @@ class SettingsDialog(tk.Toplevel):
         except BackupError as exc:
             messagebox.showerror(t("Sicherung"), str(exc), parent=self)
             return
+        # Zeitpunkt der Sicherung merken -> der Start-Hinweis „länger als 30 Tage keine
+        # Sicherung" bezieht sich darauf.
+        self.settings.set("last_backup_ts", time.time())
         self._log_import(t("Sicherung exportiert: {file} ({parts})",
                            file=os.path.basename(path), parts=", ".join(included)))
         messagebox.showinfo(

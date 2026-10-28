@@ -4,6 +4,15 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.28 — 2026-10-28
+
+- **Erinnerung an eine fällige Konfigurationssicherung.** Wurde länger als **30 Tage**
+  keine Sicherung (`.kkmbackup`) erstellt — oder noch nie —, weist der Programmstart
+  einmal dezent darauf hin (nur wenn überhaupt Geräte im Bestand sind; eine frische
+  Installation wird nicht behelligt). Der Zeitpunkt wird beim Exportieren einer Sicherung
+  gemerkt. Der Hinweis ist unter **Einstellungen → Import und Sicherung** abschaltbar
+  (ab Werk an).
+
 ## 26.10.26 — 2026-10-26
 
 - **Python auf 3.14.10 aktualisiert** (im Linux-AppImage mitkompiliert; vorher 3.14.8).

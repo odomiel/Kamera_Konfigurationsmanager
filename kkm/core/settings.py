@@ -47,7 +47,12 @@ DEFAULTS = {
     "check_updates": True,       # beim Start GitHub nach einer neueren Version fragen
     "allow_basic_over_http": False,  # Basic-Auth über HTTP (Klartext-Passwort) erlauben
     "cert_pinning": True,        # Kamera-Zertifikate merken (TOFU), bei Änderung nachfragen
+    "warn_backup_age": True,     # Hinweis beim Start, wenn >30 Tage keine Sicherung
+    "last_backup_ts": 0.0,       # Unix-Zeit der letzten .kkmbackup-Sicherung (0 = nie)
 }
+
+#: Nach so vielen Tagen ohne Sicherung weist der Start darauf hin (``warn_backup_age``).
+BACKUP_WARN_DAYS = 30
 
 
 class AppSettings:

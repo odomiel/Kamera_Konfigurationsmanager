@@ -26,6 +26,9 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
   portabel, kein OS-Keyring, keine DB). Iterationszahl wird mit gespeichert und beim
   Öffnen geprüft; Konfig-Ordner/-Dateien unter Linux nur für den Besitzer lesbar
   (`0700`/`0600`).
+- **Sicherungs-Erinnerung**: Wurde länger als 30 Tage keine Konfigurationssicherung
+  (`.kkmbackup`) erstellt, weist der Programmstart einmal darauf hin (abschaltbar unter
+  Einstellungen → Import und Sicherung).
 - **Kein Klartext-Passwort über HTTP**: über HTTP nur Digest-Anmeldung, Basic nur über
   HTTPS (für Altgeräte in den Einstellungen abschaltbar).
 - **Zertifikats-Merken (Trust-on-First-Use)**: HTTPS-Zertifikat je Kamera beim ersten
