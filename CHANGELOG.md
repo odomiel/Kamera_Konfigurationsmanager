@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.28b1 — 2026-10-28
+
+- **Scutum/Inform Netcon 2 wird erkannt.** Das Netcon-Plugin erkennt nun auch die
+  **Netcon 2** (Vorgänger der Netcon 3) — am echten Gerät (SSH `dropbear_0.50`)
+  verifiziert. Zwei Anpassungen waren nötig: der Hersteller-OUI **`00:04:D9`
+  (Titan Electronics)** zählt jetzt als Netcon-2-Hardware, und der Reverse-DNS-Name
+  wird robuster gelesen — eine lange Ziffernfolge direkt hinter `netcon` (z. B.
+  `netcon1793132771`) gilt als Geräte-/Seriennummer statt als Modellnummer. Dadurch
+  erscheint das Gerät korrekt als „Netcon 2" (vorher fälschlich „Netcon 1793132771");
+  Netcon 3/4 werden unverändert erkannt.
+
 ## 26.10.28 — 2026-10-28
 
 - **Erinnerung an eine fällige Konfigurationssicherung.** Wurde länger als **30 Tage**

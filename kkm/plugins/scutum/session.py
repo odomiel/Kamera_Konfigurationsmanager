@@ -42,14 +42,24 @@ PORT = 22
 _MAC_RE = re.compile(r"([0-9a-fA-F]{2}(?:[:-][0-9a-fA-F]{2}){5})")
 
 #: Marker im (DHCP-/Reverse-DNS-)Hostnamen, z. B. ``netcon3-1436520562``.
-_NETCON = re.compile(r"netcon\s*([0-9]+)?[-_]?([0-9a-f]+)?", re.I)
+#: Reverse-DNS-Marker. ``netcon`` gefolgt von optionaler Modellnummer und/oder Geräte-ID.
+#: Ein Trenner (``-``/``_``) scheidet Modellnummer von Geräte-ID; ohne Trenner ist eine
+#: **lange** Ziffernfolge die Geräte-ID (keine Modellnummer) — die Netcon 2 heißt im DNS
+#: ``netcon1793132771`` (reine Seriennummer), die Netcon 3 ``netcon3-1436520562``.
+_NETCON = re.compile(r"netcon[\s_-]*([0-9]+)?(?:[-_]+([0-9a-z]+))?", re.I)
+
+#: Ab wie vielen Ziffern eine trennerlose Zahl nach ``netcon`` als Geräte-ID statt als
+#: Modellnummer gilt (``netcon4`` = Modell 4, ``netcon1793132771`` = Serien-ID).
+_MAX_MODELLNUMMER_STELLEN = 2
 
 #: MAC-OUIs bekannter Netcon-Hardware -> Modell. Der Hostname ist frei konfigurierbar
 #: und oft gar nicht im DNS registriert (dann kein Reverse-DNS-Marker); der OUI der
 #: Netzkarte dagegen liegt fest und identifiziert die Geraeteserie zuverlaessig.
 #: 74:6A:8F = VS Vision Systems GmbH (Norderstedt) = Netcon-3-Hardware.
+#: 00:04:D9 = Titan Electronics Inc. (Taiwan) = Netcon-2-Hardware (älteres Gerät, dropbear-SSH).
 _NETCON_OUIS = {
     "74:6A:8F": "Netcon 3",
+    "00:04:D9": "Netcon 2",
 }
 
 
@@ -58,17 +68,35 @@ def _erkennen(host: str, mac: str) -> dict | None:
 
     Zwei Wege: der Reverse-DNS-Name ``netcon…`` (trägt ggf. Modellnummer + Geräte-ID)
     oder ein bekannter Hersteller-OUI der Netzkarte. Liefert ``{modell, serial}`` oder
-    ``None``. Rein zeichenkettenbasiert, damit ohne echtes Gerät testbar."""
+    ``None``. Rein zeichenkettenbasiert, damit ohne echtes Gerät testbar.
+
+    Die Modellnummer kommt bevorzugt aus dem Hostnamen (``netcon<n>`` / ``netcon<n>-<id>``);
+    fehlt sie dort — etwa weil der Name nur die Serien-ID trägt (``netcon1793132771``) oder
+    gar kein ``netcon…`` ist —, liefert der OUI der Netzkarte das Modell."""
     treffer = _NETCON.match(host) if host else None
+    oui_modell = _NETCON_OUIS.get(mac[:8].upper()) if mac else None
+    if not treffer and not oui_modell:
+        return None
+
+    nummer = ""
+    serial = ""
     if treffer:
-        nummer = treffer.group(1) or ""
-        return {"modell": f"Netcon {nummer}".strip() if nummer else "Netcon",
-                "serial": treffer.group(2) or ""}
-    if mac:
-        modell = _NETCON_OUIS.get(mac[:8].upper())
-        if modell:
-            return {"modell": modell, "serial": ""}
-    return None
+        z1 = treffer.group(1) or ""
+        z2 = treffer.group(2) or ""
+        if z2:                                         # netcon<n>-<serial>: n=Modell, Rest=ID
+            nummer, serial = z1, z2
+        elif len(z1) <= _MAX_MODELLNUMMER_STELLEN:     # netcon<n>: kurze Zahl = Modellnummer
+            nummer = z1
+        else:                                          # netcon<lange-zahl>: reine Geräte-ID
+            serial = z1
+
+    if nummer:
+        modell = f"Netcon {nummer}"
+    elif oui_modell:                                   # Hostname ohne Modellnr. -> OUI entscheidet
+        modell = oui_modell
+    else:
+        modell = "Netcon"
+    return {"modell": modell, "serial": serial}
 
 
 def erreichbar(ip: str, timeout: float = 0.4) -> bool:

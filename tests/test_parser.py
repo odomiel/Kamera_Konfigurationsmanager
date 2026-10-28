@@ -48,6 +48,13 @@ class TestScutumHostname(unittest.TestCase):
         self.assertEqual(m.group(1), "4")
         self.assertIn(m.group(2), (None, ""))
 
+    def test_netcon2_nur_serie_ohne_trenner(self):
+        """Die Netcon 2 heißt ``netcon<lange-serie>`` ohne Trenner — keine Modellnummer."""
+        m = scutum._NETCON.match("netcon1793132771")
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group(1), "1793132771")
+        self.assertIn(m.group(2), (None, ""))
+
     def test_fremder_host_passt_nicht(self):
         self.assertIsNone(scutum._NETCON.match("axis-b8a44f"))
 
@@ -66,6 +73,18 @@ class TestScutumErkennung(unittest.TestCase):
                          {"modell": "Netcon 3", "serial": ""})
         self.assertEqual(scutum._erkennen("", "74:6A:8F:00:05:F4"),
                          {"modell": "Netcon 3", "serial": ""})
+
+    def test_netcon2_hostname_serie_plus_oui(self):
+        """Die Netcon 2 (.173): ``netcon<serie>`` ohne Trenner — Modell kommt vom OUI,
+        die lange Zahl bleibt Serien-ID (nicht 'Netcon 1793132771')."""
+        self.assertEqual(scutum._erkennen("netcon1793132771", "00:04:D9:80:D4:C1"),
+                         {"modell": "Netcon 2", "serial": "1793132771"})
+        # Auch ohne MAC darf die reine Serien-ID nicht zur Modellnummer werden.
+        self.assertEqual(scutum._erkennen("netcon1793132771", ""),
+                         {"modell": "Netcon", "serial": "1793132771"})
+        # Der Titan-OUI allein (ohne netcon-Hostname) genügt.
+        self.assertEqual(scutum._erkennen("", "00:04:D9:12:34:56"),
+                         {"modell": "Netcon 2", "serial": ""})
 
     def test_fremder_ssh_host_ist_keine_netcon(self):
         # Ein Raspberry-Pi-OUI ohne netcon-Hostname darf NICHT als Netcon gelten.

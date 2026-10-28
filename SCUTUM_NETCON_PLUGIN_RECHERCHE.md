@@ -50,6 +50,23 @@ Unterschiede:
   Hostname-Muster (`netcon` + optionale Nummer + optionale ID) erkennt beide Modelle
   generisch; ein eigenes Modell-/Plugin-Handling ist nicht nötig.
 
+### Netcon 2 (Vorgänger, 2026-10-28 am echten Gerät verifiziert)
+
+Eine **Netcon 2** lag auf **192.168.0.173** vor. Gleiches Bild wie Netcon 3/4: im Netz
+**nur SSH (Port 22)**, kein Web (80/443 zu), kein mDNS. Die Besonderheiten, die eine
+Anpassung der Erkennung nötig machten:
+- **Älteres Embedded-Gerät:** SSH-Banner **`SSH-2.0-dropbear_0.50`** (Dropbear statt
+  OpenSSH) — kein Debian/Raspberry darunter wie bei Netcon 3/4.
+- **Hostname ohne Modellnummer *und* ohne Trenner:** Reverse-DNS liefert
+  **`netcon1793132771`** — also `netcon` direkt gefolgt von der reinen Geräte-ID, die
+  „2" steht **nicht** im Namen. Das alte Hostname-Muster hätte die 10-stellige ID
+  fälschlich als Modellnummer gelesen („Netcon 1793132771"). Behoben: eine trennerlose
+  Ziffernfolge nach `netcon` gilt erst ab ≤ 2 Stellen als Modellnummer, sonst als
+  Serien-ID (`_MAX_MODELLNUMMER_STELLEN`); das Modell kommt dann aus dem OUI.
+- **MAC-OUI `00:04:D9` = Titan Electronics Inc. (Taiwan) = Netcon-2-Hardware**, ergänzt
+  in `_NETCON_OUIS`. So wird `.173` als **„Netcon 2"** erkannt, die ID `1793132771`
+  als Seriennummer geführt; die MAC (per ARP) gewinnt für den `camera_key`.
+
 ---
 
 ## 1. Erkennung (wie das Plugin das Gerät findet)
@@ -63,9 +80,12 @@ Der einzige unauth-Marker ist der Hostname, also:
 - **MAC-OUI als zuverlässiger Marker:** Der Hostname ist frei konfigurierbar und oft gar
   nicht im DNS registriert — am realen Netz hießen zwei Netcon 3 `enet` bzw. hatten gar
   keinen PTR, der reine Hostname-Marker verfehlte sie. Der OUI der Netzkarte liegt dagegen
-  fest: **`74:6A:8F` = VS Vision Systems GmbH (Norderstedt) = Netcon-3-Hardware**
-  (`_NETCON_OUIS`). Ein Raspberry-Pi-OUI (`B8:27:EB`, Netcon 4) steht bewusst **nicht** in
-  der Liste — er wäre nicht eindeutig; die Netcon 4 wird über ihren Hostnamen erkannt.
+  fest: **`74:6A:8F` = VS Vision Systems GmbH (Norderstedt) = Netcon-3-Hardware** und
+  **`00:04:D9` = Titan Electronics Inc. (Taiwan) = Netcon-2-Hardware** (`_NETCON_OUIS`).
+  Der OUI liefert zugleich das Modell, wenn der Hostname keine Modellnummer trägt (die
+  Netcon 2 heißt `netcon<serie>` ohne Nummer). Ein Raspberry-Pi-OUI (`B8:27:EB`,
+  Netcon 4) steht bewusst **nicht** in der Liste — er wäre nicht eindeutig; die Netcon 4
+  wird über ihren Hostnamen (`netcon4`) erkannt.
 - **Grenze:** Der MAC-Weg greift nur im selben Subnetz (ARP); in einem fremden Subnetz
   ohne `netcon`-Hostnamen bleibt nur das **manuelle Hinzufügen**.
 - **Fallback (immer):** **manuelles Hinzufügen** über den Pfeil am *Suchen*-Button

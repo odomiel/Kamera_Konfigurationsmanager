@@ -49,14 +49,15 @@ selbst kompiliert, die Windows-`.exe` nutzt das Tk 9 des python.org-Installers).
   Gerätekennung, dazu **IP-Adresse (statisch/DHCP), Benutzer, Firmware-Einspielen (`.bin`),
   Werksreset und Im-/Export der Videoquellen (`.json`)** über die Token-REST-API
   (`POST /Session`) — **experimentell**, an einem A10D verifiziert, ab Werk ausgeschaltet.
-  Schließlich **Scutum/Inform Netcon** (z. B. Netcon 3 und Netcon 4; ein *I/O-Modul* mit
+  Schließlich **Scutum/Inform Netcon** (z. B. Netcon 2, 3 und 4; ein *I/O-Modul* mit
   8 seriellen Schnittstellen, keine Kamera, ohne Weboberfläche): es stellt im Netz nur SSH bereit und
   lässt sich daher nur **anzeigen** — Suche per Subnetz-Scan über den Reverse-DNS-Namen
   (`netcon…`) **oder den Hersteller-OUI der Netzkarte** (VS Vision Systems für die
-  Netcon 3), Online-Status, Modell und MAC-Adresse (per ARP; ersatzweise die
-  Hostnamen-ID als Seriennummer); **keine** Konfiguration (die bräuchte den
-  Errichter-SSH-Zugang) und **keine Passwortabfrage** bei der Suche (das Gerät kennt keine
-  nutzbaren Zugangsdaten). **Experimentell**, an Netcon 3 und 4 verifiziert, ab Werk aus.
+  Netcon 3, Titan Electronics für die Netcon 2), Online-Status, Modell und MAC-Adresse
+  (per ARP; ersatzweise die Hostnamen-ID als Seriennummer); **keine** Konfiguration (die
+  bräuchte den Errichter-SSH-Zugang) und **keine Passwortabfrage** bei der Suche (das Gerät
+  kennt keine nutzbaren Zugangsdaten). **Experimentell**, an Netcon 2, 3 und 4 verifiziert,
+  ab Werk aus.
 
 ## Architektur
 
