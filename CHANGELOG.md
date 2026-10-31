@@ -4,6 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.10.31 — 2026-10-31
+
+- **Scutum/Inform Netcon 4 ohne `netcon`-Hostnamen wird erkannt.** Eine Netcon 4, der
+  per DHCP kein `netcon`-Name zugewiesen ist (Reverse-DNS z. B. `enet`), fiel bisher
+  durch die Suche, weil Netcon 4 nur über den Hostnamen erkannt wurde. Sie wird jetzt
+  zusätzlich über ihre Raspberry-Pi-Hardware erkannt — allerdings bewusst **eng**, um
+  keinen beliebigen Raspberry Pi fälschlich als Netcon anzuzeigen: nur bei einem
+  Raspberry-Pi-OUI **zusammen mit** dem exakten, an echter Hardware verifizierten
+  Netcon-4-SSH-Banner und wenn das Gerät — wie eine Netcon — ausschließlich SSH anbietet
+  (Port 80/443 zu). Trägt der Hostname die Modellnummer (`netcon4`), zählt er weiterhin.
+  An einem zweiten Netcon-4-Gerät verifiziert.
+
 ## 26.10.28b1 — 2026-10-28
 
 - **Scutum/Inform Netcon 2 wird erkannt.** Das Netcon-Plugin erkennt nun auch die

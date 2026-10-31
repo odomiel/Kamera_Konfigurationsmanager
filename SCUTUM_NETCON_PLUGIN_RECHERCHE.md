@@ -50,6 +50,24 @@ Unterschiede:
   Hostname-Muster (`netcon` + optionale Nummer + optionale ID) erkennt beide Modelle
   generisch; ein eigenes Modell-/Plugin-Handling ist nicht nötig.
 
+#### Netcon 4 ohne `netcon`-Hostnamen (2026-10-31, zweites Gerät auf 192.168.0.22)
+
+Eine zweite Netcon 4 lag auf **192.168.0.22** mit Reverse-DNS **`enet`** (DHCP vergab
+keinen `netcon`-Namen) — der Hostname-Weg verfehlte sie, und der Raspberry-Pi-OUI
+`B8:27:EB` steht bewusst nicht in `_NETCON_OUIS` (er träfe jeden Pi). Erkennungsproblem
+wie bei den hostnamenlosen Netcon 3 (`enet`), nur dass hier **kein** eindeutiger OUI
+existiert. Gelöst über einen dritten, bewusst **engen** Weg (`_ist_netcon4_pi`):
+- **Raspberry-Pi-OUI** (`_RPI_OUIS`: `B8:27:EB` sowie die Pi-4/neueren OUIs) **UND**
+- das **exakte** verifizierte Netcon-4-SSH-Banner `SSH-2.0-OpenSSH_7.9p1
+  Raspbian-10+deb10u2+rpt1` (`_NETCON4_SSH`) — ein moderner Pi (Bookworm, OpenSSH 9.x)
+  löst damit **nicht** aus, und der OUI allein ebenfalls nicht.
+- Zusätzlich bestätigt `kennung` auf diesem hostnamenlosen Weg, dass das Gerät — wie
+  eine Netcon — **nur SSH** anbietet (`_nur_ssh_offen`: 80/443 zu); an `.22` waren nur
+  Port 22 offen. So fällt ein gewöhnlicher Raspbian-Buster-Pi mit Webdienst heraus.
+
+Trägt der Hostname die Modellnummer (`netcon4`), zählt er weiterhin unabhängig vom
+Banner — der neue Weg ist reiner Zusatz für den hostnamenlosen Fall.
+
 ### Netcon 2 (Vorgänger, 2026-10-28 am echten Gerät verifiziert)
 
 Eine **Netcon 2** lag auf **192.168.0.173** vor. Gleiches Bild wie Netcon 3/4: im Netz
@@ -75,8 +93,10 @@ Der einzige unauth-Marker ist der Hostname, also:
 
 - **`discover()`** (`scutum/discovery.py`): Subnetz-Scan der lokalen `/24`(s) — schneller
   **TCP-Vortest auf Port 22**, dann `session.kennung` nur auf offenen Hosts. Erkannt wird
-  über **zwei Wege** (`_erkennen`, netzfrei): der **Reverse-DNS-Name `netcon…`** *oder*
-  der **MAC-OUI** der Netzkarte (bekannte Netcon-Hardware). **Keine Loginversuche.**
+  über **drei Wege** (`_erkennen`, netzfrei): der **Reverse-DNS-Name `netcon…`**, der
+  **MAC-OUI** der Netzkarte (bekannte Netcon-2/3-Hardware) *oder* — für die hostnamenlose
+  Netcon 4 — ein **Raspberry-Pi-OUI zusammen mit dem exakten Netcon-4-SSH-Banner**.
+  **Keine Loginversuche.**
 - **MAC-OUI als zuverlässiger Marker:** Der Hostname ist frei konfigurierbar und oft gar
   nicht im DNS registriert — am realen Netz hießen zwei Netcon 3 `enet` bzw. hatten gar
   keinen PTR, der reine Hostname-Marker verfehlte sie. Der OUI der Netzkarte liegt dagegen
@@ -84,8 +104,10 @@ Der einzige unauth-Marker ist der Hostname, also:
   **`00:04:D9` = Titan Electronics Inc. (Taiwan) = Netcon-2-Hardware** (`_NETCON_OUIS`).
   Der OUI liefert zugleich das Modell, wenn der Hostname keine Modellnummer trägt (die
   Netcon 2 heißt `netcon<serie>` ohne Nummer). Ein Raspberry-Pi-OUI (`B8:27:EB`,
-  Netcon 4) steht bewusst **nicht** in der Liste — er wäre nicht eindeutig; die Netcon 4
-  wird über ihren Hostnamen (`netcon4`) erkannt.
+  Netcon 4) steht bewusst **nicht** in `_NETCON_OUIS` — er wäre nicht eindeutig; die
+  Netcon 4 wird über ihren Hostnamen (`netcon4`) **oder**, wenn der fehlt (`enet`), über
+  den engen Raspberry-Pi+Banner-Weg (`_ist_netcon4_pi` + `_nur_ssh_offen`, siehe
+  Netcon-4-Abschnitt oben) erkannt.
 - **Grenze:** Der MAC-Weg greift nur im selben Subnetz (ARP); in einem fremden Subnetz
   ohne `netcon`-Hostnamen bleibt nur das **manuelle Hinzufügen**.
 - **Fallback (immer):** **manuelles Hinzufügen** über den Pfeil am *Suchen*-Button

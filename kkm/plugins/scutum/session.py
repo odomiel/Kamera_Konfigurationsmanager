@@ -62,20 +62,47 @@ _NETCON_OUIS = {
     "00:04:D9": "Netcon 2",
 }
 
+#: Raspberry-Pi-OUIs — die Hardwarebasis der Netcon 4. Allein **nicht** eindeutig (jeder
+#: Raspberry Pi trägt sie), darum bewusst nicht in ``_NETCON_OUIS``. Sie kennzeichnen eine
+#: Netcon 4 nur **zusammen mit** dem exakten Netcon-4-SSH-Banner (siehe ``_NETCON4_SSH``).
+_RPI_OUIS = frozenset({
+    "B8:27:EB",                           # Raspberry Pi Foundation (Pi 1–3, klassisch)
+    "DC:A6:32", "E4:5F:01",               # Raspberry Pi Trading (Pi 4)
+    "28:CD:C1", "D8:3A:DD", "2C:CF:67",   # neuere Modelle
+})
 
-def _erkennen(host: str, mac: str) -> dict | None:
-    """Entscheidet **ohne Netzwerk**, ob Hostname/MAC eine Netcon kennzeichnen.
+#: Exaktes SSH-Banner der an echter Hardware verifizierten Netcon 4 (Raspberry Pi OS
+#: „Buster"). Eine Netcon 4 ohne ``netcon``-Hostnamen (DHCP vergibt z. B. ``enet``) lässt
+#: sich im Netz nur hierüber von einem beliebigen Raspberry Pi unterscheiden: nur bei
+#: **genau** diesem Banner (plus RPi-OUI) gilt das Gerät als Netcon 4. Ein moderner Pi
+#: (Bookworm, OpenSSH 9.x) löst damit nicht aus.
+_NETCON4_SSH = "SSH-2.0-OpenSSH_7.9p1 Raspbian-10+deb10u2+rpt1"
 
-    Zwei Wege: der Reverse-DNS-Name ``netcon…`` (trägt ggf. Modellnummer + Geräte-ID)
-    oder ein bekannter Hersteller-OUI der Netzkarte. Liefert ``{modell, serial}`` oder
-    ``None``. Rein zeichenkettenbasiert, damit ohne echtes Gerät testbar.
+
+def _ist_netcon4_pi(mac: str, ssh: str) -> bool:
+    """Hostnamenlose Netcon 4 auf Raspberry-Pi-Basis: Treffer nur bei RPi-OUI **und**
+    exaktem Netcon-4-Buster-Banner — der OUI allein träfe jeden Pi."""
+    oui = mac[:8].upper() if mac else ""
+    return oui in _RPI_OUIS and (ssh or "").strip() == _NETCON4_SSH
+
+
+def _erkennen(host: str, mac: str, ssh: str = "") -> dict | None:
+    """Entscheidet **ohne Netzwerk**, ob Hostname/MAC/SSH-Banner eine Netcon kennzeichnen.
+
+    Drei Wege: der Reverse-DNS-Name ``netcon…`` (trägt ggf. Modellnummer + Geräte-ID),
+    ein bekannter Hersteller-OUI der Netzkarte (Netcon 2/3) oder — für die hostnamenlose
+    Netcon 4 — ein Raspberry-Pi-OUI zusammen mit dem exakten Netcon-4-SSH-Banner. Liefert
+    ``{modell, serial}`` oder ``None``. Rein zeichenkettenbasiert, damit ohne echtes Gerät
+    testbar.
 
     Die Modellnummer kommt bevorzugt aus dem Hostnamen (``netcon<n>`` / ``netcon<n>-<id>``);
     fehlt sie dort — etwa weil der Name nur die Serien-ID trägt (``netcon1793132771``) oder
-    gar kein ``netcon…`` ist —, liefert der OUI der Netzkarte das Modell."""
+    gar kein ``netcon…`` ist —, liefert der OUI (Netcon 2/3) bzw. der Raspberry-Pi+Banner-Weg
+    (Netcon 4) das Modell."""
     treffer = _NETCON.match(host) if host else None
     oui_modell = _NETCON_OUIS.get(mac[:8].upper()) if mac else None
-    if not treffer and not oui_modell:
+    rpi4 = _ist_netcon4_pi(mac, ssh)
+    if not treffer and not oui_modell and not rpi4:
         return None
 
     nummer = ""
@@ -94,6 +121,8 @@ def _erkennen(host: str, mac: str) -> dict | None:
         modell = f"Netcon {nummer}"
     elif oui_modell:                                   # Hostname ohne Modellnr. -> OUI entscheidet
         modell = oui_modell
+    elif rpi4:                                         # hostnamenlos, RPi + exaktes Buster-Banner
+        modell = "Netcon 4"
     else:
         modell = "Netcon"
     return {"modell": modell, "serial": serial}
@@ -162,6 +191,23 @@ def mac_adresse(ip: str) -> str:
     return ""
 
 
+def _nur_ssh_offen(ip: str, timeout: float = 1.0) -> bool:
+    """True, wenn die typischen Web-Ports (80/443) **zu** sind — eine Netcon bietet im
+    Netz ausschließlich SSH. Dient als Zusatzbestätigung des hostnamenlosen
+    Raspberry-Pi-Erkennungswegs (ein normaler Pi mit Webdienst fällt so heraus)."""
+    for port in (80, 443):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(min(timeout, 0.8))
+        try:
+            if s.connect_ex((ip, port)) == 0:
+                return False
+        except OSError:
+            pass
+        finally:
+            s.close()
+    return True
+
+
 def _reverse_dns(ip: str, timeout: float = 2.0) -> str:
     """Reverse-DNS-Name (PTR) der IP, Kurzform ohne Domain; leer bei keinem PTR."""
     alt = socket.getdefaulttimeout()
@@ -176,26 +222,36 @@ def _reverse_dns(ip: str, timeout: float = 2.0) -> str:
 
 
 def kennung(ip: str, timeout: float = 4.0) -> dict | None:
-    """Erkennt eine Netcon ohne Login über zwei Wege: den **Hostnamen** (``netcon…``)
-    aus Reverse-DNS **oder** den **MAC-OUI** der Netzkarte (bekannte Netcon-Hardware).
-    Der offene SSH-Port dient als Lebenszeichen und wird zuerst geprüft.
+    """Erkennt eine Netcon ohne Login über drei Wege: den **Hostnamen** (``netcon…``)
+    aus Reverse-DNS, den **MAC-OUI** der Netzkarte (bekannte Netcon-2/3-Hardware) **oder**
+    — für die hostnamenlose Netcon 4 — einen **Raspberry-Pi-OUI zusammen mit dem exakten
+    Netcon-4-SSH-Banner**. Der offene SSH-Port dient als Lebenszeichen und wird zuerst
+    geprüft.
 
-    Liefert ``{name, modell, serial, mac, ssh}`` bei einem Treffer, sonst ``None`` —
-    nur Geräte mit Hostnamen-Marker oder bekanntem Hersteller-OUI werden gelistet
-    (keine Fehltreffer auf beliebige SSH-Hosts)."""
+    Liefert ``{name, modell, serial, mac, ssh}`` bei einem Treffer, sonst ``None`` — nur
+    Geräte mit Hostnamen-Marker, bekanntem Hersteller-OUI oder dem Raspberry-Pi+Banner-
+    Profil werden gelistet (keine Fehltreffer auf beliebige SSH-Hosts)."""
     if not erreichbar(ip, min(timeout, 1.5)):
         return None
     host = _reverse_dns(ip, min(timeout, 2.0))
     # MAC aus dem ARP-Cache (gefuellt durch das obige erreichbar()); zugleich der
     # zweite Erkennungsweg (Hersteller-OUI) und die stabile Identitaet.
     mac = mac_adresse(ip)
-    treffer = _erkennen(host, mac)
+    ssh = ssh_banner(ip, min(timeout, 3.0))
+    treffer = _erkennen(host, mac, ssh)
     if not treffer:
+        return None
+    # Der hostnamenlose Raspberry-Pi-Weg (Netcon 4) ist eine Heuristik. Wenn weder ein
+    # netcon-Hostname noch ein bekannter Netcon-OUI vorliegt, zusätzlich bestätigen, dass
+    # das Gerät — wie eine Netcon — NUR SSH anbietet (ein normaler Pi mit Web fällt raus).
+    hostname_marker = bool(_NETCON.match(host)) if host else False
+    bekannter_oui = (mac[:8].upper() if mac else "") in _NETCON_OUIS
+    if not hostname_marker and not bekannter_oui and not _nur_ssh_offen(ip, timeout):
         return None
     return {
         "name": host,
         "modell": treffer["modell"],
         "serial": treffer["serial"],
         "mac": mac,
-        "ssh": ssh_banner(ip, min(timeout, 3.0)),
+        "ssh": ssh,
     }

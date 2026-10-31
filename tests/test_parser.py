@@ -87,10 +87,42 @@ class TestScutumErkennung(unittest.TestCase):
                          {"modell": "Netcon 2", "serial": ""})
 
     def test_fremder_ssh_host_ist_keine_netcon(self):
-        # Ein Raspberry-Pi-OUI ohne netcon-Hostname darf NICHT als Netcon gelten.
+        # Ein Raspberry-Pi-OUI ohne netcon-Hostname UND ohne Netcon-4-Banner darf NICHT
+        # als Netcon gelten (Default-Banner ist leer).
         self.assertIsNone(scutum._erkennen("raspberrypi", "B8:27:EB:B4:7F:78"))
         self.assertIsNone(scutum._erkennen("fileserver", "00:11:22:33:44:55"))
         self.assertIsNone(scutum._erkennen("", ""))
+
+
+class TestScutumNetcon4Pi(unittest.TestCase):
+    """Hostnamenlose Netcon 4: Raspberry-Pi-OUI **plus** exaktes Buster-SSH-Banner."""
+
+    BUSTER = scutum._NETCON4_SSH  # "SSH-2.0-OpenSSH_7.9p1 Raspbian-10+deb10u2+rpt1"
+
+    def test_enet_pi_mit_buster_banner_ist_netcon4(self):
+        """.22: Reverse-DNS 'enet', RPi-OUI B8:27:EB, exaktes Buster-Banner -> Netcon 4."""
+        self.assertEqual(scutum._erkennen("enet", "B8:27:EB:83:4C:AE", self.BUSTER),
+                         {"modell": "Netcon 4", "serial": ""})
+
+    def test_neuerer_pi_oui_zaehlt_auch(self):
+        self.assertEqual(scutum._erkennen("", "DC:A6:32:11:22:33", self.BUSTER)["modell"],
+                         "Netcon 4")
+
+    def test_pi_ohne_exaktes_banner_ist_keine_netcon(self):
+        # Falsches/neueres Banner oder kein Banner -> kein Treffer (kein normaler Pi).
+        self.assertIsNone(scutum._erkennen("enet", "B8:27:EB:83:4C:AE",
+                                           "SSH-2.0-OpenSSH_9.2p1 Debian-2"))
+        self.assertIsNone(scutum._erkennen("enet", "B8:27:EB:83:4C:AE", ""))
+        self.assertFalse(scutum._ist_netcon4_pi("B8:27:EB:83:4C:AE", "SSH-2.0-OpenSSH_8.4p1"))
+
+    def test_buster_banner_ohne_pi_oui_ist_keine_netcon(self):
+        # Exaktes Banner, aber fremder OUI (kein Raspberry Pi) -> kein Treffer.
+        self.assertIsNone(scutum._erkennen("enet", "00:11:22:33:44:55", self.BUSTER))
+
+    def test_netcon4_hostname_braucht_kein_banner(self):
+        # Trägt der Hostname die Modellnummer, zählt er unabhängig vom Banner.
+        self.assertEqual(scutum._erkennen("netcon4", "B8:27:EB:00:00:00", "")["modell"],
+                         "Netcon 4")
 
 
 class TestScutumMac(unittest.TestCase):
