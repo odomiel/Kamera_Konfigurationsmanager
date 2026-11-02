@@ -32,10 +32,17 @@ from __future__ import annotations
 
 from kkm.core import t
 from kkm.core.plugins import (VendorPlugin, Credentials, Capability,
-                              FirmwareInfo, FirmwareRelease)
+                              FirmwareInfo, FirmwareRelease, FirmwareAmbiguous)
 from . import vapix
 from . import discovery
 from . import firmware_repo
+
+
+def _variant_names(ordner: list[str]) -> list[str]:
+    """Ordnernamen des Repos (``Q3505-V_Mk_II``) in lesbare Modell-/Variantennamen
+    (``Q3505-V Mk II``) wandeln — so, wie sie wieder als Suchschluessel taugen
+    (``_normalize`` bildet beide Formen aufeinander ab)."""
+    return [o.replace("_", " ") for o in ordner]
 
 
 class AxisPlugin(VendorPlugin):
@@ -175,7 +182,10 @@ class AxisPlugin(VendorPlugin):
 
     # --- firmware lookup (Capability.FIRMWARE_CHECK) ------------------------
     def firmware_updates(self, model, current="", prefer_track=True) -> FirmwareInfo:
-        model_dir = firmware_repo.resolve_model(model, self.repo_url)
+        try:
+            model_dir = firmware_repo.resolve_model(model, self.repo_url)
+        except firmware_repo.AmbiguousModelError as exc:
+            raise FirmwareAmbiguous(model, _variant_names(exc.candidates)) from exc
         vers = firmware_repo.versions(model_dir, self.repo_url)
         latest = firmware_repo.latest_version(model_dir, self.repo_url)
         if latest:
@@ -194,7 +204,10 @@ class AxisPlugin(VendorPlugin):
         )
 
     def firmware_release(self, model, version="") -> FirmwareRelease:
-        model_dir = firmware_repo.resolve_model(model, self.repo_url)
+        try:
+            model_dir = firmware_repo.resolve_model(model, self.repo_url)
+        except firmware_repo.AmbiguousModelError as exc:
+            raise FirmwareAmbiguous(model, _variant_names(exc.candidates)) from exc
         rel = firmware_repo.release(model_dir, version or None, self.repo_url)
         return FirmwareRelease(model=rel.model, version=rel.version, url=rel.url,
                                filename=rel.filename, size=rel.size,

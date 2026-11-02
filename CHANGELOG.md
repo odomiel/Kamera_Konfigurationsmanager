@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.02b1 — 2026-11-02
+
+- **Firmware: Modellvariante im Dialog wählbar.** Lässt sich eine Axis-Variante nicht
+  automatisch bestimmen (Kamera meldet den Familiennamen ohne Zusatz und es gibt mehrere
+  Varianten-Ordner, z. B. Q3505-V/-VE/-SVE Mk II), zeigt die Update-Suche das Modell nun
+  als „Variante wählen …" an und bietet über „Version wählen…" eine **Varianten-Auswahl**
+  an, statt mit einer Fehlermeldung in der Sackgasse zu enden. Nach der Wahl wird für die
+  gewählte Variante gesucht und heruntergeladen. (Baut auf dem ProdNbr-Abgleich aus
+  26.11.02 auf — nach einer frischen Suche mit Zugangsdaten greift der meist automatisch.)
+
 ## 26.11.02 — 2026-11-02
 
 - **Firmware-Suche trifft Axis-Modellvarianten (z. B. Q3505-V Mk II).** Meldet eine

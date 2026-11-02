@@ -68,6 +68,15 @@ class RepoError(Exception):
     """Firmware-Verzeichnis nicht erreichbar / Modell unbekannt / Layout geaendert."""
 
 
+class AmbiguousModelError(RepoError):
+    """Der Modellname passt zu mehreren Ordnern (Varianten-Familie ohne Zusatz in der
+    Kameraangabe). ``candidates`` traegt die Ordnernamen zur Auswahl."""
+
+    def __init__(self, message: str, candidates: list[str]):
+        super().__init__(message)
+        self.candidates = list(candidates)
+
+
 @dataclass
 class Release:
     """Eine konkrete Firmware-Version eines Modells."""
@@ -282,9 +291,11 @@ def resolve_model(model: str, base_url: str | None = None) -> str:
         return varianten[0]
     if varianten:
         auswahl = sorted(set(varianten + ([by_norm[wanted]] if wanted in by_norm else [])))
-        raise RepoError(t("Modell „{model}“ ist im Firmware-Verzeichnis mehrdeutig — "
-                          "bitte Variante wählen oder die Datei von Hand zuweisen ({hits}).",
-                        model=model, hits=', '.join(auswahl[:5])))
+        raise AmbiguousModelError(
+            t("Modell „{model}“ ist im Firmware-Verzeichnis mehrdeutig — "
+              "bitte Variante wählen oder die Datei von Hand zuweisen ({hits}).",
+              model=model, hits=', '.join(auswahl[:5])),
+            candidates=auswahl)
     hits = [orig for norm, orig in by_norm.items()
             if norm.startswith(wanted) or wanted.startswith(norm)]
     if len(hits) == 1:

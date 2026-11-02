@@ -48,6 +48,7 @@ from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
 
 from kkm.core import Capability, camera_key, certpin, get_first_ip, version_tuple, t
+from kkm.core.plugins import FirmwareAmbiguous
 from kkm.gui.widgets import add_scrollbars
 from .base import ActionDialog
 
@@ -98,6 +99,8 @@ class FirmwareDialog(ActionDialog):
         # Online-Suche: Ergebnisse und (abweichende) Versionswahl je Modell.
         self._info_by_model: dict[str, object] = {}   # model -> FirmwareInfo
         self._pick_by_model: dict[str, str] = {}      # model -> gewählte Version
+        self._variant_by_model: dict[str, str] = {}   # model -> gewählte Variante (Suchschlüssel)
+        self._ambiguous_by_model: dict[str, list[str]] = {}  # model -> Varianten zur Auswahl
         self._repo_q: queue.Queue = queue.Queue()     # Worker -> GUI
         self._repo_busy = False
         self._cancel = threading.Event()
@@ -222,16 +225,22 @@ class FirmwareDialog(ActionDialog):
         self._repo_busy = busy
         state = tk.DISABLED if busy else tk.NORMAL
         self._btn_check.config(state=state)
-        have = bool(self._info_by_model)
-        self._btn_get.config(state=tk.DISABLED if busy or not have else tk.NORMAL)
-        self._btn_pick.config(state=tk.DISABLED if busy or not have else tk.NORMAL)
+        self._btn_get.config(state=tk.DISABLED if busy or not self._info_by_model else tk.NORMAL)
+        # „Version/Variante wählen" auch dann, wenn (noch) kein Ergebnis vorliegt, aber
+        # eine Variante zu klären ist.
+        waehlbar = bool(self._info_by_model) or bool(self._ambiguous_by_model)
+        self._btn_pick.config(state=tk.DISABLED if busy or not waehlbar else tk.NORMAL)
 
     def _lookup_key(self, model: str) -> str:
         """Schlüssel für die Firmware-Suche einer Modellzeile. Bevorzugt die
         **Produktnummer inkl. Varianten-Zusatz** (``_prodnbr``, z. B. „Q3505-V Mk II")
         einer Kamera der Zeile — der Anzeigename lässt den Zusatz bei manchen Modellen
         weg, die Firmware-Ordner tragen ihn aber. Fehlt die Produktnummer (z. B. nur per
-        mDNS gefunden, noch keine Geräteinfo), gilt der Anzeigename."""
+        mDNS gefunden, noch keine Geräteinfo), gilt eine zuvor von Hand gewählte Variante,
+        sonst der Anzeigename."""
+        gewaehlt = self._variant_by_model.get(model)
+        if gewaehlt:
+            return gewaehlt
         for cam in self._by_model.get(model, []):
             prodnbr = (cam.get("_prodnbr") or "").strip()
             if prodnbr:
@@ -250,13 +259,15 @@ class FirmwareDialog(ActionDialog):
         vers = [v for v in vers if v]
         return max(vers, key=version_tuple) if vers else ""
 
-    def _check_updates(self):
+    def _check_updates(self, only: list[str] | None = None):
         plugin = self._repo_plugin()
         if plugin is None or self._repo_busy:
             return
         settings = self._settings()
         prefer_track = bool(settings.get("firmware_prefer_track", True)) if settings else True
-        models = sorted(self._by_model)
+        models = list(only) if only else sorted(self._by_model)
+        if not models:
+            return
         self._repo_set_busy(True)
         self._repo_status.config(text=t("Suche nach Updates …"))
         for model in models:
@@ -267,6 +278,9 @@ class FirmwareDialog(ActionDialog):
                 current = self._current_of_model(model)
                 try:
                     info = plugin.firmware_updates(self._lookup_key(model), current, prefer_track)
+                except FirmwareAmbiguous as exc:
+                    self._repo_q.put(("ambiguous", model, exc.variants))
+                    return
                 except Exception as exc:  # noqa: BLE001 - je Modell melden, nicht abbrechen
                     self._repo_q.put(("fail", model, str(exc)))
                     return
@@ -299,11 +313,20 @@ class FirmwareDialog(ActionDialog):
 
     def _pick_version(self):
         """Andere als die vorgeschlagene Version wählen (z. B. Sprung auf den
-        Active-Track oder bewusst eine ältere Version)."""
+        Active-Track oder bewusst eine ältere Version). Ist das Modell mehrdeutig
+        (Varianten-Familie), wird stattdessen die Variante erfragt."""
         model = self._selected_model()
         if not model:
-            messagebox.showinfo(t(self.title_text), t("Bitte zuerst ein Modell auswählen."),
-                                parent=self)
+            # Kein Modell markiert: steht genau eine Mehrdeutigkeit offen, diese klären.
+            offen = [m for m in self._ambiguous_by_model if m not in self._variant_by_model]
+            if len(offen) == 1:
+                model = offen[0]
+            else:
+                messagebox.showinfo(t(self.title_text), t("Bitte zuerst ein Modell auswählen."),
+                                    parent=self)
+                return
+        if model in self._ambiguous_by_model and model not in self._info_by_model:
+            self._choose_variant(model)
             return
         info = self._info_by_model.get(model)
         if info is None or not info.versions:
@@ -316,6 +339,37 @@ class FirmwareDialog(ActionDialog):
         if version:
             self._pick_by_model[model] = version
             self.tree.set(model, "online", self._online_text(model))
+
+    def _resolve_ambiguous(self):
+        """Nach einer Suche offene Mehrdeutigkeiten der Reihe nach zur Auswahl anbieten
+        und für die gewählten Varianten erneut suchen."""
+        if self._repo_busy:
+            return
+        erneut: list[str] = []
+        for model in list(self._ambiguous_by_model):
+            if model in self._variant_by_model:
+                continue
+            if self._choose_variant(model, nachsuchen=False):
+                erneut.append(model)
+        if erneut:
+            self._check_updates(only=erneut)
+
+    def _choose_variant(self, model: str, nachsuchen: bool = True) -> bool:
+        """Variante eines mehrdeutigen Modells wählen. Gibt ``True`` zurück, wenn eine
+        Variante gesetzt wurde. Mit *nachsuchen* wird direkt erneut gesucht."""
+        varianten = self._ambiguous_by_model.get(model)
+        if not varianten:
+            return False
+        gewaehlt = _VariantPicker(self, model, varianten,
+                                  self._variant_by_model.get(model)).result
+        if not gewaehlt:
+            return False
+        self._variant_by_model[model] = gewaehlt
+        if self.tree.exists(model):
+            self.tree.set(model, "online", "…")
+        if nachsuchen:
+            self._check_updates(only=[model])
+        return True
 
     def _download_updates(self):
         """Firmware für das ausgewählte Modell (oder alle mit Update) laden und
@@ -382,6 +436,14 @@ class FirmwareDialog(ActionDialog):
                     else:
                         self._q.put(("line", "✓ " + t("{model}: aktuell ({version})",
                                              model=model, version=payload.latest or '?')))
+                elif kind == "ambiguous":
+                    self._ambiguous_by_model[model] = payload
+                    if self.tree.exists(model):
+                        self.tree.set(model, "online", t("Variante wählen …"))
+                    self._q.put(("line", "… " + t(
+                        "{model}: mehrere Varianten im Firmware-Verzeichnis — bitte "
+                        "Variante wählen ({hits}).", model=model,
+                        hits=', '.join(payload[:5]))))
                 elif kind == "fail":
                     if model and self.tree.exists(model):
                         self.tree.set(model, "online", "?")
@@ -401,6 +463,8 @@ class FirmwareDialog(ActionDialog):
                 elif kind == "checked":
                     self._repo_set_busy(False)
                     self._repo_status.config(text="")
+                    # Offene Mehrdeutigkeiten gleich zur Auswahl anbieten.
+                    self.after(0, self._resolve_ambiguous)
                 elif kind == "loaded":
                     self._repo_set_busy(False)
                     self._repo_bar.pack_forget()
@@ -661,4 +725,54 @@ class _VersionPicker(tk.Toplevel):
         sel = self._list.curselection()
         if sel:
             self.result = self._versions[sel[0]]
+        self.destroy()
+
+
+class _VariantPicker(tk.Toplevel):
+    """Auswahl der Modellvariante, wenn der Modellname zu mehreren Firmware-Ordnern
+    passt (z. B. ``Q3505-V/-VE/-SVE Mk II``), weil die Kamera ihren Varianten-Zusatz
+    nicht meldet. ``result`` ist der gewählte Variantenname oder ``None``.
+    """
+
+    def __init__(self, parent, model, variants, preselect=None):
+        super().__init__(parent)
+        self.title(t("Variante wählen — {model}", model=model))
+        self.transient(parent)
+        self.result: str | None = None
+
+        frame = ttk.Frame(self, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+        ttk.Label(frame, text=t("„{model}“ gibt es im Firmware-Verzeichnis in mehreren "
+                                "Varianten. Bitte die zutreffende wählen — die Firmware "
+                                "muss zur Variante passen.", model=model),
+                  wraplength=380, justify=tk.LEFT).pack(anchor=tk.W, pady=(0, 6))
+
+        box = ttk.Frame(frame)
+        box.pack(fill=tk.BOTH, expand=True)
+        self._variants = list(variants)
+        self._list = tk.Listbox(box, height=min(10, max(3, len(self._variants))),
+                                exportselection=False)
+        scroll = ttk.Scrollbar(box, orient=tk.VERTICAL, command=self._list.yview)
+        self._list.config(yscrollcommand=scroll.set)
+        self._list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.LEFT, fill=tk.Y)
+        for i, name in enumerate(self._variants):
+            self._list.insert(tk.END, name)
+            if name == preselect:
+                self._list.selection_set(i)
+                self._list.see(i)
+
+        row = ttk.Frame(frame)
+        row.pack(fill=tk.X, pady=(8, 0))
+        ttk.Button(row, text=t("Übernehmen"), command=self._ok).pack(side=tk.LEFT)
+        ttk.Button(row, text=t("Abbrechen"), command=self.destroy).pack(side=tk.LEFT, padx=6)
+        self._list.bind("<Double-Button-1>", lambda _e: self._ok())
+
+        self.grab_set()
+        self.wait_window(self)
+
+    def _ok(self):
+        sel = self._list.curselection()
+        if sel:
+            self.result = self._variants[sel[0]]
         self.destroy()

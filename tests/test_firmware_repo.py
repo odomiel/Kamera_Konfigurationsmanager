@@ -101,6 +101,34 @@ class TestResolveModel(unittest.TestCase):
         with self.assertRaises(fr.RepoError):
             fr.resolve_model("AXIS ZZZ9999")
 
+    def test_mehrdeutig_traegt_kandidaten(self):
+        with self.assertRaises(fr.AmbiguousModelError) as ctx:
+            fr.resolve_model("AXIS Q3505 Mk II")
+        self.assertIn("Q3505-V_Mk_II", ctx.exception.candidates)
+        self.assertIn("Q3505-VE_Mk_II", ctx.exception.candidates)
+
+
+class TestPluginAmbiguous(unittest.TestCase):
+    """Das Axis-Plugin reicht die Mehrdeutigkeit vendor-neutral als ``FirmwareAmbiguous``
+    mit lesbaren Variantennamen weiter (ohne Netzwerk — Modellindex eingespeist)."""
+
+    INDEX = TestResolveModel.INDEX
+
+    def setUp(self):
+        self._orig = fr.model_index
+        fr.model_index = lambda base_url=None, refresh=False: list(self.INDEX)
+        self.addCleanup(lambda: setattr(fr, "model_index", self._orig))
+
+    def test_firmware_updates_wirft_firmware_ambiguous(self):
+        from kkm.plugins.axis.plugin import AxisPlugin
+        from kkm.core.plugins import FirmwareAmbiguous
+        with self.assertRaises(FirmwareAmbiguous) as ctx:
+            AxisPlugin().firmware_updates("AXIS Q3505 Mk II", "8.40.0", True)
+        # Ordnernamen werden zu lesbaren Varianten (Unterstrich -> Leerzeichen).
+        self.assertIn("Q3505-V Mk II", ctx.exception.variants)
+        self.assertIn("Q3505-VE Mk II", ctx.exception.variants)
+        self.assertTrue(all("_" not in v for v in ctx.exception.variants))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -89,6 +89,21 @@ class FirmwareInfo:
     recommended: str = ""                              # Vorschlag ("" = kein Update)
 
 
+class FirmwareAmbiguous(Exception):
+    """Der Modellname passt zu mehreren Firmware-Ordnern (z. B. Axis-Varianten
+    ``Q3505-V/-VE/-SVE Mk II``), weil die Kamera ihren Varianten-Zusatz nicht meldet.
+
+    Vendor-neutral (in ``core``), damit die GUI die Auswahl anbieten kann, ohne ein
+    Hersteller-Plugin zu importieren. ``variants`` sind die zur Auswahl stehenden,
+    menschenlesbaren Modell-/Variantennamen (einer davon wird erneut als Suchschluessel
+    an ``firmware_updates``/``firmware_release`` gegeben und trifft dann eindeutig)."""
+
+    def __init__(self, model: str, variants: list[str]):
+        self.model = model
+        self.variants = list(variants)
+        super().__init__(f"{model}: {', '.join(self.variants)}")
+
+
 # A progress callback receives (ip, ok, message) per camera for live result logs.
 ProgressFn = Callable[[str, bool, str], None]
 
