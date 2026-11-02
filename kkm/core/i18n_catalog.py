@@ -313,6 +313,7 @@ EN: dict[str, str] = {
     'Modell / Kamera': 'Model / camera',
     'Modell „{model}“ im Firmware-Verzeichnis nicht gefunden.': 'Model „{model}“ not found in the firmware directory.',
     'Modell „{model}“ ist im Firmware-Verzeichnis nicht eindeutig ({hits} …).': 'Model „{model}“ is not unique in the firmware directory ({hits} …).',
+    'Modell „{model}“ ist im Firmware-Verzeichnis mehrdeutig — bitte Variante wählen oder die Datei von Hand zuweisen ({hits}).': 'Model „{model}“ is ambiguous in the firmware directory — please choose the variant or assign the file manually ({hits}).',
     'Modell: {model} · Firmware: {fw} · {np} Parameter · {ns} Stream-Profile': 'Model: {model} · firmware: {fw} · {np} parameters · {ns} stream profiles',
     'Modernes Sun-Valley-Design. Wirkt sofort.': 'Modern Sun Valley design. Takes effect immediately.',
     'Nach Updates suchen': 'Search for updates',

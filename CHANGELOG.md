@@ -4,7 +4,18 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
-## 26.10.31 — 2026-10-31
+## 26.11.02 — 2026-11-02
+
+- **Firmware-Suche trifft Axis-Modellvarianten (z. B. Q3505-V Mk II).** Meldet eine
+  Kamera ihren Modellnamen ohne Varianten-Zusatz (Anzeige „AXIS Q3505 Mk II", während
+  die Firmware im Ordner „Q3505-V Mk II" liegt), schlug der automatische Download fehl
+  bzw. landete im veralteten Sammelordner. Behoben in zwei Schritten: (1) Es wird nun
+  zusätzlich die **Produktnummer `Brand.ProdNbr`** gelesen (sie enthält den Zusatz
+  `-V`/`-VE`/`-LVE` …) und für die Firmware-Suche bevorzugt — damit trifft der Abgleich
+  die richtige Variante. (2) Fehlt die Produktnummer, erkennt die Suche Varianten-Ordner
+  eines Familiennamens generisch: Gibt es genau eine, wird sie genommen; gibt es mehrere,
+  erscheint eine klare Meldung mit allen Varianten (statt still den falschen/veralteten
+  Ordner zu wählen). Betrifft alle Axis-Modelle mit Varianten-Zusatz.
 
 - **Scutum/Inform Netcon 4 ohne `netcon`-Hostnamen wird erkannt.** Eine Netcon 4, der
   per DHCP kein `netcon`-Name zugewiesen ist (Reverse-DNS z. B. `enet`), fiel bisher

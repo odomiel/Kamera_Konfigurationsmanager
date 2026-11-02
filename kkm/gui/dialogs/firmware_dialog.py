@@ -226,6 +226,18 @@ class FirmwareDialog(ActionDialog):
         self._btn_get.config(state=tk.DISABLED if busy or not have else tk.NORMAL)
         self._btn_pick.config(state=tk.DISABLED if busy or not have else tk.NORMAL)
 
+    def _lookup_key(self, model: str) -> str:
+        """Schlüssel für die Firmware-Suche einer Modellzeile. Bevorzugt die
+        **Produktnummer inkl. Varianten-Zusatz** (``_prodnbr``, z. B. „Q3505-V Mk II")
+        einer Kamera der Zeile — der Anzeigename lässt den Zusatz bei manchen Modellen
+        weg, die Firmware-Ordner tragen ihn aber. Fehlt die Produktnummer (z. B. nur per
+        mDNS gefunden, noch keine Geräteinfo), gilt der Anzeigename."""
+        for cam in self._by_model.get(model, []):
+            prodnbr = (cam.get("_prodnbr") or "").strip()
+            if prodnbr:
+                return prodnbr
+        return model
+
     def _current_of_model(self, model: str) -> str:
         """Vergleichsbasis einer Modellzeile: die **neueste** Firmware unter ihren
         Kameras. Eine Modellzeile bekommt genau eine Datei, die auf alle Kameras der
@@ -254,7 +266,7 @@ class FirmwareDialog(ActionDialog):
             def one(model):
                 current = self._current_of_model(model)
                 try:
-                    info = plugin.firmware_updates(model, current, prefer_track)
+                    info = plugin.firmware_updates(self._lookup_key(model), current, prefer_track)
                 except Exception as exc:  # noqa: BLE001 - je Modell melden, nicht abbrechen
                     self._repo_q.put(("fail", model, str(exc)))
                     return
@@ -329,7 +341,7 @@ class FirmwareDialog(ActionDialog):
         def work():
             for model, version in todo:
                 try:
-                    rel = plugin.firmware_release(model, version)
+                    rel = plugin.firmware_release(self._lookup_key(model), version)
                     self._repo_q.put((
                         "status", None,
                         t("Lade {file} ({version}, {size}) …",

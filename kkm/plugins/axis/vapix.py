@@ -475,7 +475,7 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
     """
     path = (
         "/axis-cgi/param.cgi?action=list"
-        "&group=Brand.ProdShortName,Properties.System.SerialNumber,"
+        "&group=Brand.ProdShortName,Brand.ProdNbr,Properties.System.SerialNumber,"
         "Properties.Firmware.Version"
     )
     params = _parse_param_list(
@@ -483,11 +483,15 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
     )
     info = {
         "model": _param_value(params, "Brand.ProdShortName") or "?",
+        # Produktnummer inkl. Varianten-Zusatz (z. B. „Q3505-V Mk II") — der
+        # ProdShortName laesst den Zusatz bei manchen Modellen weg, die
+        # Firmware-Ordner tragen ihn aber. Fuer die Firmware-Suche massgeblich.
+        "prodnbr": _param_value(params, "Brand.ProdNbr") or "",
         "serial": _param_value(params, "Properties.System.SerialNumber") or "?",
         "firmware": _param_value(params, "Properties.Firmware.Version"),
     }
     # Fallback fuer moderne Geraete: fehlende Firmware/Modell per JSON-Endpunkt.
-    if not info["firmware"] or info["model"] in ("", "?"):
+    if not info["firmware"] or info["model"] in ("", "?") or not info["prodnbr"]:
         props = _basic_device_info(ip, username, password, scheme, port, timeout)
         if props:
             if not info["firmware"]:
@@ -495,6 +499,8 @@ def get_device_info(ip, username, password, scheme="auto", port=None, timeout=10
             if info["model"] in ("", "?"):
                 info["model"] = (props.get("ProdShortName") or props.get("ProdNbr")
                                  or info["model"])
+            if not info["prodnbr"]:
+                info["prodnbr"] = props.get("ProdNbr", "") or ""
             if info["serial"] in ("", "?"):
                 info["serial"] = props.get("SerialNumber", "") or info["serial"]
     # Fallback fuer aeltere Geraete (z. B. AXIS OS 5.x): manche Firmware liefert

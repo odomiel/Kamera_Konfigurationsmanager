@@ -1341,6 +1341,12 @@ class MainWindow(tk.Tk):
             cam["_firmware"] = fw
         if model and model != "?":
             cam["_model"] = model
+        # Produktnummer inkl. Varianten-Zusatz (z. B. „Q3505-V Mk II") merken — der
+        # Anzeigename lässt den Zusatz bei manchen Modellen weg, die Firmware-Suche
+        # braucht ihn aber, um den richtigen Varianten-Ordner zu treffen.
+        prodnbr = info.get("prodnbr")
+        if prodnbr:
+            cam["_prodnbr"] = prodnbr
         # MAC/Seriennummer nachtragen, wenn die Suche sie nicht liefern konnte
         # (z. B. Senstar: der unauthentifizierte Fingerprint kennt keine MAC —
         # sie kommt erst mit Zugangsdaten aus der Geräteinfo). Das Feld ist

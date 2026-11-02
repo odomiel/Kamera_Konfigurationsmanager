@@ -222,21 +222,69 @@ def _normalize(name: str) -> str:
     return re.sub(r"[\s_]+", "_", name).strip("_").lower()
 
 
+#: Varianten-Zusatz am Modellcode-Token: „-V", „-VE", „-SVE", „-LVE", „-E", „-LE" …
+#: (nur Buchstaben nach dem Bindestrich; in der normalisierten Form kleingeschrieben).
+_VARIANTE_RE = re.compile(r"-[a-z]+$")
+
+
+def _is_variant_of(basis_norm: str, kandidat_norm: str) -> bool:
+    """True, wenn *kandidat* derselbe Modellname wie *basis* ist, nur mit einem
+    Varianten-Zusatz am Modellcode-Token (Basis „q3505_mk_ii" → Kandidat
+    „q3505-v_mk_ii"). Die Basis darf selbst **keinen** Zusatz tragen — so wird eine
+    bereits variantengenaue Kameraangabe (z. B. „q3505-v_mk_ii") nicht an eine
+    *andere* Variante (q3505-ve …) gekoppelt."""
+    b = basis_norm.split("_")
+    c = kandidat_norm.split("_")
+    if len(b) != len(c) or b == c:
+        return False
+    unterschiede = [(bb, cc) for bb, cc in zip(b, c) if bb != cc]
+    if len(unterschiede) != 1:
+        return False
+    bb, cc = unterschiede[0]
+    # bb muss ein Modellcode sein (enthaelt Ziffern) ohne eigenen Varianten-Zusatz,
+    # cc derselbe Code mit angehaengtem „-<buchstaben>".
+    if "-" in bb or not any(ch.isdigit() for ch in bb):
+        return False
+    return bool(re.fullmatch(re.escape(bb) + r"-[a-z]+", cc))
+
+
 def resolve_model(model: str, base_url: str | None = None) -> str:
     """Modellnamen der Kamera auf einen Ordner im Repo abbilden.
 
     Die Kamera meldet „AXIS M3085-V", der Ordner heisst „M3085-V" — das deckt die
-    Masse ab. Fuer Sonderfaelle (z. B. „Companion_Dome_V") bleibt ein eindeutiger
-    Praefix-Treffer als Rueckfall; ist nichts eindeutig, wird ``RepoError``
-    geworfen und der Nutzer weist die Datei wie bisher von Hand zu.
+    Masse ab. Zwei Sonderfaelle werden zusaetzlich abgefangen:
+
+    * **Varianten-Zusatz fehlt.** Axis legt manche Familien als Varianten-Ordner ab
+      (``Q3505-V/-VE/-SVE Mk II``), teils neben einem veralteten Sammelordner ohne
+      Zusatz (``Q3505 Mk II``, der nur alte Firmware fuehrt). Meldet die Kamera den
+      blossen Familiennamen und gibt es **genau eine** Variante, wird diese genommen;
+      gibt es mehrere (oder zusaetzlich den Sammelordner), ist der Name mehrdeutig und
+      es wird eine klare Meldung geworfen — am besten liefert das Plugin ohnehin die
+      Produktnummer inkl. Variante (``Brand.ProdNbr``), dann trifft der exakte Weg.
+    * **Sonstige Sonderfaelle** (z. B. „Companion_Dome_V") ueber einen eindeutigen
+      Praefix-Treffer. Ist nichts eindeutig, wird ``RepoError`` geworfen und der
+      Nutzer weist die Datei wie bisher von Hand zu.
     """
     wanted = _normalize(model)
     if not wanted:
         raise RepoError(t("Kein Modellname bekannt."))
     models = model_index(base_url)
     by_norm = {_normalize(m): m for m in models}
-    if wanted in by_norm:
+
+    varianten = sorted(orig for norm, orig in by_norm.items()
+                       if _is_variant_of(wanted, norm))
+    # Exakter Treffer ist nur eindeutig, wenn es keine Varianten-Ordner desselben
+    # Basisnamens gibt (sonst ist der blosse Familienname mehrdeutig, s. o.).
+    if wanted in by_norm and not varianten:
         return by_norm[wanted]
+    # Familienname ohne Zusatz, genau eine Variante -> die ist gemeint.
+    if len(varianten) == 1 and wanted not in by_norm:
+        return varianten[0]
+    if varianten:
+        auswahl = sorted(set(varianten + ([by_norm[wanted]] if wanted in by_norm else [])))
+        raise RepoError(t("Modell „{model}“ ist im Firmware-Verzeichnis mehrdeutig — "
+                          "bitte Variante wählen oder die Datei von Hand zuweisen ({hits}).",
+                        model=model, hits=', '.join(auswahl[:5])))
     hits = [orig for norm, orig in by_norm.items()
             if norm.startswith(wanted) or wanted.startswith(norm)]
     if len(hits) == 1:
