@@ -160,13 +160,25 @@ def create_release(slug: str, version: str, notes: str, draft: bool,
         "name": tag,
         "body": notes,
         "draft": draft,
-        "prerelease": "b" in version,
+        # Der bN-Suffix zaehlt nur die Builds eines Tages (JJ.MM.TT[bN]) — normales
+        # Release, KEINE Vorabversion (sonst bliebe es aus /releases/latest heraus).
+        "prerelease": False,
     }).encode()
     status, body = _request("POST", f"{API}/repos/{slug}/releases",
                             _headers(token), payload)
     if status in (200, 201):
         return json.loads(body)
     raise SystemExit(f"GitHub-Release anlegen fehlgeschlagen (HTTP {status}): "
+                     f"{body[:400].decode(errors='replace')}")
+
+
+def update_release(slug: str, release_id: int, fields: dict, token: str) -> dict:
+    """Aktualisiert ein bestehendes Release (z. B. prerelease-Flag/Notizen beim Reuse)."""
+    status, body = _request("PATCH", f"{API}/repos/{slug}/releases/{release_id}",
+                            _headers(token), json.dumps(fields).encode())
+    if status in (200, 201):
+        return json.loads(body)
+    raise SystemExit(f"GitHub-Release aktualisieren fehlgeschlagen (HTTP {status}): "
                      f"{body[:400].decode(errors='replace')}")
 
 
@@ -248,7 +260,11 @@ def main() -> int:
     existing = get_release_by_tag(slug, tag, token)
     if existing:
         print(f"Release {tag} existiert bereits (id {existing['id']}) — wird wiederverwendet.")
-        release = existing
+        # Flags/Notizen eines frueher (ggf. als Vorabversion) angelegten Releases angleichen.
+        felder = {"prerelease": False, "draft": args.draft}
+        if notes:
+            felder["body"] = notes
+        release = update_release(slug, existing["id"], felder, token)
     else:
         release = create_release(slug, version, notes, args.draft, token)
         print(f"Release angelegt: id {release['id']}, tag {release['tag_name']}")

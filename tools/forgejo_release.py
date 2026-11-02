@@ -197,7 +197,9 @@ def create_release(version: str, notes: str, draft: bool, auth: dict) -> dict:
         "name": tag,
         "body": notes,
         "draft": draft,
-        "prerelease": "b" in version,      # bN-Suffix -> Vorabversion
+        # Der bN-Suffix zaehlt nur die Builds eines Tages (JJ.MM.TT[bN]) — es ist ein
+        # ganz normales Release, KEINE Vorabversion.
+        "prerelease": False,
     }).encode()
     hdr = {**auth, "Content-Type": "application/json"}
     url = f"{API_BASE}/repos/{OWNER}/{REPO}/releases"
@@ -205,6 +207,17 @@ def create_release(version: str, notes: str, draft: bool, auth: dict) -> dict:
     if status in (200, 201):
         return json.loads(body)
     raise SystemExit(f"Release anlegen fehlgeschlagen (HTTP {status}): {body[:400].decode(errors='replace')}")
+
+
+def update_release(release_id: int, fields: dict, auth: dict) -> dict:
+    """Aktualisiert ein bestehendes Release (z. B. prerelease-Flag/Notizen beim Reuse)."""
+    hdr = {**auth, "Content-Type": "application/json"}
+    url = f"{API_BASE}/repos/{OWNER}/{REPO}/releases/{release_id}"
+    status, body = _request("PATCH", url, hdr, json.dumps(fields).encode())
+    if status in (200, 201):
+        return json.loads(body)
+    raise SystemExit(f"Release aktualisieren fehlgeschlagen (HTTP {status}): "
+                     f"{body[:400].decode(errors='replace')}")
 
 
 def delete_existing_asset(release: dict, name: str, auth: dict) -> None:
@@ -311,7 +324,11 @@ def main() -> int:
     existing = get_release_by_tag(tag, auth)
     if existing:
         print(f"Release {tag} existiert bereits (id {existing['id']}) — wird wiederverwendet.")
-        release = existing
+        # Flags/Notizen eines frueher (ggf. als Vorabversion) angelegten Releases angleichen.
+        felder = {"prerelease": False, "draft": args.draft}
+        if notes:
+            felder["body"] = notes
+        release = update_release(existing["id"], felder, auth)
     else:
         release = create_release(version, notes, args.draft, auth)
         print(f"Release angelegt: id {release['id']}, tag {release['tag_name']}")
