@@ -34,8 +34,14 @@ import unittest
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(WURZEL))
 
-from kkm.core import camera, certpin
+from kkm.core import camera, certpin, vault
 from kkm.plugins.onvif import soap
+
+try:
+    import cryptography  # noqa: F401
+    _HAT_CRYPTO = True
+except ImportError:
+    _HAT_CRYPTO = False
 
 
 class TestCsvInjektion(unittest.TestCase):
@@ -145,6 +151,62 @@ class TestPinningDowngrade(unittest.TestCase):
         self.addCleanup(lambda: certpin.set_enabled(True))
         with certpin.bound("kF", "auto"):
             self.assertFalse(certpin.pinned_in_context())
+
+
+class TestAutounlockSecret(unittest.TestCase):
+    """Audit-Befund 5: Per-Install-Geheimnis in der Schlüsselableitung; ohne die
+    Zusatzdatei scheitert die Auto-Entsperrung (kopierte Dateien allein genügen nicht)."""
+
+    def test_machine_key_abwaertskompatibel_ohne_secret(self):
+        salt = b"0123456789abcdef"
+        self.assertEqual(vault._machine_key(salt),
+                         vault._machine_key(salt, secret=b""))
+
+    def test_machine_key_mit_secret_weicht_ab(self):
+        salt = b"0123456789abcdef"
+        self.assertNotEqual(vault._machine_key(salt),
+                            vault._machine_key(salt, secret=b"geheim"))
+
+    def test_secret_wird_erzeugt_und_wiedergelesen(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(d, ignore_errors=True))
+        self.assertEqual(vault._autounlock_secret(d, create=False), b"")   # noch keins
+        s1 = vault._autounlock_secret(d, create=True)
+        self.assertEqual(len(s1), 32)
+        self.assertTrue(os.path.exists(os.path.join(d, vault.AUTO_SECRET_FILENAME)))
+        self.assertEqual(vault._autounlock_secret(d, create=False), s1)     # stabil
+
+    @unittest.skipUnless(_HAT_CRYPTO, "cryptography nicht verfügbar")
+    def test_autounlock_braucht_die_seed_datei(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(d, ignore_errors=True))
+        pfad = os.path.join(d, "vault.enc")
+        v = vault.PasswordVault(path=pfad)
+        v.create("Master-PW")
+        v.enable_autounlock("Master-PW")
+        # Gleiches Verzeichnis (seed vorhanden) -> entsperrt automatisch.
+        self.assertTrue(vault.PasswordVault(path=pfad).try_autounlock())
+        # vault.seed fehlt (z. B. nur vault.enc+vault.auto kopiert) -> bleibt gesperrt.
+        os.remove(os.path.join(d, vault.AUTO_SECRET_FILENAME))
+        v3 = vault.PasswordVault(path=pfad)
+        self.assertFalse(v3.try_autounlock())
+        self.assertTrue(v3.is_locked)
+
+    @unittest.skipUnless(_HAT_CRYPTO, "cryptography nicht verfügbar")
+    def test_disable_entfernt_seed(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(d, ignore_errors=True))
+        pfad = os.path.join(d, "vault.enc")
+        v = vault.PasswordVault(path=pfad)
+        v.create("pw")
+        v.enable_autounlock("pw")
+        self.assertTrue(os.path.exists(os.path.join(d, vault.AUTO_SECRET_FILENAME)))
+        v.disable_autounlock()
+        self.assertFalse(os.path.exists(os.path.join(d, vault.AUTO_SECRET_FILENAME)))
+        self.assertFalse(os.path.exists(os.path.join(d, vault.AUTO_FILENAME)))
 
 
 if __name__ == "__main__":

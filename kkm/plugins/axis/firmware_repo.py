@@ -63,6 +63,20 @@ CHUNK = 256 * 1024
 _DIR_RE = re.compile(rb'href="([^"?/]+)/"')
 _BIN_RE = re.compile(rb'href="([^"?/]+\.bin)"')
 
+# Erlaubte Zeichen fuer einen aus Serverdaten (Verzeichnisindex, ver.txt) uebernommenen
+# Datei-/Versionsnamen, der in einen Cache-Pfad einfliesst. Schliesst Pfadtrenner beider
+# Systeme ('/', '\\'), absolute Pfade und '..' aus — sonst koennte ein boesartiger Spiegel
+# aus dem Cache-Verzeichnis ausbrechen.
+_SICHERER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*$")
+
+
+def _pruefe_namen(name: str, was: str) -> str:
+    """Stellt sicher, dass *name* keinen Pfadausbruch erlaubt; sonst RepoError."""
+    if not _SICHERER_NAME.match(name) or ".." in name:
+        raise RepoError(t("Unerwarteter {was} „{name}“ aus dem Firmware-Verzeichnis — "
+                          "abgebrochen.", was=was, name=name))
+    return name
+
 
 class RepoError(Exception):
     """Firmware-Verzeichnis nicht erreichbar / Modell unbekannt / Layout geaendert."""
@@ -131,7 +145,9 @@ def _urlopen(req, timeout: int = TIMEOUT):
 def _get(url: str, timeout: int = TIMEOUT) -> bytes:
     try:
         with _urlopen(url, timeout) as resp:
-            return resp.read()
+            # Nur Verzeichnisindex/ver.txt werden so gelesen (klein) — die .bin laedt
+            # download() gestreamt. Deckel gegen eine ueberlange Antwort.
+            return resp.read(16 * 1024 * 1024)
     except urllib.error.HTTPError as exc:
         raise RepoError(f"{url}: HTTP {exc.code}") from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
@@ -140,6 +156,12 @@ def _get(url: str, timeout: int = TIMEOUT) -> bytes:
 
 def _base(base_url: str | None = None) -> str:
     url = (base_url or BASE_URL).strip() or BASE_URL
+    # Firmware wird anschliessend auf die Kamera geschrieben — ein ungeprueftes HTTP
+    # (auch bei einem eigenen Spiegel) wird abgelehnt. Die Standardquelle ist HTTPS.
+    if not url.lower().startswith("https://"):
+        raise RepoError(t("Firmware-Spiegel „{url}“ ist nicht über HTTPS erreichbar — "
+                          "abgelehnt, da die Firmware sonst ungeprüft geladen würde. "
+                          "Eine https://-Adresse eintragen.", url=url))
     return url if url.endswith("/") else url + "/"
 
 
@@ -345,10 +367,11 @@ def release(model_dir: str, version: str | None = None,
     bins = [b.decode("utf-8", "replace") for b in _BIN_RE.findall(raw)]
     if not bins:
         raise RepoError(f"Keine .bin-Datei unter {dir_url}.")
-    filename = bins[0]
+    filename = _pruefe_namen(bins[0], t("Dateiname"))
     ver = version
     if ver is None:
         ver = _get(dir_url + "ver.txt").decode("utf-8", "replace").strip()
+    _pruefe_namen(ver, t("Versionswert"))     # fliesst in den Cache-Pfad -> kein Ausbruch
     url = dir_url + filename
     return Release(model=model_dir, version=ver, url=url, filename=filename,
                    size=_remote_size(url), notes_url=dir_url + "relnote.txt")
@@ -384,9 +407,16 @@ def cached_path(rel: Release) -> str:
     Dateiname des Herstellers erhalten (er geht beim Upload als Multipart-Dateiname
     an die Kamera), und zwei Versionen ueberschreiben sich trotzdem nicht.
     """
-    sub = os.path.join(cache_dir(), rel.model, rel.version.replace(".", "_"))
+    wurzel = cache_dir()
+    sub = os.path.join(wurzel, rel.model, rel.version.replace(".", "_"))
+    ziel = os.path.join(sub, rel.filename)
+    # Verteidigung in der Tiefe: Modell/Version/Dateiname kommen aus Serverdaten; der
+    # Zielpfad muss im Cache bleiben (faengt auch '\\' unter Windows und absolute Werte).
+    real_wurzel = os.path.realpath(wurzel)
+    if os.path.commonpath([real_wurzel, os.path.realpath(ziel)]) != real_wurzel:
+        raise RepoError(t("Firmware-Zielpfad läge außerhalb des Caches — abgebrochen."))
     os.makedirs(sub, exist_ok=True)
-    return os.path.join(sub, rel.filename)
+    return ziel
 
 
 def cache_size() -> int:

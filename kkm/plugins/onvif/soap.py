@@ -98,6 +98,11 @@ class _BasicAuthHandler(urllib.request.HTTPBasicAuthHandler):
 # HTTPS-Aufbau (der = None) und vor jedem HTTP-Aufbau. Wirft der Hook, wird die
 # Verbindung verworfen, BEVOR eine Anfrage (und damit ein Passwort) gesendet wird.
 CONNECT_HOOK = None
+# Obergrenze fuer eine eingelesene Antwort aus dem LAN (Schutz vor Speicher-DoS durch
+# ein boesartiges Geraet). Grosszuegig, damit auch ein ganzes Konfigurations-Abbild
+# passt, aber nicht unbegrenzt.
+_MAX_ANTWORT = 64 * 1024 * 1024
+
 
 
 class _HookedHTTPSConnection(http.client.HTTPSConnection):
@@ -273,9 +278,9 @@ def call(url: str, body: str, username: str = "", password: str = "",
         headers={"Content-Type": 'application/soap+xml; charset=utf-8'})
     try:
         with _opener(url, username, password).open(req, timeout=timeout) as resp:
-            raw = resp.read()
+            raw = resp.read(_MAX_ANTWORT)
     except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
+        detail = exc.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
         try:
             reason = _fault(ET.fromstring(detail))
         except ET.ParseError:

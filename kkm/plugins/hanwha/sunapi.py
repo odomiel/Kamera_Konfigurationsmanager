@@ -94,6 +94,11 @@ class _BasicAuthHandler(urllib.request.HTTPBasicAuthHandler):
 # HTTPS-Aufbau (der = None) und vor jedem HTTP-Aufbau. Wirft der Hook, wird die
 # Verbindung verworfen, BEVOR eine Anfrage (und damit ein Passwort) gesendet wird.
 CONNECT_HOOK = None
+# Obergrenze fuer eine eingelesene Antwort aus dem LAN (Schutz vor Speicher-DoS durch
+# ein boesartiges Geraet). Grosszuegig, damit auch ein ganzes Konfigurations-Abbild
+# passt, aber nicht unbegrenzt.
+_MAX_ANTWORT = 64 * 1024 * 1024
+
 
 
 class _HookedHTTPSConnection(http.client.HTTPSConnection):
@@ -188,7 +193,7 @@ def _open_read(opener, target, timeout) -> bytes:
     for attempt in range(_MAX_490_RETRIES + 1):
         try:
             with opener.open(target, timeout=timeout) as resp:
-                return resp.read()
+                return resp.read(_MAX_ANTWORT)
         except urllib.error.HTTPError as exc:
             if exc.code == 490 and attempt < _MAX_490_RETRIES:
                 time.sleep(1.0 + attempt)   # Session-Slot freiwerden lassen
@@ -213,7 +218,7 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
         if exc.code == 401:
             raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
         try:
-            detail = exc.read().decode("utf-8", errors="replace").strip()
+            detail = exc.read(_MAX_ANTWORT).decode("utf-8", errors="replace").strip()
         except Exception:  # noqa: BLE001
             detail = ""
         raise SunapiError(t("SUNAPI-Fehler {code}: {detail}", code=exc.code, detail=detail[:160] or exc.reason))
@@ -263,7 +268,7 @@ def is_online(ip, scheme="auto", port=None, timeout=5) -> bool:
         url = f"{sc}://{ip}:{p}{CGI}/system.cgi?msubmenu=deviceinfo&action=view"
         try:
             with _opener(f"{ip}:{p}", "", "", auth=False).open(url, timeout=timeout) as r:
-                r.read()
+                r.read(_MAX_ANTWORT)
             return True
         except urllib.error.HTTPError:
             return True                       # geantwortet (z. B. 401) -> online
@@ -306,7 +311,7 @@ def is_unconfigured(ip, scheme="auto", port=None, timeout=5) -> bool:
         url = f"{sc}://{ip}:{p}{CGI}/system.cgi?msubmenu=deviceinfo&action=view"
         try:
             with _opener(f"{ip}:{p}", "", "", auth=False).open(url, timeout=timeout) as r:
-                r.read()
+                r.read(_MAX_ANTWORT)
             return False   # 200 ohne Auth -> kein Init-Blockade-Fall
         except urllib.error.HTTPError as exc:
             return exc.code == 403   # 403 = uninitialisiert, 401 = bereits initialisiert

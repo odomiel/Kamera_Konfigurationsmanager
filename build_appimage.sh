@@ -36,6 +36,28 @@ dl() {  # dl <url> <zieldatei>
     [ -f "$out" ] || { echo ">> download $(basename "$out")"; curl -fSL "$url" -o "$out"; }
 }
 
+pruefe_sha256() {  # pruefe_sha256 <datei> <erwartet>
+    local f="$1" want="$2" got
+    got=$(sha256sum "$f" | awk '{print $1}')
+    if [ "$got" != "$want" ]; then
+        echo "FEHLER: SHA256 von $(basename "$f") stimmt nicht überein" >&2
+        echo "  erwartet: $want" >&2
+        echo "  erhalten: $got" >&2
+        exit 1
+    fi
+}
+
+# Bekannte SHA256 der (versions-gepinnten) Quell-Tarballs — gegen einen manipulierten
+# Spiegel/kompromittiertes Paket. Bei einem Versions-Bump (TCL_VER/… oben) MITBUMPEN:
+# `sha256sum <neuer tarball>` eintragen, sonst bricht der Build hier bewusst ab.
+declare -A SRC_SHA256=(
+    ["tcl-$TCL_VER.tar.gz"]=d0aed49230bc02a65c1e0229e65f34590a4b037ec40d546f32573b467f7551ea
+    ["tk-$TK_VER.tar.gz"]=d7a146d2917eb8b5cc95276dbf0e3d03c7464d2b19c1675357857c989301dbb4
+    ["python-$PY_VER.tgz"]=9e4996c19ae5a3df31f10c37723661f71d3455d73bd005f79df7098e5cc13192
+    ["libffi-$FFI_VER.tar.gz"]=7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4
+    ["openssl-$SSL_VER.tar.gz"]=603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a
+)
+
 # --------------------------------------------------------------- 1. Quellen
 # Cache-Dateinamen enthalten die Version, damit ein Versions-Bump automatisch neu
 # lädt (sonst bliebe ein alter Tarball gleichen Namens liegen -> falsche Version).
@@ -44,6 +66,13 @@ dl "https://downloads.sourceforge.net/project/tcl/Tcl/$TK_VER/tk$TK_VER-src.tar.
 dl "https://www.python.org/ftp/python/$PY_VER/Python-$PY_VER.tgz"                       "$SRC/python-$PY_VER.tgz"
 dl "https://github.com/libffi/libffi/releases/download/v$FFI_VER/libffi-$FFI_VER.tar.gz" "$SRC/libffi-$FFI_VER.tar.gz"
 dl "https://github.com/openssl/openssl/releases/download/openssl-$SSL_VER/openssl-$SSL_VER.tar.gz" "$SRC/openssl-$SSL_VER.tar.gz"
+
+# Prüfsummen aller Quell-Tarballs (frisch geladen oder aus dem Cache) vor dem Entpacken.
+echo "==== Quell-Tarballs per SHA256 prüfen ===="
+for name in "${!SRC_SHA256[@]}"; do
+    pruefe_sha256 "$SRC/$name" "${SRC_SHA256[$name]}"
+    echo ">> OK: $name"
+done
 
 cd "$SRC"
 rm -rf "tcl$TCL_VER" "tk$TK_VER" "Python-$PY_VER" "libffi-$FFI_VER" "openssl-$SSL_VER"
@@ -117,18 +146,22 @@ SITE="$PREFIX/lib/python$PY_XY/site-packages"
 mkdir -p "$SITE"
 wheel() {  # wheel <pypi-paket> <filter>
     local pkg="$1" filt="$2"
-    local url
-    url=$(curl -s "https://pypi.org/pypi/$pkg/json" | "$PYBIN" -c "
+    local url sha
+    # URL und die von PyPI mitgelieferte SHA256 (digests.sha256) des gewaehlten Wheels.
+    read -r url sha < <(curl -s "https://pypi.org/pypi/$pkg/json" | "$PYBIN" -c "
 import json,sys
 d=json.load(sys.stdin); v=d['info']['version']
 for f in d['releases'][v]:
     n=f['filename']
     if $filt:
-        print(f['url']); break
+        print(f['url'], f['digests']['sha256']); break
 ")
     [ -n "$url" ] || { echo "FEHLER: kein passendes Wheel fuer $pkg gefunden"; exit 1; }
     echo ">> $pkg: $(basename "$url")"
     curl -fsSL "$url" -o "$BUILD/$pkg.whl"
+    # Integritaet gegen die Paketindex-Angabe (faengt Uebertragungsfehler / einen
+    # zwischen Index und Datei abweichenden Spiegel).
+    [ -n "$sha" ] && pruefe_sha256 "$BUILD/$pkg.whl" "$sha"
     "$PYBIN" -m zipfile -e "$BUILD/$pkg.whl" "$SITE/"
 }
 # Discovery (mDNS/Zeroconf). Filter 'cp314-cp314-' waehlt die regulaere ABI und

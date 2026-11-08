@@ -304,7 +304,10 @@ class SettingsDialog(tk.Toplevel):
                   foreground=theme.CURRENT.get("warn", "#c0392b"),
                   text=t("Hinweis: Speichert das Master-Passwort gerätegebunden auf "
                          "diesem Rechner. Bequem, aber weniger sicher — wer als dieser "
-                         "Benutzer Zugriff hat, kann den Tresor öffnen.")).grid(
+                         "Benutzer Zugriff hat, kann den Tresor öffnen. Unter Windows ist "
+                         "es an das Benutzerkonto gebunden (DPAPI); bei einer portablen "
+                         "Installation auf einem Wechseldatenträger gehören die Dateien "
+                         "trotzdem geschützt aufbewahrt.")).grid(
             row=start_row + 1, column=0, columnspan=2, sticky=tk.W, pady=(2, 0))
 
     def _toggle_autounlock(self):

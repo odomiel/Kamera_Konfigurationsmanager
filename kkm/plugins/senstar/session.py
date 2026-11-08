@@ -78,6 +78,10 @@ PORT = 443
 # bleiben ``None``, solange das Plugin standalone laeuft (kein Pinning).
 CONNECT_HOOK = None
 PINNED_HOOK = None
+# Obergrenze fuer eine eingelesene Antwort aus dem LAN (Schutz vor Speicher-DoS).
+# Grosszuegig, damit auch ein Konfigurations-/Videoquellen-Export passt.
+_MAX_ANTWORT = 64 * 1024 * 1024
+
 
 
 class _HookedHTTPSConnection(http.client.HTTPSConnection):
@@ -225,9 +229,9 @@ def _anfrage(ip: str, methode: str, pfad: str, token: str | None = None,
     req = urllib.request.Request(url, data=daten, method=methode, headers=kopf)
     try:
         with _oeffnen(req, timeout) as resp:
-            return resp.status, resp.read()
+            return resp.status, resp.read(_MAX_ANTWORT)
     except urllib.error.HTTPError as exc:
-        return exc.code, exc.read()
+        return exc.code, exc.read(_MAX_ANTWORT)
     except Exception as exc:  # noqa: BLE001 - offline / TLS
         if getattr(exc, "cert_mismatch", False):   # Zertifikat geaendert -> GUI fragt nach
             raise
@@ -453,9 +457,9 @@ def _firmware_form_upload(ip: str, token: str, pfad: str, timeout: float) -> Non
                                  method="POST", headers=kopf)
     try:
         with _oeffnen(req, timeout) as resp:
-            status, body = resp.status, resp.read()
+            status, body = resp.status, resp.read(_MAX_ANTWORT)
     except urllib.error.HTTPError as exc:
-        status, body = exc.code, exc.read()
+        status, body = exc.code, exc.read(_MAX_ANTWORT)
     except Exception as exc:  # noqa: BLE001
         if getattr(exc, "cert_mismatch", False):
             raise
@@ -573,9 +577,9 @@ def videoquellen_import(ip: str, token: str, daten: bytes, timeout: float = 60.0
     req = urllib.request.Request(url, data=rumpf, method="POST", headers=kopf)
     try:
         with _oeffnen(req, timeout) as resp:
-            status, body = resp.status, resp.read()
+            status, body = resp.status, resp.read(_MAX_ANTWORT)
     except urllib.error.HTTPError as exc:
-        status, body = exc.code, exc.read()
+        status, body = exc.code, exc.read(_MAX_ANTWORT)
     except Exception as exc:  # noqa: BLE001 - offline / TLS
         if getattr(exc, "cert_mismatch", False):
             raise

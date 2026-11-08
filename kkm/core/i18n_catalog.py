@@ -239,6 +239,7 @@ EN: dict[str, str] = {
     'Hinweis: Bei geänderter Plugin-Auswahl das Programm neu starten.': 'Note: restart the program if the plugin selection was changed.',
     'Hinweis: Das Einspielen ist noch nicht an echter Hardware verifiziert — die Kamera kann es mit einem Geräte-Fehler ablehnen. Das Herunterladen von Backups ist getestet.': 'Note: Restoring is not yet verified on real hardware — the camera may reject it with a device error. Downloading backups is tested.',
     'Hinweis: Speichert das Master-Passwort gerätegebunden auf diesem Rechner. Bequem, aber weniger sicher — wer als dieser Benutzer Zugriff hat, kann den Tresor öffnen.': 'Note: stores the master password device-bound on this computer. Convenient, but less secure — anyone with access as this user can open the vault.',
+    'Hinweis: Speichert das Master-Passwort gerätegebunden auf diesem Rechner. Bequem, aber weniger sicher — wer als dieser Benutzer Zugriff hat, kann den Tresor öffnen. Unter Windows ist es an das Benutzerkonto gebunden (DPAPI); bei einer portablen Installation auf einem Wechseldatenträger gehören die Dateien trotzdem geschützt aufbewahrt.': 'Note: stores the master password device-bound on this computer. Convenient, but less secure — anyone with access as this user can open the vault. On Windows it is bound to the user account (DPAPI); with a portable installation on a removable drive the files should still be kept protected.',
     'IP auf {ip}/{prefix} gesetzt': 'IP set to {ip}/{prefix}',
     'IP-Adresse': 'IP address',
     'IP-Adresse setzen': 'Set IP address',
@@ -640,6 +641,11 @@ EN: dict[str, str] = {
     'HTTPS nicht erreichbar — dieser Vorgang setzt ein Passwort und wird nicht unverschlüsselt über HTTP ausgeführt. HTTPS an der Kamera aktivieren oder bewusst die Verbindung „http“ wählen.': 'HTTPS not reachable — this operation sets a password and is not performed unencrypted over HTTP. Enable HTTPS on the camera or deliberately choose the “http” connection.',
     'Nicht erreichbar.': 'Not reachable.',
     ' — {n} Kamera(s) an neuer Adresse: keine automatische Anmeldung (bei Bedarf Aktion manuell starten)': ' — {n} camera(s) at a new address: no automatic sign-in (start an action manually if needed)',
+    'Dateiname': 'file name',
+    'Versionswert': 'version value',
+    'Unerwarteter {was} „{name}“ aus dem Firmware-Verzeichnis — abgebrochen.': 'Unexpected {was} “{name}” from the firmware directory — aborted.',
+    'Firmware-Zielpfad läge außerhalb des Caches — abgebrochen.': 'Firmware target path would be outside the cache — aborted.',
+    'Firmware-Spiegel „{url}“ ist nicht über HTTPS erreichbar — abgelehnt, da die Firmware sonst ungeprüft geladen würde. Eine https://-Adresse eintragen.': 'Firmware mirror “{url}” is not reachable over HTTPS — rejected, as the firmware would otherwise be downloaded unverified. Enter an https:// address.',
 }
 
 CATALOG: dict[str, dict[str, str]] = {"en": EN}

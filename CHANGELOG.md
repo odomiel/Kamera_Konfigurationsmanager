@@ -4,6 +4,30 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.08b1 — 2026-11-08
+
+Zweites Paket der Sicherheits-Härtung aus dem Code-Audit (Befunde 5–8, niedrige Schwere):
+
+- **Firmware-Download abgesichert (Befund 6).** Datei- und Versionsnamen aus dem
+  Verzeichnisindex werden geprüft (kein Pfadausbruch aus dem Cache, auch nicht über `\`
+  oder absolute/`..`-Pfade), der Cache-Zielpfad zusätzlich per `realpath` im Cache gehalten.
+  Ein **eigener Firmware-Spiegel muss HTTPS** sein — eine `http://`-Adresse wird abgelehnt,
+  da die Firmware sonst ungeprüft geladen würde.
+- **Auto-Entsperrung des Tresors gehärtet (Befund 5).** In die Schlüsselableitung geht
+  jetzt ein zufälliges Per-Install-Geheimnis ein, das **nicht** in Sicherungen landet und
+  nicht mit `vault.enc`/`vault.auto` mitkopiert wird — Rechnername und Benutzer allein (oder
+  ein wiederhergestelltes Backup) genügen nicht mehr. Unter **Windows** ist dieses Geheimnis
+  zusätzlich per **DPAPI an das Benutzerkonto gebunden**, sodass eine auf einen anderen
+  Rechner kopierte portable Installation dort nutzlos ist. Bestehende Auto-Entsperrungen
+  bleiben gültig (abwärtskompatibel); der Hinweis in den Einstellungen wurde ergänzt.
+- **Speicher-Schutz gegen bösartige LAN-Geräte (Befund 8).** Antworten der Kamera-Clients
+  werden mit einer großzügigen Obergrenze (64 MiB) eingelesen, statt unbegrenzt — ein Gerät
+  kann den Speicher nicht mehr mit einer Riesenantwort füllen. Config-Backups u. Ä. passen
+  weiterhin problemlos.
+- **Reproduzierbarer, geprüfter Build (Befund 7).** Das Build-Skript prüft die
+  Quell-Tarballs (Python, OpenSSL, Tcl/Tk, libffi) gegen hinterlegte SHA256-Prüfsummen und
+  die Python-Wheels gegen die von PyPI gemeldete Prüfsumme; bei Abweichung bricht der Build ab.
+
 ## 26.11.08 — 2026-11-08
 
 Sicherheits-Härtung aus dem Code-Audit (Befunde 1–4 sowie zwei Code-Qualitäts-Hinweise):

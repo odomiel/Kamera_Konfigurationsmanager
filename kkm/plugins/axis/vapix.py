@@ -118,6 +118,11 @@ class _HookedHTTPHandler(urllib.request.HTTPHandler):
 # Standard-Ports je Schema
 DEFAULT_PORTS = {"http": 80, "https": 443}
 
+# Obergrenze fuer eine eingelesene Antwort aus dem LAN (Schutz vor Speicher-DoS durch
+# ein boesartiges Geraet). Grosszuegig, damit auch ein ganzes Konfigurations-Abbild
+# passt, aber nicht unbegrenzt.
+_MAX_ANTWORT = 64 * 1024 * 1024
+
 
 class VapixError(Exception):
     """Fehler bei einem VAPIX-Aufruf (Netzwerk, Auth oder Geraeteantwort)."""
@@ -174,7 +179,7 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
                            allow_insecure_basic=allow_insecure_basic)
     try:
         with opener.open(url, timeout=timeout) as resp:
-            return resp.read().decode("utf-8", errors="replace")
+            return resp.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
             raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
@@ -212,7 +217,7 @@ def _post_form(ip, username, password, path, fields, scheme, port, timeout):
     )
     try:
         with opener.open(req, timeout=timeout) as resp:
-            return resp.read().decode("utf-8", errors="replace")
+            return resp.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
             raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
@@ -241,7 +246,7 @@ def _http_error_detail(exc) -> str:
     (``error.message``) oder Klartext in den Body ein — auch bei HTTP 500.
     """
     try:
-        raw = exc.read().decode("utf-8", errors="replace").strip()
+        raw = exc.read(_MAX_ANTWORT).decode("utf-8", errors="replace").strip()
     except Exception:  # noqa: BLE001 - Body evtl. nicht lesbar
         return ""
     if not raw:
@@ -276,7 +281,7 @@ def _post_json(ip, username, password, path, obj, scheme, port, timeout, method=
         method=method)
     try:
         with opener.open(req, timeout=timeout) as resp:
-            text = resp.read().decode("utf-8", errors="replace")
+            text = resp.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
             raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
@@ -324,7 +329,7 @@ def _is_setup_response(exc) -> bool:
     except Exception:  # noqa: BLE001 - defensiv, Header duerfen fehlen
         pass
     try:
-        body = exc.read().decode("utf-8", errors="replace").lower()
+        body = exc.read(_MAX_ANTWORT).decode("utf-8", errors="replace").lower()
     except Exception:  # noqa: BLE001 - Body evtl. nicht lesbar
         return False
     return "initial admin user must be created" in body
@@ -378,7 +383,7 @@ def is_unconfigured(ip, scheme="auto", port=None, timeout=10):
         opener = _build_opener(f"{ip}:{p}", "", "", auth=False)
         try:
             with opener.open(url, timeout=timeout) as resp:
-                resp.read()
+                resp.read(_MAX_ANTWORT)
             return True  # 200 ohne Auth -> werksneu (sehr alte Firmware)
         except urllib.error.HTTPError as exc:
             if _is_setup_response(exc):
@@ -408,7 +413,7 @@ def is_online(ip, scheme="auto", port=None, timeout=5):
         opener = _build_opener(f"{ip}:{p}", "", "", auth=False)
         try:
             with opener.open(url, timeout=timeout) as resp:
-                resp.read()
+                resp.read(_MAX_ANTWORT)
             return True                       # 200 -> online
         except urllib.error.HTTPError:
             return True                       # Geraet hat geantwortet (z. B. 401)
@@ -454,7 +459,7 @@ def _basic_device_info(ip, username, password, scheme="auto", port=None, timeout
                                      headers={"Content-Type": "application/json"})
         try:
             with opener.open(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                data = json.loads(resp.read(_MAX_ANTWORT).decode("utf-8", errors="replace"))
             return data.get("data", {}).get("propertyList", {}) or {}
         except urllib.error.HTTPError as exc:
             if exc.code == 401:
@@ -739,11 +744,11 @@ def _onvif_post(ip, username, password, inner, scheme, port, timeout):
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "text/xml"})
     try:
         with opener.open(req, timeout=timeout) as resp:
-            return resp.read().decode("utf-8", errors="replace")
+            return resp.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
             raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort?)."))
-        detail = exc.read().decode("utf-8", errors="replace")
+        detail = exc.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
         reason = _extract_soap_fault(detail) or f"HTTP {exc.code}: {exc.reason}"
         raise VapixError(t("ONVIF-Fehler: {reason}", reason=reason))
     except urllib.error.URLError as exc:
@@ -895,7 +900,7 @@ def _post_multipart(ip, username, password, path, parts, scheme, port, timeout):
         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
     )
     with opener.open(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+        return resp.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
 
 
 def _parse_fw_response(resp):
@@ -925,7 +930,7 @@ def _resolve_scheme(ip, username, password, scheme, port, timeout):
         opener = _build_opener(f"{ip}:{p}", username, password)
         try:
             with opener.open(url, timeout=timeout) as r:
-                r.read()
+                r.read(_MAX_ANTWORT)
             return sc
         except urllib.error.HTTPError:
             return sc  # verbunden (z. B. 401) -> Schema funktioniert
@@ -944,7 +949,7 @@ def _has_firmware_api(ip, username, password, scheme, port, timeout):
                                  headers={"Content-Type": "application/json"})
     try:
         with opener.open(req, timeout=timeout) as r:
-            r.read()
+            r.read(_MAX_ANTWORT)
         return True
     except urllib.error.HTTPError as exc:
         return exc.code not in (404, 501)  # existiert, nur z. B. 401/400

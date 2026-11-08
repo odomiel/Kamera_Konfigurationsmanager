@@ -22,6 +22,7 @@ name (``Q3505 Mk II``), and ``resolve_model`` combines both. The folder matching
 pure string work and tested here without touching ftp.axis.com — the live directory
 is injected as a fake ``model_index``."""
 
+import os
 import pathlib
 import sys
 import unittest
@@ -128,6 +129,46 @@ class TestPluginAmbiguous(unittest.TestCase):
         self.assertIn("Q3505-V Mk II", ctx.exception.variants)
         self.assertIn("Q3505-VE Mk II", ctx.exception.variants)
         self.assertTrue(all("_" not in v for v in ctx.exception.variants))
+
+
+class TestPfadHaertung(unittest.TestCase):
+    """Audit-Befund 6: Datei-/Versionsnamen aus Serverdaten dürfen nicht aus dem Cache
+    ausbrechen; ein eigener Spiegel muss HTTPS sein."""
+
+    def test_pruefe_namen_laesst_normale_namen_durch(self):
+        self.assertEqual(fr._pruefe_namen("M3085-V.bin", "Dateiname"), "M3085-V.bin")
+        self.assertEqual(fr._pruefe_namen("12.11.72", "Versionswert"), "12.11.72")
+        self.assertEqual(fr._pruefe_namen("AXIS_P3214.bin", "Dateiname"), "AXIS_P3214.bin")
+
+    def test_pruefe_namen_weist_pfadausbruch_ab(self):
+        for boese in ("../x.bin", r"..\x.bin", "/etc/passwd", r"a\b.bin", "a/b", ".."):
+            with self.subTest(boese=boese), self.assertRaises(fr.RepoError):
+                fr._pruefe_namen(boese, "Dateiname")
+
+    def test_base_weist_http_spiegel_ab(self):
+        with self.assertRaises(fr.RepoError):
+            fr._base("http://spiegel.intern/fw/")
+        # HTTPS ist erlaubt und bekommt einen Schrägstrich angehängt.
+        self.assertEqual(fr._base("https://spiegel.intern/fw"),
+                         "https://spiegel.intern/fw/")
+        # Leer -> Standardquelle (HTTPS).
+        self.assertTrue(fr._base("").startswith("https://"))
+
+    def test_cached_path_bleibt_im_cache(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        self.addCleanup(lambda: __import__("shutil").rmtree(d, ignore_errors=True))
+        self._orig = fr.cache_dir
+        fr.cache_dir = lambda: d
+        self.addCleanup(lambda: setattr(fr, "cache_dir", self._orig))
+        rel = fr.Release(model="M3085-V", version="12.11.72", url="",
+                         filename="M3085-V.bin")
+        pfad = fr.cached_path(rel)
+        self.assertTrue(os.path.realpath(pfad).startswith(os.path.realpath(d)))
+        # Ein (hier künstlich gesetzter) ausbrechender Name wird abgewiesen.
+        boese = fr.Release(model="..", version="..", url="", filename="x.bin")
+        with self.assertRaises(fr.RepoError):
+            fr.cached_path(boese)
 
 
 if __name__ == "__main__":

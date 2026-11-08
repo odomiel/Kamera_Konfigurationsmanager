@@ -62,6 +62,14 @@ NONCE_LEN = 12
 # gegen jemanden, der als dieser Benutzer Code ausfuehren kann, nicht sicher.
 AUTO_FILENAME = "vault.auto"
 AUTO_ITERATIONS = 200_000
+# Zusatz-Geheimnis der Auto-Entsperrung: ein zufaelliger Per-Install-Wert, der NICHT
+# mit vault.auto/vault.enc mitwandert (nicht in der Backup-Allowlist). Er geht in die
+# Schluesselableitung ein, sodass das blosse Kennen von Rechnername+Benutzer (oder ein
+# wiederhergestelltes Backup) nicht mehr ausreicht. Unter Windows wird er zusaetzlich per
+# DPAPI an das Konto gebunden — dann ist eine auf einen anderen Rechner kopierte
+# portable Installation (Stick) dort nutzlos. Fehlt die Datei, verhaelt sich die
+# Ableitung wie zuvor (Abwaertskompatibilitaet: bestehende Tokens brechen nicht).
+AUTO_SECRET_FILENAME = "vault.seed"
 
 
 def _getuser() -> str:
@@ -69,6 +77,69 @@ def _getuser() -> str:
         return getpass.getuser()
     except Exception:  # pragma: no cover - je nach Umgebung
         return "user"
+
+
+# --------------------------------------------------------------------------- #
+# Windows DPAPI (optional, an das Benutzerkonto gebunden) — stdlib-only ueber ctypes  #
+# --------------------------------------------------------------------------- #
+
+def _dpapi(protect: bool, data: bytes) -> bytes:
+    """CryptProtectData/CryptUnprotectData (Windows). Bindet *data* an das aktuelle
+    Konto+Rechner. Wirft bei Fehler/Nicht-Windows — der Aufrufer faengt das ab."""
+    import ctypes
+    from ctypes import wintypes
+
+    class _BLOB(ctypes.Structure):
+        _fields_ = [("cbData", wintypes.DWORD),
+                    ("pbData", ctypes.POINTER(ctypes.c_char))]
+
+    def _blob(b: bytes) -> _BLOB:
+        buf = ctypes.create_string_buffer(b, len(b))
+        return _BLOB(len(b), ctypes.cast(buf, ctypes.POINTER(ctypes.c_char)))
+
+    crypt32 = ctypes.windll.crypt32            # nur auf Windows vorhanden
+    kernel32 = ctypes.windll.kernel32
+    fn = crypt32.CryptProtectData if protect else crypt32.CryptUnprotectData
+    out = _BLOB()
+    CRYPTPROTECT_UI_FORBIDDEN = 0x1
+    ok = fn(ctypes.byref(_blob(data)), None, None, None, None,
+            CRYPTPROTECT_UI_FORBIDDEN, ctypes.byref(out))
+    if not ok:
+        raise OSError("DPAPI-Aufruf fehlgeschlagen")
+    try:
+        return ctypes.string_at(out.pbData, out.cbData)
+    finally:
+        kernel32.LocalFree(out.pbData)
+
+
+def _autounlock_secret(directory: str, create: bool) -> bytes:
+    """Liefert das Per-Install-Geheimnis fuer die Auto-Entsperrung (siehe
+    :data:`AUTO_SECRET_FILENAME`). *create*: beim Einrichten der Auto-Entsperrung ein
+    neues erzeugen; beim Start nur lesen. Fehlt es (und *create* ist falsch), wird ``b""``
+    zurueckgegeben — die Ableitung bleibt dann abwaertskompatibel."""
+    path = os.path.join(directory, AUTO_SECRET_FILENAME)
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                blob = json.load(fh)
+            roh = base64.b64decode(blob["data"])
+            return _dpapi(False, roh) if blob.get("dpapi") else roh
+        except Exception:  # noqa: BLE001 - fremder Rechner (DPAPI) / beschaedigt -> gesperrt
+            return b""
+    if not create:
+        return b""
+    secret = os.urandom(32)
+    gespeichert, dpapi = secret, False
+    if os.name == "nt":
+        try:
+            gespeichert, dpapi = _dpapi(True, secret), True
+        except Exception:  # noqa: BLE001 - DPAPI nicht verfuegbar -> roher Zufallswert
+            gespeichert, dpapi = secret, False
+    tmp = path + ".tmp"
+    with open_private(tmp) as fh:
+        json.dump({"dpapi": dpapi, "data": base64.b64encode(gespeichert).decode()}, fh)
+    os.replace(tmp, path)
+    return secret
 
 
 def check_iterations(value) -> int:
@@ -81,13 +152,18 @@ def check_iterations(value) -> int:
     return value
 
 
-def _machine_key(salt: bytes, iterations: int = AUTO_ITERATIONS) -> bytes:
+def _machine_key(salt: bytes, iterations: int = AUTO_ITERATIONS,
+                 secret: bytes = b"") -> bytes:
     ident = "\x1f".join([
         platform.node(), _getuser(), platform.system(),
         "kkm-vault-autounlock-v1",
     ])
-    return hashlib.pbkdf2_hmac("sha256", ident.encode("utf-8"), salt,
-                               iterations, KEY_LEN)
+    material = ident.encode("utf-8")
+    # Per-Install-Geheimnis anhaengen, falls vorhanden; ohne (b"") bleibt die Ableitung
+    # identisch zur bisherigen (Abwaertskompatibilitaet bestehender Tokens).
+    if secret:
+        material += b"\x1f" + secret
+    return hashlib.pbkdf2_hmac("sha256", material, salt, iterations, KEY_LEN)
 
 
 class VaultLocked(Exception):
@@ -216,7 +292,9 @@ class PasswordVault:
         self.unlock(master)                       # prüft das Passwort
         salt = os.urandom(SALT_LEN)
         nonce = os.urandom(NONCE_LEN)
-        ct = _aesgcm()(_machine_key(salt)).encrypt(nonce, master.encode("utf-8"), None)
+        secret = _autounlock_secret(os.path.dirname(self.auto_path), create=True)
+        ct = _aesgcm()(_machine_key(salt, secret=secret)).encrypt(
+            nonce, master.encode("utf-8"), None)
         blob = {
             "version": 1,
             "iterations": AUTO_ITERATIONS,
@@ -230,11 +308,13 @@ class PasswordVault:
         os.replace(tmp, self.auto_path)
 
     def disable_autounlock(self) -> None:
-        """Auto-Entsperr-Token entfernen."""
-        try:
-            os.remove(self.auto_path)
-        except FileNotFoundError:
-            pass
+        """Auto-Entsperr-Token und das zugehörige Per-Install-Geheimnis entfernen."""
+        for pfad in (self.auto_path,
+                     os.path.join(os.path.dirname(self.auto_path), AUTO_SECRET_FILENAME)):
+            try:
+                os.remove(pfad)
+            except FileNotFoundError:
+                pass
 
     def try_autounlock(self) -> bool:
         """Beim Start aufrufen: entsperrt den Tresor mit dem hinterlegten Token.
@@ -248,7 +328,8 @@ class PasswordVault:
             salt = base64.b64decode(blob["salt"])
             nonce = base64.b64decode(blob["nonce"])
             ct = base64.b64decode(blob["ct"])
-            master = _aesgcm()(_machine_key(salt, iterations)).decrypt(
+            secret = _autounlock_secret(os.path.dirname(self.auto_path), create=False)
+            master = _aesgcm()(_machine_key(salt, iterations, secret)).decrypt(
                 nonce, ct, None).decode("utf-8")
             self.unlock(master)
             return True

@@ -88,6 +88,11 @@ class _BasicAuthHandler(urllib.request.HTTPBasicAuthHandler):
 # HTTPS-Aufbau (der = None) und vor jedem HTTP-Aufbau. Wirft der Hook, wird die
 # Verbindung verworfen, BEVOR eine Anfrage (und damit ein Passwort) gesendet wird.
 CONNECT_HOOK = None
+# Obergrenze fuer eine eingelesene Antwort aus dem LAN (Schutz vor Speicher-DoS durch
+# ein boesartiges Geraet). Grosszuegig, damit auch ein ganzes Konfigurations-Abbild
+# passt, aber nicht unbegrenzt.
+_MAX_ANTWORT = 64 * 1024 * 1024
+
 
 
 class _HookedHTTPSConnection(http.client.HTTPSConnection):
@@ -206,13 +211,13 @@ def _request(ip, username, password, path, scheme="http", port=None, timeout=10,
     url = f"{scheme}://{host_port}{path}"
     try:
         with _opener(host_port, username, password, auth).open(url, timeout=timeout) as resp:
-            return resp.read().decode("utf-8", errors="replace")
+            return resp.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
     except urllib.error.HTTPError as exc:
         if exc.code == 401:
             raise _auth_error(t("Authentifizierung fehlgeschlagen (Benutzer/Passwort "
                              "falsch, oder die Uhr der Kamera weicht ab)."))
         try:
-            detail = _dahua_error(exc.read().decode("utf-8", errors="replace"))
+            detail = _dahua_error(exc.read(_MAX_ANTWORT).decode("utf-8", errors="replace"))
         except Exception:  # noqa: BLE001 - Body evtl. nicht lesbar
             detail = ""
         raise DahuaError(t("Dahua-Fehler {code}: {detail}", code=exc.code, detail=detail or exc.reason))
@@ -250,7 +255,7 @@ def is_online(ip, scheme="auto", port=None, timeout=5) -> bool:
         url = f"{sc}://{ip}:{p}{CGI}/magicBox.cgi?action=getDeviceType"
         try:
             with _opener(f"{ip}:{p}", "", "", auth=False).open(url, timeout=timeout) as r:
-                r.read()
+                r.read(_MAX_ANTWORT)
             return True
         except urllib.error.HTTPError:
             return True                       # geantwortet (z. B. 401) -> online
@@ -299,7 +304,7 @@ def is_unconfigured(ip, scheme="auto", port=None, timeout=5) -> bool:
         url = f"{sc}://{ip}:{p}{CGI}/magicBox.cgi?action=getMachineName"
         try:
             with _opener(f"{ip}:{p}", "", "", auth=False).open(url, timeout=timeout) as r:
-                r.read()
+                r.read(_MAX_ANTWORT)
             return True                       # 200 ohne Auth -> nicht initialisiert
         except urllib.error.HTTPError:
             return False                      # verlangt Auth -> bereits initialisiert
@@ -417,7 +422,7 @@ def upgrade_firmware(ip, username, password, firmware_path, scheme="auto",
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
         try:
             with _opener(host_port, username, password).open(req, timeout=timeout) as resp:
-                text = resp.read().decode("utf-8", errors="replace")
+                text = resp.read(_MAX_ANTWORT).decode("utf-8", errors="replace")
             _check_ok(text)
             return t("Firmware aufgespielt — Geraet startet neu")
         except urllib.error.HTTPError as exc:
