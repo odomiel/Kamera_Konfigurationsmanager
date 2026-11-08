@@ -30,6 +30,7 @@ hier bewusst noch nicht umgesetzt.
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import socket
@@ -70,20 +71,69 @@ if hasattr(ssl, "OP_LEGACY_SERVER_CONNECT"):
 
 PORT = 443
 
+# kkm.plugins.set_connect_hook(): ``hook(scheme, host, port, der)``. Wie die anderen
+# Clients prueft Senstar damit das Kamera-Zertifikat (Trust-on-First-Use, Downgrade-
+# Schutz). PINNED_HOOK meldet, ob fuer die gebundene Kamera schon ein modernes
+# Zertifikat gepinnt ist — dann entfaellt der Rueckfall auf veraltetes TLS. Beide
+# bleiben ``None``, solange das Plugin standalone laeuft (kein Pinning).
+CONNECT_HOOK = None
+PINNED_HOOK = None
+
+
+class _HookedHTTPSConnection(http.client.HTTPSConnection):
+    def connect(self):
+        hook = CONNECT_HOOK
+        try:
+            super().connect()
+        except OSError:
+            if hook is not None:
+                hook("https", self.host, self.port, None)
+            raise
+        if hook is not None:
+            try:
+                hook("https", self.host, self.port, self.sock.getpeercert(binary_form=True))
+            except BaseException:
+                self.close()
+                raise
+
+
+class _HookedHTTPConnection(http.client.HTTPConnection):
+    def connect(self):
+        if CONNECT_HOOK is not None:
+            CONNECT_HOOK("http", self.host, self.port, None)
+        super().connect()
+
+
+class _HookedHTTPSHandler(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_HookedHTTPSConnection, req, context=self._context)
+
+
+class _HookedHTTPHandler(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_HookedHTTPConnection, req)
+
 
 def _oeffnen(req: urllib.request.Request, timeout: float):
-    """``urlopen`` mit TLS-Rueckfall: erst der strikte Context, bei einem SSL-Fehler
-    (veraltetes TLS aelterer Firmware) noch einmal mit dem nachgiebigen Legacy-Context.
+    """``urlopen`` mit Zertifikatspruefung (TOFU-Hook) und TLS-Rueckfall: erst der
+    strikte Context, bei einem SSL-Fehler (veraltetes TLS aelterer Firmware) noch einmal
+    mit dem nachgiebigen Legacy-Context. Der Legacy-Rueckfall entfaellt, sobald fuer die
+    Kamera bereits ein modernes Zertifikat gepinnt ist (``PINNED_HOOK``) — so laesst sich
+    der strikte Handshake nicht durch einen Mann in der Mitte auf schwaches TLS druecken.
     Eine echte HTTP-Antwort (``HTTPError``, z. B. 401/404) reicht der Aufrufer wie bisher
     durch; nur SSL-Handshake-Fehler loesen den Rueckfall aus."""
-    for ctx in (_SSL, _SSL_LEGACY):
+    pinned = bool(PINNED_HOOK and PINNED_HOOK())
+    kontexte = (_SSL,) if pinned else (_SSL, _SSL_LEGACY)
+    for ctx in kontexte:
+        opener = urllib.request.build_opener(_HookedHTTPSHandler(context=ctx),
+                                             _HookedHTTPHandler())
         try:
-            return urllib.request.urlopen(req, context=ctx, timeout=timeout)
+            return opener.open(req, timeout=timeout)
         except urllib.error.HTTPError:
             raise
         except urllib.error.URLError as exc:
             letzter = not isinstance(getattr(exc, "reason", None), ssl.SSLError) \
-                or ctx is _SSL_LEGACY
+                or ctx is kontexte[-1]
             if letzter:
                 raise
 
@@ -179,6 +229,8 @@ def _anfrage(ip: str, methode: str, pfad: str, token: str | None = None,
     except urllib.error.HTTPError as exc:
         return exc.code, exc.read()
     except Exception as exc:  # noqa: BLE001 - offline / TLS
+        if getattr(exc, "cert_mismatch", False):   # Zertifikat geaendert -> GUI fragt nach
+            raise
         raise SenstarError(f"Nicht erreichbar: {exc}")
 
 
@@ -364,6 +416,8 @@ def _firmware_put_upload(ip: str, token: str, pfad: str, groesse: int,
         except urllib.error.HTTPError as exc:
             status = exc.code
         except Exception as exc:  # noqa: BLE001
+            if getattr(exc, "cert_mismatch", False):
+                raise
             raise SenstarError(f"Firmware-Upload fehlgeschlagen: {exc}")
     if status in (401, 403):
         raise SenstarError("Nicht autorisiert.", auth_failed=True)
@@ -403,6 +457,8 @@ def _firmware_form_upload(ip: str, token: str, pfad: str, timeout: float) -> Non
     except urllib.error.HTTPError as exc:
         status, body = exc.code, exc.read()
     except Exception as exc:  # noqa: BLE001
+        if getattr(exc, "cert_mismatch", False):
+            raise
         raise SenstarError(f"Firmware-Upload fehlgeschlagen: {exc}")
     if status in (401, 403):
         raise SenstarError("Nicht autorisiert.", auth_failed=True)
@@ -521,6 +577,8 @@ def videoquellen_import(ip: str, token: str, daten: bytes, timeout: float = 60.0
     except urllib.error.HTTPError as exc:
         status, body = exc.code, exc.read()
     except Exception as exc:  # noqa: BLE001 - offline / TLS
+        if getattr(exc, "cert_mismatch", False):
+            raise
         raise SenstarError(f"Nicht erreichbar: {exc}")
     if status in (401, 403):
         raise SenstarError("Nicht autorisiert.", auth_failed=True)

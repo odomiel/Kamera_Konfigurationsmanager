@@ -233,6 +233,10 @@ class MainWindow(tk.Tk):
         self._cam_creds: dict[str, tuple] = {}
         self._unknown_queue: list[dict] = []
         self._factory_found = 0   # Anzahl werksneuer Kameras der letzten Suche
+        # IP je Kamera *vor* der letzten Suche — entscheidet, ob gespeicherte
+        # Zugangsdaten nach der Suche automatisch gesendet werden duerfen (s.
+        # _auto_send_ok: gefaelschte Discovery-Identitaet an fremder IP bekommt keine).
+        self._pre_search_ips: dict[str, str] = {}
 
         self._build_toolbar()
         self._build_body()
@@ -1240,6 +1244,22 @@ class MainWindow(tk.Tk):
                                    password=stored.get("password", ""))
         return None
 
+    def _auto_send_ok(self, cam) -> bool:
+        """Darf diese Kamera nach der Suche *automatisch* (ohne Rückfrage) mit den
+        gespeicherten Zugangsdaten angesprochen werden?
+
+        mDNS/WS-Discovery-Antworten sind im LAN fälschbar: Wer eine Antwort mit der
+        MAC/UUID einer echten Kamera, aber der eigenen IP verschickt, bekäme sonst deren
+        gespeicherte Zugangsdaten. Erlaubt daher nur, wenn die Gegenstelle bestätigt ist:
+        ein gepinntes Zertifikat (certpin prüft es vor dem Senden) **oder** eine
+        unveränderte IP gegenüber dem letzten bekannten Stand (eine Identität, die
+        plötzlich an fremder IP auftaucht, wird zurückgehalten)."""
+        key = camera_key(cam)
+        if certpin.is_enabled() and certpin.STORE.get(key):
+            return True
+        vorher = self._pre_search_ips.get(key)
+        return bool(vorher) and vorher == get_first_ip(cam)
+
     def _after_search(self, found):
         """Nach der Suche: bekannte Kameras still auslesen; unbekannte zuerst auf
         Auslieferungszustand prüfen (werksneue nicht nach Passwort fragen, sondern
@@ -1248,10 +1268,17 @@ class MainWindow(tk.Tk):
         # Reine Anzeige-Geraete ohne Zugangsdaten (z. B. Scutum/Netcon) weder anreichern
         # noch nach Passwort fragen — discover() hat bereits alles (Modell/MAC/online).
         found = [c for c in found if self._uses_credentials(c)]
-        known = [c for c in found if self._creds_known(c)]
+        # Gespeicherte Zugangsdaten nur an bestätigte Gegenstellen automatisch senden;
+        # bei unbestätigter, neuer IP zurückhalten (keine automatische Anmeldung).
+        known = [c for c in found if self._creds_known(c) and self._auto_send_ok(c)]
+        withheld = [c for c in found if self._creds_known(c) and not self._auto_send_ok(c)]
         if known:
             threading.Thread(target=self._worker_enrich, args=(known,),
                              daemon=True).start()
+        if withheld:
+            self.status.config(text=self.status.cget("text") + t(
+                " — {n} Kamera(s) an neuer Adresse: keine automatische Anmeldung "
+                "(bei Bedarf Aktion manuell starten)", n=len(withheld)))
         unknown = [c for c in found if not self._creds_known(c)]
         if unknown:
             # Werkszustand im Hintergrund prüfen; Ergebnis entscheidet, ob gefragt
@@ -1382,6 +1409,10 @@ class MainWindow(tk.Tk):
             while True:
                 kind, payload = self._q.get_nowait()
                 if kind == "search_done":
+                    # IP-Stand vor dem Einpflegen der Treffer festhalten (fuer die
+                    # Entscheidung, ob Zugangsdaten automatisch gesendet werden duerfen).
+                    self._pre_search_ips = {k: get_first_ip(c)
+                                            for k, c in self.store.roster.items()}
                     self.store.remember_all(payload)
                     # Gefundene Kameras = online, alle übrigen bekannten = offline.
                     found_keys = {camera_key(c) for c in payload}

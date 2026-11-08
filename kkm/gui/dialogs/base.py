@@ -325,7 +325,8 @@ class ActionDialog(tk.Toplevel):
             creds = self.creds_for(cam)
             # Alle Verbindungen dieses Threads der Kamera zuordnen -> Zertifikatspruefung
             # (Trust-on-First-Use) greift, auch in Polls nach einem Neustart.
-            with certpin.bound(camera_key(cam), creds.scheme):
+            with certpin.bound(camera_key(cam), creds.scheme,
+                               sensitive=getattr(self, "sensitive_write", False)):
                 msg = op(plugin, cam, creds)
             self._q.put(("line", f"✓ {name} ({ip}): {msg or 'OK'}"))
         except Exception as exc:  # noqa: BLE001 - per-camera failure is logged

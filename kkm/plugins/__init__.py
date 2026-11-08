@@ -27,6 +27,7 @@ owns only Axis cameras gains nothing from it, and it is enabled in the plugin ma
 when a third-party camera turns up.
 """
 
+from kkm.core import certpin
 from kkm.core.plugins import PluginRegistry
 from .axis import AxisPlugin
 from .onvif import OnvifPlugin
@@ -40,6 +41,7 @@ from .hikvision import isapi as _isapi
 from .dahua import httpapi as _httpapi
 from .hanwha import sunapi as _sunapi
 from .onvif import soap as _soap
+from .senstar import session as _senstar
 
 #: Plugins, die ohne gespeicherte Auswahl ausgeschaltet bleiben (generisches ONVIF
 #: sowie noch nicht an Hardware verifizierte, experimentelle Hersteller-Plugins).
@@ -71,8 +73,11 @@ def set_connect_hook(hook) -> None:
     """Connect-Hook (``hook(scheme, host, port, der)``) in allen HTTP-Clients setzen —
     fuer die Zertifikatspruefung (``kkm.core.certpin.check_connection``); ``None``
     schaltet ihn ab."""
-    for mod in (_vapix, _isapi, _httpapi, _sunapi, _soap):
+    for mod in (_vapix, _isapi, _httpapi, _sunapi, _soap, _senstar):
         mod.CONNECT_HOOK = hook
+    # Senstar entscheidet den Rueckfall auf veraltetes TLS anhand eines bereits
+    # gepinnten Zertifikats (Downgrade-Schutz).
+    _senstar.PINNED_HOOK = certpin.pinned_in_context if hook else None
 
 
 __all__ = ["build_registry", "set_basic_over_http", "set_connect_hook", "AxisPlugin", "OnvifPlugin", "HikvisionPlugin",

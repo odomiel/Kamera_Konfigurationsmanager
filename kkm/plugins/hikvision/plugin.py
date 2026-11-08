@@ -79,10 +79,10 @@ class HikvisionPlugin(VendorPlugin):
         ip = self.ip_of(camera)
         if not ip:
             raise soap.OnvifError(t("Kamera hat keine IP-Adresse."))
-        scheme = creds.scheme if creds.scheme in ("http", "https") else "http"
-        url = soap.device_url(ip, scheme, creds.port)
-        offset = soap.time_offset(url, timeout=min(creds.timeout, 5))
-        return url, offset
+        # Im Modus auto erst HTTPS, dann HTTP (Downgrade-Schutz via certpin) — sonst
+        # ginge das ONVIF-Passwort im Klartext ueber HTTP.
+        return soap.resolve_device(ip, creds.scheme, creds.port,
+                                   timeout=min(creds.timeout, 5))
 
     # --- discovery & status -------------------------------------------------
     def discover(self, timeout: int = 10) -> list[dict]:

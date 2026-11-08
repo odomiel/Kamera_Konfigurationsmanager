@@ -34,7 +34,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from kkm.gui import filedialogs as filedialog
 
-from kkm.core import Capability, get_first_ip, t
+from kkm.core import Capability, t
 from .base import ActionDialog
 
 

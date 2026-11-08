@@ -44,6 +44,8 @@ from .base import ActionDialog
 
 class UserDialog(ActionDialog):
     title_text = "Benutzer verwalten"
+    # Setzt Passwoerter -> im Modus auto kein Rueckfall auf unverschluesseltes HTTP.
+    sensitive_write = True
     capability = Capability.USERS
 
     def build_body(self, parent):

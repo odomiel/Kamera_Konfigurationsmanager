@@ -83,10 +83,14 @@ class OnvifPlugin(VendorPlugin):
                                xaddr=camera.get("_onvif_xaddr", ""))
 
     def _auth(self, camera: dict, creds: Credentials):
-        """URL + Zeitversatz — jeder authentifizierte Aufruf braucht beides."""
-        url = self._url(camera, creds)
-        offset = soap.time_offset(url, timeout=min(creds.timeout, 5))
-        return url, offset
+        """URL + Zeitversatz — jeder authentifizierte Aufruf braucht beides. Im Modus
+        ``auto`` wird erst HTTPS, dann HTTP versucht (Downgrade-Schutz via certpin)."""
+        ip = get_first_ip(camera)
+        if not ip:
+            raise soap.OnvifError(t("Kamera hat keine IP-Adresse."))
+        return soap.resolve_device(ip, creds.scheme, creds.port,
+                                   xaddr=camera.get("_onvif_xaddr", ""),
+                                   timeout=min(creds.timeout, 5))
 
     def _interface_token(self, url, creds: Credentials, offset) -> str:
         ifaces = soap.network_interfaces(url, creds.username, creds.password, offset,

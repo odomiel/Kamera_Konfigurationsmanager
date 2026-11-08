@@ -38,6 +38,8 @@ from .base import ActionDialog
 
 class OnvifDialog(ActionDialog):
     title_text = "ONVIF-Benutzer verwalten"
+    # Setzt Passwoerter -> im Modus auto kein Rueckfall auf unverschluesseltes HTTP.
+    sensitive_write = True
     capability = Capability.ONVIF_USERS
 
     def build_body(self, parent):

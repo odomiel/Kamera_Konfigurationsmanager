@@ -44,6 +44,7 @@ import os
 import http.client
 import ssl
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
@@ -197,13 +198,40 @@ def _fault(root) -> str:
 # ------------------------------------------------------------------- HTTP
 def device_url(ip: str, scheme: str = "http", port: int | None = None,
                xaddr: str = "") -> str:
-    """Endpunkt des Device-Service. Ein per WS-Discovery gemeldetes XAddr gewinnt —
-    manche Geraete haengen ihn an einen abweichenden Pfad oder Port."""
-    if xaddr:
-        return xaddr
+    """Endpunkt des Device-Service. Ein per WS-Discovery gemeldetes XAddr liefert nur
+    **Pfad und Port** (manche Geraete nutzen abweichende) — das **Schema** bestimmt der
+    Aufrufer, damit ein ``http://``-XAddr aus der (faelschbaren) Discovery eine bewusst
+    gewaehlte HTTPS-Verbindung nicht auf HTTP herunterzieht."""
     scheme = "http" if scheme not in ("http", "https") else scheme
+    path = DEVICE_PATH
+    if xaddr:
+        parsed = urllib.parse.urlsplit(xaddr)
+        if parsed.path:
+            path = parsed.path
+        if port is None and parsed.port:
+            port = parsed.port
     p = port or DEFAULT_PORTS[scheme]
-    return f"{scheme}://{ip}:{p}{DEVICE_PATH}"
+    return f"{scheme}://{ip}:{p}{path}"
+
+
+def resolve_device(ip: str, scheme: str = "auto", port: int | None = None,
+                   xaddr: str = "", timeout: int = 5):
+    """Konkrete Device-URL **und** Zeitversatz zur Kamera-Uhr. Im Modus ``auto`` wird
+    erst HTTPS, dann HTTP versucht (wie die uebrigen Clients): so pint/prueft der
+    certpin-Hook das HTTPS-Zertifikat und kann den Downgrade verweigern, wenn eins
+    bekannt ist oder der Vorgang ein Passwort setzt. Ein ausdruecklich gewaehltes
+    Schema wird direkt genommen. Liefert ``(url, offset)``."""
+    if scheme in ("http", "https"):
+        url = device_url(ip, scheme, port, xaddr=xaddr)
+        return url, time_offset(url, timeout)
+    last: Exception | None = None
+    for sc in ("https", "http"):
+        url = device_url(ip, sc, port, xaddr=xaddr)
+        try:
+            return url, time_offset(url, timeout)
+        except OnvifError as exc:
+            last = exc
+    raise last or OnvifError(t("Nicht erreichbar."))
 
 
 def _opener(url: str, username: str, password: str):

@@ -427,7 +427,6 @@ EN: dict[str, str] = {
     'Suche': 'Search',
     'Suche fertig: {n} Gerät(e)': 'Search finished: {n} device(s)',
     'Suche läuft…': 'Search running…',
-    'Suche nach Updates …': 'Searching for updates …',
     'Suche teilweise fehlgeschlagen: ': 'Search partially failed: ',
     'Suchen/aktualisieren': 'Search/refresh',
     'Text': 'Text',
@@ -638,6 +637,9 @@ EN: dict[str, str] = {
     'Alle vergessen': 'Forget all',
     'Gespeicherte Zertifikate: {n}': 'Stored certificates: {n}',
     'Alle gespeicherten Kamera-Zertifikate vergessen? Sie werden beim nächsten Kontakt neu gespeichert (ohne Prüfung).': 'Forget all stored camera certificates? They will be stored again at next contact (without verification).',
+    'HTTPS nicht erreichbar — dieser Vorgang setzt ein Passwort und wird nicht unverschlüsselt über HTTP ausgeführt. HTTPS an der Kamera aktivieren oder bewusst die Verbindung „http“ wählen.': 'HTTPS not reachable — this operation sets a password and is not performed unencrypted over HTTP. Enable HTTPS on the camera or deliberately choose the “http” connection.',
+    'Nicht erreichbar.': 'Not reachable.',
+    ' — {n} Kamera(s) an neuer Adresse: keine automatische Anmeldung (bei Bedarf Aktion manuell starten)': ' — {n} camera(s) at a new address: no automatic sign-in (start an action manually if needed)',
 }
 
 CATALOG: dict[str, dict[str, str]] = {"en": EN}

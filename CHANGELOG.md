@@ -4,6 +4,31 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.08 — 2026-11-08
+
+Sicherheits-Härtung aus dem Code-Audit (Befunde 1–4 sowie zwei Code-Qualitäts-Hinweise):
+
+- **Senstar: Zertifikatsprüfung (TOFU) nachgerüstet.** Der Senstar-/Aimetis-Client prüft
+  jetzt wie alle anderen Plugins das Kamera-Zertifikat per Trust-on-First-Use und bricht
+  bei einem Wechsel ab, bevor Zugangsdaten gesendet werden. Der Rückfall auf veraltetes
+  TLS (TLS 1.0) entfällt, sobald ein modernes Zertifikat gepinnt ist — so lässt sich der
+  Handshake nicht durch einen Mann in der Mitte auf schwaches TLS herunterdrücken.
+- **Keine Passwörter mehr im Klartext über HTTP.** Passwort-setzende Aktionen (Benutzer
+  verwalten, ONVIF-Benutzer) weichen im Modus „auto" nicht länger auf unverschlüsseltes
+  HTTP aus — auch nicht bei der Ersteinrichtung, wenn noch kein Zertifikat bekannt ist.
+  ONVIF versucht in „auto" nun **zuerst HTTPS**, und ein per Discovery gemeldetes XAddr
+  liefert nur noch Pfad und Port — das Schema bestimmt die Zugangsdaten-Auswahl, damit ein
+  gefälschtes `http://`-XAddr eine HTTPS-Verbindung nicht herunterzieht.
+- **Keine automatische Anmeldung an unbestätigte Adressen.** Gespeicherte Zugangsdaten
+  werden nach einer Suche nur dann automatisch gesendet, wenn die Gegenstelle bestätigt
+  ist (gepinntes Zertifikat **oder** unveränderte IP). Taucht eine bekannte Identität
+  (fälschbare MAC/UUID aus der Discovery) plötzlich an einer neuen Adresse auf, werden die
+  Zugangsdaten zurückgehalten und ein Hinweis in der Statuszeile angezeigt.
+- **CSV-Export gegen Formel-Injection abgesichert.** Zellen, die mit `= + - @` (oder Tab/
+  CR) beginnen, werden beim Export mit `'` maskiert, damit Excel/LibreOffice aus einem
+  gefälschten Gerätenamen keine Formel ausführt.
+- Code-Qualität: doppelten Übersetzungsschlüssel und einen ungenutzten Import entfernt.
+
 ## 26.11.02b1 — 2026-11-02
 
 - **Firmware: Modellvariante im Dialog wählbar.** Lässt sich eine Axis-Variante nicht

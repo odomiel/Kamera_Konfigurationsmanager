@@ -172,26 +172,42 @@ def is_enabled() -> bool:
 
 
 class _Context:
-    __slots__ = ("key", "scheme", "relearn", "https_failed")
+    __slots__ = ("key", "scheme", "relearn", "https_failed", "sensitive")
 
-    def __init__(self, key, scheme):
+    def __init__(self, key, scheme, sensitive=False):
         self.key = key
         self.scheme = scheme
         self.relearn = False        # nach Werksreset/Firmware: jedes Zertifikat uebernehmen
         self.https_failed = False   # HTTPS-Verbindungsaufbau zuletzt gescheitert
+        self.sensitive = sensitive  # setzt ein Passwort -> im Modus auto nie auf HTTP ausweichen
 
 
 @contextmanager
-def bound(camera_key: str, scheme: str = "auto"):
+def bound(camera_key: str, scheme: str = "auto", sensitive: bool = False):
     """Ordnet alle Verbindungen des aktuellen Threads im ``with``-Block der Kamera
     *camera_key* zu. *scheme* ist das in den Zugangsdaten gewaehlte Schema — der
-    HTTP-Rueckfall wird nur im Modus ``auto`` unterbunden (explizit ``http`` bleibt)."""
+    HTTP-Rueckfall wird nur im Modus ``auto`` unterbunden (explizit ``http`` bleibt).
+
+    *sensitive* markiert Vorgaenge, die ein **Passwort** uebertragen (Benutzer anlegen,
+    Passwort aendern, ONVIF-Benutzer, Ersteinrichtung): dann wird im Modus ``auto`` der
+    Rueckfall auf unverschluesseltes HTTP **auch ohne gepinntes Zertifikat** verweigert,
+    damit das neue Passwort niemals im Klartext ueber das Netz geht."""
     prev = getattr(_local, "ctx", None)
-    _local.ctx = _Context(camera_key, scheme or "auto")
+    _local.ctx = _Context(camera_key, scheme or "auto", sensitive)
     try:
         yield
     finally:
         _local.ctx = prev
+
+
+def pinned_in_context() -> bool:
+    """True, wenn fuer die aktuell per :func:`bound` gebundene Kamera bereits ein
+    Zertifikat gepinnt ist. Clients nutzen das, um den Rueckfall auf veraltetes/
+    unsicheres TLS zu unterbinden, sobald ein modernes Zertifikat bekannt ist."""
+    ctx = getattr(_local, "ctx", None)
+    if ctx is None or not ctx.key or not _enabled:
+        return False
+    return STORE.get(ctx.key) is not None
 
 
 def expect_new_certificate() -> None:
@@ -230,9 +246,14 @@ def check_connection(scheme: str, host: str, port, der: bytes | None) -> None:
             STORE.remember(ctx.key, fp)
             return
         raise CertMismatch(ctx.key, known, fp)
-    if (scheme == "http" and ctx.scheme == "auto" and ctx.https_failed
-            and STORE.get(ctx.key)):
-        raise HttpFallbackRefused(t(
-            "HTTPS nicht erreichbar, für diese Kamera ist aber ein Zertifikat bekannt — "
-            "kein Rückfall auf unverschlüsseltes HTTP. Verbindung „http“ wählen oder "
-            "das Zertifikat vergessen, falls HTTPS bewusst abgeschaltet wurde."))
+    if scheme == "http" and ctx.scheme == "auto" and ctx.https_failed:
+        if STORE.get(ctx.key):
+            raise HttpFallbackRefused(t(
+                "HTTPS nicht erreichbar, für diese Kamera ist aber ein Zertifikat bekannt — "
+                "kein Rückfall auf unverschlüsseltes HTTP. Verbindung „http“ wählen oder "
+                "das Zertifikat vergessen, falls HTTPS bewusst abgeschaltet wurde."))
+        if ctx.sensitive:
+            raise HttpFallbackRefused(t(
+                "HTTPS nicht erreichbar — dieser Vorgang setzt ein Passwort und wird nicht "
+                "unverschlüsselt über HTTP ausgeführt. HTTPS an der Kamera aktivieren oder "
+                "bewusst die Verbindung „http“ wählen."))

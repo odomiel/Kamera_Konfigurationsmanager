@@ -186,6 +186,18 @@ def parse_user_list(path, valid_roles, default_role, zip_password=None):
     return users
 
 
+# Zeichen, mit denen Excel/LibreOffice eine Zelle als Formel auswerten. Werte aus der
+# (im LAN faelschbaren) Discovery — Geraetename, Hostname, Standort — koennten damit
+# beginnen; beim CSV-Export werden sie mit ' maskiert (CSV-Injection-Schutz).
+_CSV_FORMELZEICHEN = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_maskieren(wert):
+    """Stellt einer Zelle, die wie eine Formel beginnt, ein ' voran — sonst unveraendert."""
+    text = "" if wert is None else str(wert)
+    return "'" + text if text[:1] in _CSV_FORMELZEICHEN else text
+
+
 def export_results(cameras, output_file, fmt=None, columns=None):
     """Exportiert die Kameraliste als CSV oder ausgerichtete Texttabelle."""
     if columns is None:
@@ -198,7 +210,7 @@ def export_results(cameras, output_file, fmt=None, columns=None):
             writer = csv.DictWriter(fh, fieldnames=columns)
             writer.writeheader()
             for cam in cameras:
-                writer.writerow({c: cam.get(c, "") for c in columns})
+                writer.writerow({c: _csv_maskieren(cam.get(c, "")) for c in columns})
     else:
         widths = {c: max(len(c), *(len(str(cam.get(c, ""))) for cam in cameras)) if cameras
                   else len(c) for c in columns}
