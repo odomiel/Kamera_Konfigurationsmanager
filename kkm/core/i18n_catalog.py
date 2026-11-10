@@ -646,6 +646,11 @@ EN: dict[str, str] = {
     'Unerwarteter {was} „{name}“ aus dem Firmware-Verzeichnis — abgebrochen.': 'Unexpected {was} “{name}” from the firmware directory — aborted.',
     'Firmware-Zielpfad läge außerhalb des Caches — abgebrochen.': 'Firmware target path would be outside the cache — aborted.',
     'Firmware-Spiegel „{url}“ ist nicht über HTTPS erreichbar — abgelehnt, da die Firmware sonst ungeprüft geladen würde. Eine https://-Adresse eintragen.': 'Firmware mirror “{url}” is not reachable over HTTPS — rejected, as the firmware would otherwise be downloaded unverified. Enter an https:// address.',
+    'Verwaiste Zugangsdaten entfernen…': 'Remove orphaned credentials…',
+    'Verwaiste Zugangsdaten entfernen': 'Remove orphaned credentials',
+    'Keine verwaisten Zugangsdaten — zu jedem Eintrag gibt es noch eine Kamera.': 'No orphaned credentials — every entry still has a camera.',
+    '{n} gespeicherte Zugangsdaten gehören zu keiner bekannten Kamera mehr. Endgültig aus dem Tresor löschen?': '{n} stored credentials no longer belong to any known camera. Permanently delete them from the vault?',
+    '{n} verwaiste Zugangsdaten gelöscht.': '{n} orphaned credentials deleted.',
 }
 
 CATALOG: dict[str, dict[str, str]] = {"en": EN}

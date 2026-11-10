@@ -291,6 +291,9 @@ class SettingsDialog(tk.Toplevel):
             ttk.Button(self._vault_body, text=t("Gespeicherte Zugangsdaten anzeigen…"),
                        command=self._show_stored_credentials).grid(
                 row=11, column=0, columnspan=2, sticky=tk.W, pady=6)
+            ttk.Button(self._vault_body, text=t("Verwaiste Zugangsdaten entfernen…"),
+                       command=self._cleanup_orphans).grid(
+                row=12, column=0, columnspan=2, sticky=tk.W, pady=(0, 6))
 
     def _autounlock_widgets(self, parent, start_row):
         """Checkbox + Warnhinweis für die automatische Entsperrung beim Start."""
@@ -397,6 +400,31 @@ class SettingsDialog(tk.Toplevel):
                                 t("Es sind keine Zugangsdaten gespeichert."), parent=self)
             return
         _CredentialsViewer(self, entries)
+
+    def _cleanup_orphans(self):
+        """Entfernt Tresor-Einträge, zu denen keine Kamera mehr im Bestand ist
+        (z. B. nach dem Löschen von Kameras oder einem Identitätswechsel)."""
+        if self.vault is None or self.vault.is_locked:
+            return
+        gespeichert = set(self.vault.all_entries())
+        vorhanden = set(self.store.roster)
+        verwaist = sorted(gespeichert - vorhanden, key=str.casefold)
+        if not verwaist:
+            messagebox.showinfo(
+                t("Tresor"),
+                t("Keine verwaisten Zugangsdaten — zu jedem Eintrag gibt es noch eine Kamera."),
+                parent=self)
+            return
+        if not messagebox.askyesno(
+                t("Verwaiste Zugangsdaten entfernen"),
+                t("{n} gespeicherte Zugangsdaten gehören zu keiner bekannten Kamera mehr. "
+                  "Endgültig aus dem Tresor löschen?", n=len(verwaist)),
+                parent=self):
+            return
+        self.vault.delete_many(verwaist)
+        messagebox.showinfo(
+            t("Tresor"), t("{n} verwaiste Zugangsdaten gelöscht.", n=len(verwaist)),
+            parent=self)
 
     # ----------------------------------------------------------------- plugins
     def _build_plugins_tab(self, parent):

@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.10b1 — 2026-11-10
+
+- **Einstellungen → Tresor: „Verwaiste Zugangsdaten entfernen…".** Löscht auf einen Klick
+  alle im Tresor gespeicherten Zugangsdaten, zu denen keine Kamera mehr im Bestand ist
+  (z. B. nach dem Entfernen von Kameras oder einem Identitätswechsel). Vorher wird die
+  Anzahl genannt und nachgefragt; gibt es keine verwaisten Einträge, sagt ein Hinweis das.
+
 ## 26.11.10 — 2026-11-10
 
 - **Benutzer-Dialog: „Passwort im Tresor speichern" ist jetzt vorausgewählt**, sobald ein
