@@ -4,6 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.10 — 2026-11-10
+
+- **Benutzer-Dialog: „Passwort im Tresor speichern" ist jetzt vorausgewählt**, sobald ein
+  Tresor vorhanden ist (wie schon „Zugangsdaten aus Tresor verwenden"). Ohne Tresor bleibt
+  die Option aus, damit nicht jede Aktion zur Tresoreinrichtung auffordert.
+
 ## 26.11.08b1 — 2026-11-08
 
 Zweites Paket der Sicherheits-Härtung aus dem Code-Audit (Befunde 5–8, niedrige Schwere):

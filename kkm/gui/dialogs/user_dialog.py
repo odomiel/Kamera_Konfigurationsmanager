@@ -66,7 +66,9 @@ class UserDialog(ActionDialog):
         self.factory = tk.BooleanVar(value=False)
         self.import_path = tk.StringVar()
         self._zip_password = None     # Passwort eines verschlüsselten ZIP (falls gewählt)
-        self.store_vault = tk.BooleanVar(value=False)
+        # Vorausgewaehlt, sobald ein Tresor existiert (wie „aus Tresor verwenden"); ohne
+        # Tresor aus, damit nicht jede Aktion zur Tresoreinrichtung auffordert.
+        self.store_vault = tk.BooleanVar(value=self.vault is not None)
 
         # Container for the mode-specific area, kept above the vault/apply row so
         # toggling modes never disturbs the overall layout order.
