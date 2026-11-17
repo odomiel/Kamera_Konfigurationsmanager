@@ -4,6 +4,12 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.17b3 — 2026-11-17
+
+- **Aktions-Dialoge: Kreis-Spinner nach rechts über das Ergebnis-Fenster verschoben.**
+  Die Fortschrittsanzeige sitzt in den Untermenüs jetzt rechtsbündig in einer eigenen
+  Zeile direkt über dem „Ergebnis"-Log statt linksbündig darunter.
+
 ## 26.11.17b2 — 2026-11-17
 
 - **Fortschrittsanzeige: Kreis-Spinner statt Balken.** Die unbestimmte Busy-Anzeige

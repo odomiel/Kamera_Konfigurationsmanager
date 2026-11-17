@@ -84,15 +84,18 @@ class ActionDialog(tk.Toplevel):
         body.pack(fill=tk.BOTH, expand=True, pady=6)
         self.build_body(body)
 
+        # --- Fortschritt: rechts, direkt über dem Ergebnis-Log ---
+        progress_row = ttk.Frame(outer)
+        progress_row.pack(fill=tk.X, pady=(6, 0))
+        self.progress = CircularSpinner(progress_row, size=22)
+        self.progress.pack(side=tk.RIGHT)
+
         # --- result log ---
         logframe = ttk.LabelFrame(outer, text=t("Ergebnis"), padding=6)
-        logframe.pack(fill=tk.BOTH, expand=True, pady=(6, 0))
+        logframe.pack(fill=tk.BOTH, expand=True, pady=(2, 0))
         self.log = tk.Text(logframe, height=self.log_height, state=tk.DISABLED,
                            wrap=tk.WORD)
         self.log.pack(fill=tk.BOTH, expand=True)
-
-        self.progress = CircularSpinner(outer, size=22)
-        self.progress.pack(anchor=tk.W, pady=(6, 0))
 
         # Auf kleinen Bildschirmen nicht höher werden als der Bildschirm: Der Dialog
         # bleibt scrollbar dort, wo Inhalt anfällt (Kameraliste, Ergebnis-Log).
