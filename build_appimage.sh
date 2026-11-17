@@ -22,7 +22,7 @@ TCL_VER=9.0.4
 TK_VER=9.0.4
 PY_VER=3.14.10
 PY_XY=3.14
-FFI_VER=3.8.0
+FFI_VER=3.8.1
 SSL_VER=3.5.9
 
 APP=Kamerakonfigurationsmanager
@@ -54,7 +54,7 @@ declare -A SRC_SHA256=(
     ["tcl-$TCL_VER.tar.gz"]=d0aed49230bc02a65c1e0229e65f34590a4b037ec40d546f32573b467f7551ea
     ["tk-$TK_VER.tar.gz"]=d7a146d2917eb8b5cc95276dbf0e3d03c7464d2b19c1675357857c989301dbb4
     ["python-$PY_VER.tgz"]=9e4996c19ae5a3df31f10c37723661f71d3455d73bd005f79df7098e5cc13192
-    ["libffi-$FFI_VER.tar.gz"]=7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4
+    ["libffi-$FFI_VER.tar.gz"]=81e879c094cc5ec3186c48510c6385ac6b3e866192e8bc71a35245703757ee40
     ["openssl-$SSL_VER.tar.gz"]=603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a
 )
 

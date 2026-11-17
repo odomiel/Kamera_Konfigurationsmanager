@@ -13,7 +13,7 @@ eigene Programmcode (Paket `kkm/`, `main.py`, `bump_version.py`,
 | Expat (libexpat) | in CPython | MIT | AppImage + .exe |
 | Tcl | 9.0.x | Tcl/Tk License (BSD-artig) | AppImage (Quelltext) + .exe (aus Python 3.14) |
 | Tk | 9.0.x | Tcl/Tk License (BSD-artig) | AppImage (Quelltext) + .exe (aus Python 3.14) |
-| libffi | 3.8.0 | libffi License (MIT-artig) | AppImage |
+| libffi | 3.8.1 | libffi License (MIT-artig) | AppImage |
 | OpenSSL | 3.5.x | Apache License 2.0 | AppImage (ssl-Modul) |
 | zeroconf | aktuell | **LGPL-2.1-or-later** | AppImage + .exe |
 | ifaddr | aktuell | MIT | AppImage + .exe |
@@ -98,7 +98,7 @@ BASIS.
 
 ---
 
-## libffi 3.8.0
+## libffi 3.8.1
 
 libffi - Copyright (c) 1996-2024 Anthony Green, Red Hat, Inc and others.
 

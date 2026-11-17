@@ -14,6 +14,9 @@ erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
   bisher nicht gefunden. (Hinweis: Um eine reine Link-Local-Kamera anschließend auch zu
   *konfigurieren*, muss der Rechner Link-Local-Erreichbarkeit im selben Segment haben —
   z. B. eine zusätzliche 169.254-Adresse oder vorübergehend DHCP/APIPA.)
+- **Build: libffi auf 3.8.1 aktualisiert** (täglicher Abhängigkeits-Check; SHA-256
+  mitgezogen). Übrige Toolchain unverändert und aktuell: Python 3.14.10, OpenSSL 3.5.9
+  (LTS), Tcl/Tk 9.0.4.
 
 ## 26.11.17 — 2026-11-17
 
