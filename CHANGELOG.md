@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.17b2 — 2026-11-17
+
+- **Fortschrittsanzeige: Kreis-Spinner statt Balken.** Die unbestimmte Busy-Anzeige
+  (Hauptfenster bei Suche/Online-Check sowie alle Aktions-Dialoge) ist jetzt ein
+  rotierender Kreis statt eines Laufbalkens — ein eigenes Canvas-Widget
+  (`gui/spinner.py`, `CircularSpinner`) mit derselben `start()`/`stop()`-Schnittstelle.
+  Farben folgen dem Hell-/Dunkel-Theme (neue Palette-Schlüssel `accent`/`track`) und
+  werden beim Theme-Wechsel aktualisiert. Der echte **Download-Prozentbalken** im
+  Firmware-Dialog (bestimmter Fortschritt) bleibt ein Balken.
+
 ## 26.11.17b1 — 2026-11-17
 
 - **Axis-Suche findet Zeroconf-/Link-Local-Kameras auch ohne DHCP.** Die mDNS-Erkennung

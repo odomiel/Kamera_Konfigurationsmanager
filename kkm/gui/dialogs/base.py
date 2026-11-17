@@ -38,6 +38,7 @@ import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk, messagebox, simpledialog
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
+from kkm.gui.spinner import CircularSpinner
 
 from kkm.core import Credentials, camera_key, certpin, get_first_ip, looks_like_zip, t
 from .vault_access import ensure_vault_unlocked
@@ -90,8 +91,8 @@ class ActionDialog(tk.Toplevel):
                            wrap=tk.WORD)
         self.log.pack(fill=tk.BOTH, expand=True)
 
-        self.progress = ttk.Progressbar(outer, mode="indeterminate", length=200)
-        self.progress.pack(fill=tk.X, pady=(6, 0))
+        self.progress = CircularSpinner(outer, size=22)
+        self.progress.pack(anchor=tk.W, pady=(6, 0))
 
         # Auf kleinen Bildschirmen nicht höher werden als der Bildschirm: Der Dialog
         # bleibt scrollbar dort, wo Inhalt anfällt (Kameraliste, Ergebnis-Log).

@@ -29,11 +29,14 @@ _DARK = {
     "name": "dark",
     "online": "#51cf66", "offline": "#ff6b6b", "warn": "#ff6b6b",
     "text_bg": "#1c1c1c", "text_fg": "#fafafa", "sel": "#2f5d8a",
+    # Akzent (laufender Bogen) + Track (ruhender Ring) des Kreis-Spinners.
+    "accent": "#60cdff", "track": "#3a3a3a",
 }
 _LIGHT = {
     "name": "light",
     "online": "#2f9e44", "offline": "#e03131", "warn": "#c0392b",
     "text_bg": "#ffffff", "text_fg": "#1a1a1a", "sel": "#cfe3ff",
+    "accent": "#005fb8", "track": "#d4d4d4",
 }
 
 CURRENT = _LIGHT

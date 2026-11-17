@@ -40,6 +40,7 @@ from concurrent.futures import ThreadPoolExecutor
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from kkm.gui import filedialogs as filedialog   # feste Dialoggröße
+from kkm.gui.spinner import CircularSpinner
 
 # Parallele Netzwerk-Zugriffe (Firmware/Online/Zugangsdaten) je Suche.
 NET_WORKERS = 12
@@ -345,7 +346,7 @@ class MainWindow(tk.Tk):
         settings_btn.pack(side=tk.RIGHT, padx=(0, 6))
         ttk.Button(right, text=t("Exportieren"), command=self._export).pack(
             side=tk.RIGHT, padx=(0, 6))
-        self.progress = ttk.Progressbar(right, mode="indeterminate", length=140)
+        self.progress = CircularSpinner(right, size=22)
         self.progress.pack(side=tk.RIGHT, padx=8)
 
         # Nur die mittleren Aktions-Buttons (IP-Adresse … Zeitzone) kommen in den
@@ -1738,6 +1739,7 @@ class MainWindow(tk.Tk):
         self.settings.set("theme", mode)
         theme.apply_theme(self, mode)
         self._apply_status_tags()
+        self.progress._refresh_colors()   # Kreis-Spinner an neue Palette angleichen
         self._refresh_table()
 
     # ------------------------------------------------- online auto-check
