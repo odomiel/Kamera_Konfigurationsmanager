@@ -4,6 +4,17 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.17b1 — 2026-11-17
+
+- **Axis-Suche findet Zeroconf-/Link-Local-Kameras auch ohne DHCP.** Die mDNS-Erkennung
+  tritt der Multicast-Gruppe jetzt explizit auf jeder lokalen Netzwerkschnittstelle bei
+  (`InterfaceChoice.All`) statt dem Kernel die Interface-Wahl über die Routing-Tabelle zu
+  überlassen. Bei statischer IP — besonders ohne Default-Gateway, etwa beim Direktanschluss
+  an eine Werks-Kamera — wurde eine nur per Zeroconf (169.254.x.x) erreichbare Axis-Kamera
+  bisher nicht gefunden. (Hinweis: Um eine reine Link-Local-Kamera anschließend auch zu
+  *konfigurieren*, muss der Rechner Link-Local-Erreichbarkeit im selben Segment haben —
+  z. B. eine zusätzliche 169.254-Adresse oder vorübergehend DHCP/APIPA.)
+
 ## 26.11.17 — 2026-11-17
 
 - **Windows: kein Konsolen-Flackern mehr bei der Kamerasuche.** Externe Kommandos

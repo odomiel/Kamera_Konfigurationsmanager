@@ -27,7 +27,7 @@ is where a plugin's discovery reaches for them.
 
 import time
 
-from zeroconf import IPVersion, ServiceBrowser, Zeroconf
+from zeroconf import IPVersion, InterfaceChoice, ServiceBrowser, Zeroconf
 
 # Die hier erzeugten Kamera-Dicts folgen der Form von ``kkm.core.camera.FIELD_NAMES``.
 # get_first_ip wird bewusst re-exportiert: axis/plugin.py löst die Kamera-IP über
@@ -41,13 +41,22 @@ class AxisDiscovery:
     SERVICE_TYPE = "_axis-video._tcp.local."
 
     def __init__(self):
+        # interfaces=All: Multicast-Mitgliedschaft EXPLIZIT auf jeder lokalen
+        # Interface-Adresse beitreten, statt dem Kernel (InterfaceChoice.Default →
+        # INADDR_ANY) die Wahl des Interfaces über die Routing-Tabelle zu überlassen.
+        # Letzteres schlägt bei statischer IP OHNE Default-Gateway fehl (typisch beim
+        # Direktanschluss an eine Werks-Kamera), sodass eine nur per Zeroconf/Link-Local
+        # (169.254.x.x) erreichbare Kamera nicht empfangen wird. Zugleich findet die
+        # explizite Per-Interface-Mitgliedschaft Kameras auf Multi-NIC-/VPN-Hosts —
+        # dieselbe Philosophie wie bei der SADP-/WS-Discovery-Probe.
         try:
             # IPv4 UND IPv6 abfragen (A- + AAAA-Records) — ohne ip_version fragt
             # zeroconf nur IPv4 ab und die Kameras meldeten keine IPv6-Adresse.
-            self.zeroconf = Zeroconf(ip_version=IPVersion.All)
+            self.zeroconf = Zeroconf(ip_version=IPVersion.All,
+                                     interfaces=InterfaceChoice.All)
         except OSError:
             # Host ohne (nutzbaren) IPv6-Stack -> wie bisher nur IPv4.
-            self.zeroconf = Zeroconf()
+            self.zeroconf = Zeroconf(interfaces=InterfaceChoice.All)
         self.services = []
 
     def add_service(self, zeroconf, service_type, name):
