@@ -55,6 +55,10 @@ def _find_native() -> str | None:
 
 _NATIVE = _find_native()
 
+#: Verhindert ein kurz aufblitzendes Konsolenfenster auf Windows (GUI-.exe ohne Konsole).
+#: Hier defensiv — die nativen Dialoge (zenity/kdialog) sind ohnehin Linux-seitig.
+_NO_WINDOW = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+
 
 def _clean_env() -> dict:
     """Umgebung für das externe Programm: AppImage-spezifische Bibliothekspfade
@@ -106,7 +110,8 @@ def _zenity(save, title, initialdir, initialfile, filetypes, defaultextension):
         cmd.append(f"--filename={fn}")
     cmd += _zenity_filters(filetypes)
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env())
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env(),
+                              creationflags=_NO_WINDOW)
     except (OSError, ValueError):
         return None            # Start fehlgeschlagen -> Fallback auf tkinter
     if proc.returncode != 0:   # 1 = Abbruch, 5 = Timeout, o. Ä.
@@ -141,7 +146,8 @@ def _kdialog(save, title, initialdir, initialfile, filetypes, defaultextension):
     if title:
         cmd += ["--title", title]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env())
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=_clean_env(),
+                              creationflags=_NO_WINDOW)
     except (OSError, ValueError):
         return None
     if proc.returncode != 0:

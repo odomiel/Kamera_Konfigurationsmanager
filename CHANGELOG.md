@@ -4,6 +4,13 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.17 — 2026-11-17
+
+- **Windows: kein Konsolen-Flackern mehr bei der Kamerasuche.** Externe Kommandos
+  (ARP-Abfrage des Scutum/Netcon-Plugins, Datei-Dialog-Fallback) werden jetzt mit
+  `CREATE_NO_WINDOW` gestartet — beim Scannen blitzen dadurch keine kurzen Terminalfenster
+  mehr auf. (Wirksam ab einem neuen Windows-Build der `.exe`.)
+
 ## 26.11.10b1 — 2026-11-10
 
 - **Einstellungen → Tresor: „Verwaiste Zugangsdaten entfernen…".** Löscht auf einen Klick

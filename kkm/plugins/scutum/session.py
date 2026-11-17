@@ -35,9 +35,15 @@ from __future__ import annotations
 import re
 import socket
 import subprocess
+import sys
 
 #: Der einzige offene Dienst des Geraets (SSH). Zugleich der Online-Pruefpunkt.
 PORT = 22
+
+#: Auf Windows verhindert ``CREATE_NO_WINDOW``, dass beim Aufruf externer Kommandos
+#: (``arp``/``ip``) kurz ein Konsolenfenster aufblitzt, wenn das GUI-``.exe`` ohne eigene
+#: Konsole laeuft. Auf POSIX ist ``creationflags=0`` wirkungslos.
+_NO_WINDOW = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
 _MAC_RE = re.compile(r"([0-9a-fA-F]{2}(?:[:-][0-9a-fA-F]{2}){5})")
 
@@ -182,7 +188,7 @@ def mac_adresse(ip: str) -> str:
     for cmd in (["ip", "neigh", "show", ip], ["arp", "-a", ip], ["arp", "-n", ip]):
         try:
             out = subprocess.run(cmd, capture_output=True, text=True,
-                                 timeout=4).stdout
+                                 timeout=4, creationflags=_NO_WINDOW).stdout
         except (OSError, subprocess.SubprocessError):
             continue
         for treffer in _MAC_RE.findall(out):
