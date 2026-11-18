@@ -4,6 +4,16 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.18 — 2026-11-18
+
+- **Programm-Icon in Titelleiste und Windows-Taskleiste** statt der Tkinter-Default-
+  „Feder". Das Hauptfenster setzt jetzt beim Start sein Icon (`iconbitmap` mit der
+  mehrauflösenden `.ico` unter Windows, `iconphoto` mit der `.png` sonst — gilt auch für
+  Dialoge); zusätzlich wird unter Windows eine eigene AppUserModelID gesetzt, damit die
+  Taskleiste korrekt unter dem Programm-Icon gruppiert. Die Icons werden ins `.exe`-Bundle
+  (PyInstaller `datas`) und in den AppImage-App-Baum (`assets/`) aufgenommen. (Wirksam ab
+  einem neuen Windows-Build der `.exe`.)
+
 ## 26.11.17b3 — 2026-11-17
 
 - **Aktions-Dialoge: Kreis-Spinner nach rechts über das Ergebnis-Fenster verschoben.**

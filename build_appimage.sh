@@ -190,6 +190,9 @@ echo "==== AppDir zusammenstellen ===="
 mkdir -p "$APPDIR/app"
 cp "$ROOT/main.py" "$ROOT/README.md" "$ROOT/HILFE.md" "$ROOT/HILFE_EN.md" "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_LICENSES.md" "$APPDIR/app/"
 cp -r "$ROOT/kkm" "$APPDIR/app/"
+# Programm-Icon auch im App-Baum: _set_app_icon() sucht es unter <app>/assets/ (das
+# .desktop-Icon in der AppDir-Wurzel deckt nur die Taskleiste, nicht das Fenster-Icon ab).
+cp -r "$ROOT/assets" "$APPDIR/app/"
 find "$APPDIR/app" -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true
 
 # Icon: vorhandenes nehmen, sonst minimalen Platzhalter erzeugen.

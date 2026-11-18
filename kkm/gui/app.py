@@ -194,6 +194,7 @@ class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(f"{APP_NAME} {__version__}")
+        self._set_app_icon()
         self.geometry("1100x650")
 
         self.settings = AppSettings()
@@ -1734,6 +1735,34 @@ class MainWindow(tk.Tk):
         self.table.tag_configure("online", foreground=theme.CURRENT["online"])
         self.table.tag_configure("offline", foreground=theme.CURRENT["offline"])
 
+    def _set_app_icon(self):
+        """Programm-Icon für Titelleiste und Windows-Taskleiste setzen — sonst zeigt
+        Tk die Default-„Feder". Windows nutzt die mehrauflösende ``.ico`` (die auch die
+        Taskleiste zieht), andere Plattformen die ``.png`` per ``iconphoto``. ``default=``
+        bzw. ``True`` gelten auch für später geöffnete Toplevel-Dialoge. Fehlende Datei
+        oder nicht unterstütztes Format wird still ignoriert (App läuft weiter)."""
+        import sys
+        from pathlib import Path
+        if getattr(sys, "frozen", False):
+            base = Path(getattr(sys, "_MEIPASS", "."))
+        else:
+            base = Path(__file__).resolve().parents[2]   # <root>/ bzw. AppImage app/
+        assets = base / "assets"
+        if sys.platform == "win32":
+            ico = assets / "Kamerakonfigurationsmanager.ico"
+            if ico.exists():
+                try:
+                    self.iconbitmap(default=str(ico))
+                except tk.TclError:
+                    pass
+            return
+        png = assets / "Kamerakonfigurationsmanager.png"
+        try:
+            self._app_icon = tk.PhotoImage(file=str(png))   # Referenz halten!
+            self.iconphoto(True, self._app_icon)
+        except (tk.TclError, OSError):
+            pass
+
     def set_theme(self, mode):
         self._theme = mode
         self.settings.set("theme", mode)
@@ -1790,7 +1819,23 @@ class MainWindow(tk.Tk):
                 pass
 
 
+def _set_windows_app_id():
+    """Windows-Taskleiste: eigene AppUserModelID setzen, damit das Fenster unter dem
+    Programm-Icon gruppiert/angeheftet wird statt unter einem generischen Default-Icon.
+    Muss vor dem ersten Fenster laufen; auf Nicht-Windows ein No-op."""
+    import sys
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "Mirik.Kamerakonfigurationsmanager")
+    except Exception:  # noqa: BLE001 - rein kosmetisch, nie den Start verhindern
+        pass
+
+
 def main():
+    _set_windows_app_id()
     MainWindow().mainloop()
 
 
