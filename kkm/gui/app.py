@@ -196,6 +196,10 @@ class MainWindow(tk.Tk):
         self.title(f"{APP_NAME} {__version__}")
         self._set_app_icon()
         self.geometry("1100x650")
+        # Mindestgröße: unter ~1100 px Breite würde die Aktions-/Button-Leiste oben
+        # abgeschnitten (ihre natürliche Breite ist der limitierende Faktor); die Höhe
+        # lässt Toolbar + einige Tabellenzeilen + Statusleiste sichtbar.
+        self.minsize(1100, 500)
 
         self.settings = AppSettings()
         # UI-Sprache aus den Einstellungen setzen, bevor irgendein Text gebaut wird

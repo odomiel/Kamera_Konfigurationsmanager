@@ -4,6 +4,11 @@ Versionsschema: `JJ.MM.TT[bN]` (zweistelliges Jahr; mehrere Releases am selben T
 erhalten ein hochzählendes `bN`-Suffix). Die aktuelle Version steht in
 `kkm/version.py`.
 
+## 26.11.23 — 2026-11-23
+
+- **Mindestfenstergröße festgelegt** (1100×500). Das Hauptfenster lässt sich nicht mehr
+  so klein ziehen, dass die obere Aktions-/Button-Leiste abgeschnitten wird.
+
 ## 26.11.18 — 2026-11-18
 
 - **Programm-Icon in Titelleiste und Windows-Taskleiste** statt der Tkinter-Default-
