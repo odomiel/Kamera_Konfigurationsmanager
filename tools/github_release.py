@@ -76,6 +76,12 @@ def resolve_token() -> str:
         raise SystemExit(
             "GitHub-Token fehlt. Setze GITHUB_TOKEN oder lege "
             f"{_CFG_DIR}/github_token an (fine-grained, Contents: Read and write).")
+    # Falle: ein zweiter Token in der zweiten Zeile — urllib wuerde BEIDE Tokens
+    # in der Fehlermeldung zeigen. Daher pruefen und OHNE Inhalt abbrechen.
+    if any(c.isspace() for c in tok):
+        raise SystemExit(
+            f"GitHub-Token ungueltig: {_CFG_DIR}/github_token (bzw. $GITHUB_TOKEN) "
+            "muss genau einen Token in einer Zeile ohne Leerraum enthalten.")
     return tok
 
 
@@ -132,6 +138,45 @@ def _request(method: str, url: str, headers: dict, data: bytes | None = None):
             return resp.status, resp.read()
     except urllib.error.HTTPError as e:
         return e.code, e.read()
+
+
+def check_token(slug: str, token: str) -> None:
+    """Prueft den Token VOR dem Release: Gueltigkeit (401 -> klare Meldung statt
+    Traceback) und nahenden Ablauf (<30 Tage -> Warnung auf stderr). So faellt ein
+    abgelaufener/bald ablaufender Token beim naechsten Release auf, nicht erst,
+    wenn etwas scheitert."""
+    import datetime as _dt
+    req = urllib.request.Request(f"{API}/repos/{slug}", headers=_headers(token))
+    try:
+        with urllib.request.urlopen(req) as resp:
+            exp = resp.headers.get("github-authentication-token-expiration")
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            raise SystemExit(
+                f"GitHub-Token ungueltig oder abgelaufen (HTTP 401) fuer {slug}. "
+                "Neuen fine-grained Token (Contents: Read and write) erzeugen und in "
+                f"{_CFG_DIR}/github_token hinterlegen.")
+        raise SystemExit(f"GitHub-Token-Pruefung fehlgeschlagen (HTTP {e.code}) fuer {slug}.")
+    if not exp:
+        print("Hinweis: GitHub meldet kein Token-Ablaufdatum (Classic-Token ohne Ablauf?).",
+              file=sys.stderr)
+        return
+    wert = exp.strip()
+    try:
+        # Kopf ist z. B. "2027-10-31 23:00:00 UTC" oder mit Versatz "... +0100".
+        norm = wert.replace(" UTC", " +0000")
+        when = _dt.datetime.strptime(norm, "%Y-%m-%d %H:%M:%S %z")
+    except ValueError:
+        print(f"Hinweis: Token-Ablaufdatum nicht lesbar: {wert!r}", file=sys.stderr)
+        return
+    tage = (when - _dt.datetime.now(_dt.timezone.utc)).days
+    if tage < 0:
+        raise SystemExit(f"GitHub-Token ist am {wert} abgelaufen. Bitte erneuern.")
+    if tage < 30:
+        print(f"WARNUNG: GitHub-Token laeuft in {tage} Tagen ab ({wert}). "
+              "Bald einen neuen fine-grained Token hinterlegen.", file=sys.stderr)
+    else:
+        print(f"Token gueltig, Ablauf {wert} (in {tage} Tagen).")
 
 
 def wait_for_tag(slug: str, tag: str, token: str, timeout: int = 180) -> bool:
@@ -251,6 +296,7 @@ def main() -> int:
         return 0
 
     token = resolve_token()
+    check_token(slug, token)
 
     print(f"-> Warte auf Tag {tag} bei GitHub (bis {args.wait}s) ...")
     if not wait_for_tag(slug, tag, token, args.wait):
